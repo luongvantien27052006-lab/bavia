@@ -1,0 +1,29 @@
+// lib/repositories/voucher_repository.dart
+//
+// POST /api/vouchers/validate — kiểm tra mã giảm giá trước khi đặt đơn.
+// Body: { voucherCode, cartItems: [{ product_id, quantity }] }.
+// Trả về discount + validationToken (HMAC) — phải gửi token này lại khi
+// đặt đơn để backend xác thực mức giảm.
+
+import '../core/network/api_client.dart';
+import '../models/voucher_model.dart';
+
+class VoucherRepository {
+  final ApiClient _api = ApiClient.I;
+
+  Future<VoucherValidation> validate({
+    required String voucherCode,
+    required List<({String productId, int quantity})> cartItems,
+  }) async {
+    final data = await _api.post(
+      '/vouchers/validate',
+      data: {
+        'voucherCode': voucherCode.trim().toUpperCase(),
+        'cartItems': cartItems
+            .map((i) => {'product_id': i.productId, 'quantity': i.quantity})
+            .toList(),
+      },
+    );
+    return VoucherValidation.fromJson(Map<String, dynamic>.from(data as Map));
+  }
+}
