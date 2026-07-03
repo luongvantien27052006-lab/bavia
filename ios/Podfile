@@ -1,5 +1,8 @@
 platform :ios, '13.0'
 
+# DÒNG BẮT BUỘC: Nạp file helper của Flutter để hệ thống hiểu các lệnh bên dưới
+load File.join(File.dirname(File.expand_path(__FILE__)), 'Flutter', 'podhelper.rb')
+
 target 'Runner' do
   use_frameworks!
   use_modular_headers!
@@ -11,7 +14,7 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     
-    # Sửa lỗi Non-modular header cho Firebase
+    # Sửa lỗi Non-modular header cho các thư viện Firebase của bạn
     target.build_configurations.each do |config|
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
     end
