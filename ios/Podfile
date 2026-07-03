@@ -1,10 +1,4 @@
-# Bản chuẩn dành cho Flutter trên iOS
 platform :ios, '13.0'
-
-# CocoaPods analytics sends network stats so organizations can prioritize future features.
-if !XCODE_VERSION_MAJOR || XCODE_VERSION_MAJOR.to_i < 13
-  puts "Till CocoaPods 1.11.0, to prevent unnecessary downloads, please upgrade Xcode."
-end
 
 target 'Runner' do
   use_frameworks!
@@ -17,7 +11,7 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     
-    # Đoạn mã sửa lỗi Non-modular header cho Firebase của bạn ở đây:
+    # Sửa lỗi Non-modular header cho Firebase
     target.build_configurations.each do |config|
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
     end
