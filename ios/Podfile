@@ -30,8 +30,6 @@ target 'Runner' do
   use_modular_headers!
   flutter_install_all_ios_pods File.dirname(File.expand_path(__FILE__))
 end
-  flutter_install_all_ios_pods File.dirname(File.expand_path(__FILE__))
-end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
