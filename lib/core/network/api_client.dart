@@ -1,3 +1,8 @@
+// ============================================================
+//  FLUTTER  lib/core/network/api_client.dart
+//  >> CHEP DE (boc lop {success,data} khi refresh -> giu phien)
+// ============================================================
+
 // lib/core/network/api_client.dart
 //
 // HTTP client trung tâm cho toàn app. Trách nhiệm:
@@ -145,7 +150,10 @@ class ApiClient {
         data: {'refreshToken': refreshToken},
       );
 
-      final data = res.data;
+      // Bóc lớp bao {success, data:{...}} nếu backend trả kiểu đó.
+      final raw = res.data;
+      final data =
+          (raw is Map && raw['data'] is Map) ? raw['data'] as Map : raw;
       if (data is Map &&
           data['accessToken'] is String &&
           data['refreshToken'] is String) {

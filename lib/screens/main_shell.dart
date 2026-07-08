@@ -1,3 +1,9 @@
+// ============================================================
+//  FLUTTER
+//  lib/screens/main_shell.dart
+//  >> CHEP DE (doi tab Scan -> Voucher)
+// ============================================================
+
 // lib/screens/main_shell.dart
 //
 // Khung chính sau đăng nhập: bottom navigation 4 tab + badge số món trong giỏ
@@ -14,7 +20,7 @@ import 'account/account_screen.dart';
 import 'cart/cart_screen.dart';
 import 'home/home_screen.dart';
 import 'menu/menu_screen.dart';
-import 'scan/scan_screen.dart';
+import 'voucher/voucher_wallet_screen.dart';
 
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
@@ -64,7 +70,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     final tabs = [
       HomeScreen(onBrowseMenu: _goToMenu),
       const MenuScreen(),
-      const ScanScreen(),
+      const VoucherWalletScreen(),
       const AccountScreen(),
     ];
 
@@ -136,10 +142,10 @@ class _MainShellState extends ConsumerState<MainShell> {
           label: 'Menu',
         ),
         const NavigationDestination(
-          icon: Icon(Icons.qr_code_scanner_outlined),
-          selectedIcon:
-              Icon(Icons.qr_code_scanner_rounded, color: AppColors.coffee),
-          label: 'Scan',
+          icon: Icon(Icons.confirmation_number_outlined),
+          selectedIcon: Icon(Icons.confirmation_number_rounded,
+              color: AppColors.coffee),
+          label: 'Voucher',
         ),
         const NavigationDestination(
           icon: Icon(Icons.person_outline_rounded),
