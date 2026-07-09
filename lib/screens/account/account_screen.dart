@@ -1,6 +1,12 @@
 // ============================================================
 //  FLUTTER
 //  lib/screens/account/account_screen.dart
+//  >> CHEP DE (them muc Chinh sach & Dieu khoan)
+// ============================================================
+
+// ============================================================
+//  FLUTTER
+//  lib/screens/account/account_screen.dart
 //  >> CHEP DE (trang thai khach + nut Dang nhap)
 // ============================================================
 
@@ -20,6 +26,7 @@ import '../address/address_list_screen.dart';
 import '../loyalty/loyalty_screen.dart';
 import '../orders/order_history_screen.dart';
 import '../profile/profile_screen.dart';
+import '../legal/legal_screen.dart';
 
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key});
@@ -91,6 +98,8 @@ class AccountScreen extends ConsumerWidget {
               'Quản lý địa chỉ giao hàng', const AddressListScreen()),
           _tile(context, Icons.card_giftcard_rounded, 'Điểm thưởng',
               'Số dư & lịch sử điểm', const LoyaltyScreen()),
+          _tile(context, Icons.privacy_tip_rounded, 'Chính sách & Điều khoản',
+              'Điều khoản sử dụng và quyền riêng tư', const LegalScreen()),
           const SizedBox(height: 16),
           OutlinedButton.icon(
             onPressed: () => ref.read(authProvider.notifier).logout(),
@@ -140,6 +149,14 @@ class AccountScreen extends ConsumerWidget {
                 ),
                 child: const Text('Đăng nhập ngay'),
               ),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const LegalScreen()),
+              ),
+              child: const Text('Chính sách & Điều khoản',
+                  style: TextStyle(color: AppColors.textMuted)),
             ),
           ],
         ),
