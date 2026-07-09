@@ -23,6 +23,7 @@ dependencies:
   # Firebase (Phone Auth)
   firebase_core: ^2.27.0
   firebase_auth: ^4.17.8
+  firebase_messaging: ^14.7.19
 
   # UI helpers
   cached_network_image: ^3.3.1

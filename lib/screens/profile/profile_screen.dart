@@ -1,3 +1,9 @@
+// ============================================================
+//  FLUTTER
+//  lib/screens/profile/profile_screen.dart
+//  >> CHEP DE (nut Xoa tai khoan + xac nhan)
+// ============================================================
+
 // lib/screens/profile/profile_screen.dart
 //
 // Hồ sơ cá nhân: xem số điện thoại (định danh, không sửa) và sửa tên hiển thị.
@@ -24,6 +30,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   late final TextEditingController _name;
   bool _saving = false;
+  bool _deleting = false;
 
   @override
   void initState() {
@@ -128,6 +135,35 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               prefixIcon: Icon(Icons.badge_outlined),
             ),
           ),
+          const SizedBox(height: 40),
+          const Divider(),
+          const SizedBox(height: 8),
+          Center(
+            child: TextButton.icon(
+              onPressed: _deleting ? null : _confirmDelete,
+              icon: _deleting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.delete_forever_rounded,
+                      color: AppColors.delivery),
+              label: Text(_deleting ? 'Đang xoá…' : 'Xoá tài khoản',
+                  style: const TextStyle(
+                      color: AppColors.delivery,
+                      fontWeight: FontWeight.w600)),
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              'Tài khoản và thông tin cá nhân sẽ bị xoá vĩnh viễn. '
+              'Lịch sử đơn hàng được giữ ẩn danh theo quy định kế toán.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: SafeArea(
@@ -146,6 +182,50 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDelete() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xoá tài khoản?'),
+        content: const Text(
+          'Hành động này không thể hoàn tác. Bạn sẽ bị đăng xuất, '
+          'thông tin cá nhân bị xoá và các voucher chưa dùng sẽ mất.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Huỷ'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Xoá tài khoản',
+                style: TextStyle(color: AppColors.delivery)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    setState(() => _deleting = true);
+    try {
+      await ref.read(authProvider.notifier).deleteAccount();
+      if (!mounted) return;
+      Navigator.of(context).popUntil((r) => r.isFirst);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tài khoản đã được xoá')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _deleting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Xoá tài khoản thất bại, vui lòng thử lại'),
+          backgroundColor: AppColors.delivery,
+        ),
+      );
+    }
   }
 
   Widget _label(String text) => Padding(

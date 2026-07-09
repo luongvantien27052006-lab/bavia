@@ -1,3 +1,9 @@
+// ============================================================
+//  FLUTTER
+//  lib/providers/auth_provider.dart
+//  >> CHEP DE (dang ky token khi login, go khi logout)
+// ============================================================
+
 // lib/providers/auth_provider.dart
 //
 // Quản lý trạng thái phiên đăng nhập toàn app bằng Riverpod Notifier.
@@ -13,6 +19,7 @@ import '../core/realtime/socket_service.dart';
 import '../core/storage/secure_storage.dart';
 import '../models/user_model.dart';
 import 'repository_providers.dart';
+import '../services/push_service.dart';
 
 enum AuthStatus { unknown, unauthenticated, authenticated }
 
@@ -47,6 +54,7 @@ class AuthNotifier extends Notifier<AuthState> {
       state = AuthState.authenticated(user);
       // Mở socket realtime sau khi xác nhận phiên còn hiệu lực.
       await SocketService.instance.connect();
+      await PushService.instance.registerForUser();
     } catch (_) {
       // Token hỏng/hết hạn và không refresh được → về màn login.
       await SecureStorage.instance.clear();
@@ -58,6 +66,7 @@ class AuthNotifier extends Notifier<AuthState> {
   Future<void> onLoggedIn(UserModel user) async {
     state = AuthState.authenticated(user);
     await SocketService.instance.connect();
+    await PushService.instance.registerForUser();
   }
 
   /// Cập nhật user trong state (sau khi sửa hồ sơ thành công).
@@ -69,9 +78,19 @@ class AuthNotifier extends Notifier<AuthState> {
 
   /// Đăng xuất chủ động.
   Future<void> logout() async {
+    await PushService.instance.unregister();
     SocketService.instance.disconnect();
     await ref.read(firebaseAuthServiceProvider).signOut();
     await ref.read(authRepositoryProvider).logout();
+    state = const AuthState.unauthenticated();
+  }
+
+  /// Xoá tài khoản trên máy chủ rồi đưa app về trạng thái chưa đăng nhập.
+  Future<void> deleteAccount() async {
+    await PushService.instance.unregister();
+    SocketService.instance.disconnect();
+    await ref.read(authRepositoryProvider).deleteAccount();
+    await ref.read(firebaseAuthServiceProvider).signOut();
     state = const AuthState.unauthenticated();
   }
 

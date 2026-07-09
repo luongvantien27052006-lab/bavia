@@ -1,7 +1,7 @@
 // ============================================================
 //  FLUTTER
 //  lib/screens/home/home_screen.dart
-//  >> CHEP DE (header khach -> Mong Fruits)
+//  >> CHEP DE (bao quan dong cua ngay o Trang chu)
 // ============================================================
 
 // ============================================================
@@ -34,6 +34,7 @@ import '../auth/login_screen.dart';
 import '../../models/user_model.dart';
 import '../../models/news.dart';
 import '../../providers/news_provider.dart';
+import '../../providers/store_provider.dart';
 import '../../widgets/news_image.dart';
 import '../news/news_list_screen.dart';
 import '../news/news_detail_screen.dart';
@@ -56,6 +57,7 @@ class HomeScreen extends ConsumerWidget {
           children: [
             _header(context, ref, user),
             const SizedBox(height: 16),
+            _closedNotice(ref),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -110,6 +112,54 @@ class HomeScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Báo quán đang đóng cửa ngay ở Trang chủ, trước khi khách chọn món.
+  Widget _closedNotice(WidgetRef ref) {
+    return ref.watch(storeStatusProvider).maybeWhen(
+          data: (store) {
+            if (store.isOpen) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.delivery.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(14),
+                  border:
+                      Border.all(color: AppColors.delivery.withOpacity(0.4)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.do_not_disturb_on_rounded,
+                        color: AppColors.delivery),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Quán đang đóng cửa',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.delivery)),
+                          const SizedBox(height: 2),
+                          Text(store.closedReason,
+                              style: const TextStyle(
+                                  fontSize: 13, color: AppColors.textDark)),
+                          const SizedBox(height: 2),
+                          Text('Giờ mở cửa: ${store.hoursLabel}',
+                              style: const TextStyle(
+                                  fontSize: 12, color: AppColors.textMuted)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+          orElse: () => const SizedBox.shrink(),
+        );
   }
 
   Widget _header(BuildContext context, WidgetRef ref, UserModel? user) {

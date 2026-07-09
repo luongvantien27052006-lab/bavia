@@ -1,3 +1,9 @@
+// ============================================================
+//  FLUTTER
+//  lib/main.dart
+//  >> CHEP DE (PushService.init sau Firebase)
+// ============================================================
+
 // lib/main.dart
 //
 // Điểm khởi động: Firebase → ApiClient → date locale → runApp.
@@ -9,6 +15,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'app.dart';
 import 'core/network/api_client.dart';
+import 'services/push_service.dart';
 // import 'firebase_options.dart'; // tạo bằng `flutterfire configure`
 
 Future<void> main() async {
@@ -36,6 +43,7 @@ Future<void> main() async {
   // và truyền options để chắc chắn đúng project:
   //   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await Firebase.initializeApp();
+  await PushService.instance.init();
 
   // Khởi tạo HTTP client (đọc baseUrl từ ApiConfig).
   ApiClient.I.init();

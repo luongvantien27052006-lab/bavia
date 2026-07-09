@@ -1,7 +1,7 @@
 // ============================================================
 //  FLUTTER
 //  lib/app.dart
-//  >> CHEP DE (title app -> Mong Fruits)
+//  >> CHEP DE (navigatorKey + mo chi tiet don khi bam thong bao)
 // ============================================================
 
 // ============================================================
@@ -27,7 +27,9 @@ import 'core/network/api_client.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
 import 'screens/main_shell.dart';
+import 'screens/orders/order_detail_screen.dart';
 import 'screens/splash_screen.dart';
+import 'services/push_service.dart';
 
 class BaviaApp extends ConsumerStatefulWidget {
   const BaviaApp({super.key});
@@ -44,10 +46,29 @@ class _BaviaAppState extends ConsumerState<BaviaApp> {
     ApiClient.I.onSessionExpired = () {
       ref.read(authProvider.notifier).onSessionExpired();
     };
+
+    // Bấm vào thông báo đơn hàng → mở màn chi tiết đơn.
+    PushService.instance.onOpenOrder = _openOrder;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      PushService.instance.flushPending();
+    });
     // Kiểm tra phiên cũ sau frame đầu.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(authProvider.notifier).bootstrap();
     });
+  }
+
+  void _openOrder(String orderId) {
+    final nav = appNavigatorKey.currentState;
+    if (nav == null) {
+      PushService.instance.pendingOrderId = orderId;
+      return;
+    }
+    // Chưa đăng nhập thì bỏ qua (không có đơn để xem).
+    if (ref.read(authProvider).user == null) return;
+    nav.push(
+      MaterialPageRoute(builder: (_) => OrderDetailScreen(orderId: orderId)),
+    );
   }
 
   @override
@@ -55,6 +76,7 @@ class _BaviaAppState extends ConsumerState<BaviaApp> {
     final status = ref.watch(authProvider).status;
 
     return MaterialApp(
+      navigatorKey: appNavigatorKey,
       title: 'Mọng Fruits',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,

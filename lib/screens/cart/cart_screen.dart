@@ -1,6 +1,12 @@
 // ============================================================
 //  FLUTTER
 //  lib/screens/cart/cart_screen.dart
+//  >> CHEP DE (khoa nut Thanh toan khi dong cua)
+// ============================================================
+
+// ============================================================
+//  FLUTTER
+//  lib/screens/cart/cart_screen.dart
 //  >> CHEP DE (chan dat don: chua dang nhap -> mo login truoc)
 // ============================================================
 
@@ -26,6 +32,7 @@ import '../../widgets/product_image.dart';
 import '../checkout/checkout_screen.dart';
 import '../auth/login_screen.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/store_provider.dart';
 
 class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
@@ -193,7 +200,9 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             _summaryRow('Tổng cộng', total, bold: true),
             const SizedBox(height: 12),
             ElevatedButton(
-              onPressed: () async {
+              onPressed: !_storeOpen(ref)
+                  ? null
+                  : () async {
                 // Chưa đăng nhập -> mở màn đăng nhập trước khi thanh toán.
                 if (ref.read(authProvider).user == null) {
                   await Navigator.of(context).push(
@@ -207,13 +216,18 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   MaterialPageRoute(builder: (_) => const CheckoutScreen()),
                 );
               },
-              child: const Text('Thanh toán'),
+              child: Text(
+                  _storeOpen(ref) ? 'Thanh toán' : 'Quán đang đóng cửa'),
             ),
           ],
         ),
       ),
     );
   }
+
+  bool _storeOpen(WidgetRef ref) => ref
+      .watch(storeStatusProvider)
+      .maybeWhen(data: (s) => s.isOpen, orElse: () => true);
 
   Widget _summaryRow(String label, int amount, {bool bold = false}) {
     final style = TextStyle(

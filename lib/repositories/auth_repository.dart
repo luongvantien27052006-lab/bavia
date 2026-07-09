@@ -1,3 +1,9 @@
+// ============================================================
+//  FLUTTER
+//  lib/repositories/auth_repository.dart
+//  >> CHEP DE (goi DELETE /auth/me)
+// ============================================================
+
 // lib/repositories/auth_repository.dart
 //
 // Cầu nối giữa Firebase Phone Auth và backend Bavia.
@@ -66,5 +72,11 @@ class AuthRepository {
   }
 
   /// Đăng xuất: backend không có endpoint, chỉ cần xoá token cục bộ.
+  /// Xoá tài khoản: gọi DELETE /auth/me rồi xoá token phía client.
+  Future<void> deleteAccount() async {
+    await _api.delete('/auth/me');
+    await _storage.clear();
+  }
+
   Future<void> logout() => _storage.clear();
 }
