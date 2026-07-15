@@ -1,7 +1,7 @@
 // ============================================================
 //  FLUTTER
 //  lib/repositories/auth_repository.dart
-//  >> CHEP DE (goi DELETE /auth/me)
+//  >> CHEP DE (login nhan referralCode + deviceId)
 // ============================================================
 
 // lib/repositories/auth_repository.dart
@@ -22,10 +22,19 @@ class AuthRepository {
   final SecureStorage _storage = SecureStorage.instance;
 
   /// Đổi Firebase idToken lấy phiên Bavia. Lưu token + trả user.
-  Future<UserModel> loginWithFirebaseIdToken(String idToken) async {
+  Future<UserModel> loginWithFirebaseIdToken(
+    String idToken, {
+    String? referralCode,
+    String? deviceId,
+  }) async {
     final data = await _api.post(
       '/auth/login/phone',
-      data: {'idToken': idToken},
+      data: {
+        'idToken': idToken,
+        if (referralCode != null && referralCode.trim().isNotEmpty)
+          'referralCode': referralCode.trim(),
+        if (deviceId != null && deviceId.isNotEmpty) 'deviceId': deviceId,
+      },
       skipAuth: true,
     );
     final map = Map<String, dynamic>.from(data as Map);

@@ -1,7 +1,7 @@
 // ============================================================
 //  FLUTTER
 //  lib/screens/account/account_screen.dart
-//  >> CHEP DE (them muc Chinh sach & Dieu khoan)
+//  >> CHEP DE (them muc Gioi thieu ban be)
 // ============================================================
 
 // ============================================================
@@ -27,6 +27,7 @@ import '../loyalty/loyalty_screen.dart';
 import '../orders/order_history_screen.dart';
 import '../profile/profile_screen.dart';
 import '../legal/legal_screen.dart';
+import '../referral/referral_screen.dart';
 
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key});
@@ -98,6 +99,8 @@ class AccountScreen extends ConsumerWidget {
               'Quản lý địa chỉ giao hàng', const AddressListScreen()),
           _tile(context, Icons.card_giftcard_rounded, 'Điểm thưởng',
               'Số dư & lịch sử điểm', const LoyaltyScreen()),
+          _tile(context, Icons.groups_rounded, 'Giới thiệu bạn bè',
+              'Nhận voucher & điểm khi mời bạn', const ReferralScreen()),
           _tile(context, Icons.privacy_tip_rounded, 'Chính sách & Điều khoản',
               'Điều khoản sử dụng và quyền riêng tư', const LegalScreen()),
           const SizedBox(height: 16),

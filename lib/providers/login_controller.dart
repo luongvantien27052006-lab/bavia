@@ -1,3 +1,9 @@
+// ============================================================
+//  FLUTTER
+//  lib/providers/login_controller.dart
+//  >> CHEP DE (giu referralCode + gui kem deviceId)
+// ============================================================
+
 // lib/providers/login_controller.dart
 //
 // Điều khiển luồng đăng nhập OTP 2 bước, tách khỏi UI để màn login chỉ lo
@@ -9,11 +15,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/network/api_exception.dart';
 import 'auth_provider.dart';
 import 'repository_providers.dart';
+import '../services/device_id_service.dart';
 
 enum LoginStep { enterPhone, enterOtp }
 
 class LoginState {
   final LoginStep step;
+  final String referralCode;
   final bool loading;
   final String? error;
   final String phone; // E.164 đã chuẩn hoá
@@ -25,6 +33,7 @@ class LoginState {
     this.error,
     this.phone = '',
     this.otpSent = false,
+    this.referralCode = '',
   });
 
   LoginState copyWith({
@@ -33,6 +42,7 @@ class LoginState {
     Object? error = _sentinel,
     String? phone,
     bool? otpSent,
+    String? referralCode,
   }) {
     return LoginState(
       step: step ?? this.step,
@@ -40,6 +50,7 @@ class LoginState {
       error: identical(error, _sentinel) ? this.error : error as String?,
       phone: phone ?? this.phone,
       otpSent: otpSent ?? this.otpSent,
+      referralCode: referralCode ?? this.referralCode,
     );
   }
 
@@ -51,6 +62,10 @@ class LoginController extends AutoDisposeNotifier<LoginState> {
   LoginState build() => const LoginState();
 
   /// Bước 1: gửi OTP tới số điện thoại.
+  void setReferralCode(String code) {
+    state = state.copyWith(referralCode: code);
+  }
+
   Future<void> sendOtp(String rawPhone) async {
     state = state.copyWith(loading: true, error: null, phone: rawPhone);
     final firebase = ref.read(firebaseAuthServiceProvider);
@@ -97,8 +112,14 @@ class LoginController extends AutoDisposeNotifier<LoginState> {
   /// Đổi idToken lấy phiên Bavia + cập nhật auth state toàn app.
   Future<void> _exchangeAndLogin(String idToken) async {
     try {
-      final user =
-          await ref.read(authRepositoryProvider).loginWithFirebaseIdToken(idToken);
+      final deviceId = await DeviceIdService.instance.get();
+      final user = await ref
+          .read(authRepositoryProvider)
+          .loginWithFirebaseIdToken(
+            idToken,
+            referralCode: state.referralCode,
+            deviceId: deviceId,
+          );
       await ref.read(authProvider.notifier).onLoggedIn(user);
       // auth state đổi sang authenticated → router tự chuyển vào app.
     } on ApiException catch (e) {

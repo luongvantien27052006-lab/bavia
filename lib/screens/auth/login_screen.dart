@@ -1,7 +1,7 @@
 // ============================================================
 //  FLUTTER
 //  lib/screens/auth/login_screen.dart
-//  >> CHEP DE (ten -> Mong Fruits)
+//  >> CHEP DE (o 'Ma gioi thieu (neu co)')
 // ============================================================
 
 // ============================================================
@@ -34,6 +34,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _phoneController = TextEditingController();
+  final _referralController = TextEditingController();
   static const _otpLength = 6;
   final _otpControllers =
       List.generate(_otpLength, (_) => TextEditingController());
@@ -42,6 +43,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   void dispose() {
     _phoneController.dispose();
+    _referralController.dispose();
     for (final c in _otpControllers) {
       c.dispose();
     }
@@ -308,6 +310,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             );
           }),
+        ),
+        const SizedBox(height: 18),
+        TextField(
+          controller: _referralController,
+          enabled: !state.loading,
+          textCapitalization: TextCapitalization.characters,
+          onChanged: (v) =>
+              ref.read(loginControllerProvider.notifier).setReferralCode(v),
+          decoration: const InputDecoration(
+            labelText: 'Mã giới thiệu (nếu có)',
+            hintText: 'VD: MONG-ABC123',
+            prefixIcon: Icon(Icons.card_giftcard_rounded),
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Nhập mã của bạn bè để họ nhận thưởng khi bạn dùng app.',
+          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
         ),
         const SizedBox(height: 22),
         ElevatedButton(
