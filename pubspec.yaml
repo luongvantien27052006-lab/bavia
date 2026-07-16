@@ -1,7 +1,7 @@
 name: bavia
 description: Bavia Coffee - App đặt món khách hàng
 publish_to: 'none'
-version: 1.0.0+6
+version: 1.0.0+8
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -34,9 +34,16 @@ dependencies:
   cupertino_icons: ^1.0.6
 
 dev_dependencies:
+  flutter_launcher_icons: ^0.13.1
   flutter_lints: ^3.0.0
   flutter_test:
     sdk: flutter
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/icon/app_icon.png"
 
 flutter:
   uses-material-design: true
