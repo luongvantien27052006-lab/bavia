@@ -1,3 +1,9 @@
+// ============================================================
+//  FLUTTER
+//  lib/core/storage/secure_storage.dart
+//  >> CHEP DE (them luu/doc device id)
+// ============================================================
+
 // lib/core/storage/secure_storage.dart
 //
 // Lưu trữ an toàn cho JWT (access + refresh token).
@@ -11,6 +17,7 @@ class SecureStorage {
 
   static const _kAccessToken = 'bavia_access_token';
   static const _kRefreshToken = 'bavia_refresh_token';
+  static const _kDeviceId = 'bavia_device_id';
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
@@ -38,6 +45,11 @@ class SecureStorage {
     final token = await getRefreshToken();
     return token != null && token.isNotEmpty;
   }
+
+  Future<String?> getDeviceId() => _storage.read(key: _kDeviceId);
+
+  Future<void> saveDeviceId(String id) =>
+      _storage.write(key: _kDeviceId, value: id);
 
   Future<void> clear() async {
     await Future.wait([
