@@ -7,63 +7,6 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:860557615585:android:b7908f31df28e201d5b2a0",
-        "android_client_info": {
-          "package_name": "com.example.bavia"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyAtz6Yz8jHv7EZ5sEDDGhXF9BvejbJaHDk"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:860557615585:android:a16cf1e348fc0440d5b2a0",
-        "android_client_info": {
-          "package_name": "com.example.clone"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyAtz6Yz8jHv7EZ5sEDDGhXF9BvejbJaHDk"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:860557615585:android:431083408c2db899d5b2a0",
-        "android_client_info": {
-          "package_name": "com.mongfruit.bavia"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyAtz6Yz8jHv7EZ5sEDDGhXF9BvejbJaHDk"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:860557615585:android:039260d17acc804dd5b2a0",
         "android_client_info": {
           "package_name": "com.mongfruits.app"

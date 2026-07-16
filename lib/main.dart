@@ -7,7 +7,7 @@
 // lib/main.dart
 //
 // Điểm khởi động: Firebase → ApiClient → date locale → runApp.
-
+import 'firebase_options.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -42,7 +42,9 @@ Future<void> main() async {
   // Khởi tạo Firebase. Sau khi chạy `flutterfire configure`, mở dòng dưới
   // và truyền options để chắc chắn đúng project:
   //   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   await PushService.instance.init();
 
   // Khởi tạo HTTP client (đọc baseUrl từ ApiConfig).
