@@ -51,17 +51,17 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAtz6Yz8jHv7EZ5sEDDGhXF9BvejbJaHDk',
-    appId: '1:860557615585:android:b7908f31df28e201d5b2a0',
+    appId: '1:860557615585:android:039260d17acc804dd5b2a0',
     messagingSenderId: '860557615585',
     projectId: 'mongfruit',
     storageBucket: 'mongfruit.firebasestorage.app',
   );
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyD6yjpfMhByzZOmkO4h5Qr72FDncgW0PJI',
-    appId: '1:860557615585:ios:0ec0c6bfaaafca90d5b2a0',
+    appId: '1:860557615585:ios:6a4096b63b54688bd5b2a0',
     messagingSenderId: '860557615585',
     projectId: 'mongfruit',
     storageBucket: 'mongfruit.firebasestorage.app',
-    iosBundleId: 'com.example.bavia',
+    iosBundleId: 'com.mongfruits.app',
   );
 }
