@@ -1,13 +1,13 @@
 // ============================================================
-//  FLUTTER
+//  FLUTTER  —  BAN DAY DU (co PushService)
 //  lib/main.dart
-//  >> CHEP DE (PushService.init sau Firebase)
+//  >> CHEP DE (firebase_options + try/catch + push init)
 // ============================================================
 
 // lib/main.dart
 //
-// Điểm khởi động: Firebase → ApiClient → date locale → runApp.
-import 'firebase_options.dart';
+// Điểm khởi động: Firebase → Push → ApiClient → date locale → runApp.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -15,14 +15,14 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'app.dart';
 import 'core/network/api_client.dart';
+import 'firebase_options.dart';
 import 'services/push_service.dart';
-// import 'firebase_options.dart'; // tạo bằng `flutterfire configure`
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // TẠM THỜI ĐỂ GỠ LỖI: thay vì màn trắng, hiện thẳng nội dung lỗi ra màn hình
-  // để dễ chụp gửi đi. Khi xong có thể xoá block này.
+  // Nếu có lỗi giao diện, hiện nội dung lỗi ra màn hình thay vì màn trắng
+  // (dễ chụp gửi đi khi gỡ lỗi).
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return Material(
       color: Colors.white,
@@ -39,13 +39,18 @@ Future<void> main() async {
     );
   };
 
-  // Khởi tạo Firebase. Sau khi chạy `flutterfire configure`, mở dòng dưới
-  // và truyền options để chắc chắn đúng project:
-  //   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  await PushService.instance.init();
+  // Khởi tạo Firebase bằng options nhúng trong code (firebase_options.dart)
+  // -> chạy đúng trên CẢ iOS lẫn Android, không phụ thuộc GoogleService-Info.plist.
+  // Bọc try/catch: nếu Firebase lỗi thì app VẪN mở (không treo màn trắng),
+  // chỉ là tính năng cần Firebase (OTP/push) tạm thời không dùng được.
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    await PushService.instance.init();
+  } catch (e, st) {
+    debugPrint('Khởi tạo Firebase lỗi: $e\n$st');
+  }
 
   // Khởi tạo HTTP client (đọc baseUrl từ ApiConfig).
   ApiClient.I.init();
