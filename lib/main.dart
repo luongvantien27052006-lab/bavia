@@ -1,10 +1,14 @@
 // ============================================================
-//  FLUTTER — lib/main.dart  (BẢN GIA CỐ CHỐNG MÀN TRẮNG iOS)
+//  FLUTTER — lib/main.dart  (BẢN GIA CỐ v2 — SỬA lỗi [core/no-app])
 //
-//  Nguyên tắc: runApp() PHẢI được gọi và KHÔNG BAO GIỜ bị chặn bởi
-//  Firebase/Push. Mọi init phụ thuộc mạng/native chạy NỀN, có timeout.
-//  Nhờ vậy nếu có gì treo, bạn thấy GIAO DIỆN (hoặc chữ đỏ báo lỗi),
-//  chứ không phải màn trắng.
+//  Thứ tự ĐÚNG:
+//    1) Firebase.initializeApp()  -> PHẢI xong TRƯỚC runApp, vì cây widget
+//       (PushService/FirebaseMessaging) dùng Firebase NGAY khi khởi tạo.
+//       Firebase KHÔNG treo (màn chẩn đoán đã xác nhận "ok").
+//    2) runApp()
+//    3) PushService.init()        -> ĐÂY mới là thứ treo trên iOS
+//       (getInitialMessage đợi APNS). Đẩy RIÊNG nó xuống chạy nền + timeout,
+//       nên không bao giờ chặn giao diện.
 // ============================================================
 
 import 'dart:async';
@@ -20,73 +24,65 @@ import 'firebase_options.dart';
 import 'services/push_service.dart';
 
 void main() {
-  // runZonedGuarded bắt cả những lỗi async xảy ra NGOÀI cây widget
-  // (những lỗi mà ErrorWidget.builder không thể thấy).
+  // Bắt cả lỗi async ngoài cây widget.
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
-    debugPrint('>>> BOOT 1: binding ready');
 
-    // Widget lỗi được BỌC Directionality để hiển thị được ngay cả khi
-    // lỗi xảy ra PHÍA TRÊN MaterialApp (nếu không, Text sẽ tự văng ->
-    // rơi về màn trắng).
-    ErrorWidget.builder = (FlutterErrorDetails details) {
-      return Directionality(
-        textDirection: TextDirection.ltr,
-        child: Material(
-          color: Colors.white,
-          child: Container(
-            alignment: Alignment.center,
-            padding: const EdgeInsets.all(20),
-            child: SingleChildScrollView(
-              child: Text(
-                'LỖI GIAO DIỆN:\n\n${details.exceptionAsString()}',
-                style: const TextStyle(color: Colors.red, fontSize: 13),
+    // Widget lỗi bọc Directionality -> hiện được chữ đỏ kể cả lỗi tầng cao,
+    // thay vì rơi về màn trắng.
+    ErrorWidget.builder = (FlutterErrorDetails details) => Directionality(
+          textDirection: TextDirection.ltr,
+          child: Material(
+            color: Colors.white,
+            child: Container(
+              alignment: Alignment.center,
+              padding: const EdgeInsets.all(20),
+              child: SingleChildScrollView(
+                child: Text(
+                  'LỖI GIAO DIỆN:\n\n${details.exceptionAsString()}',
+                  style: const TextStyle(color: Colors.red, fontSize: 13),
+                ),
               ),
             ),
           ),
-        ),
-      );
-    };
+        );
 
-    // Init ĐỒNG BỘ, an toàn, nhanh — không gọi mạng, không đụng native.
+    // Init đồng bộ, an toàn.
     ApiClient.I.init();
-    debugPrint('>>> BOOT 2: ApiClient ready');
 
-    // Locale tiền/ngày tiếng Việt: đọc dữ liệu đóng gói sẵn, không treo.
+    // Locale tiền/ngày tiếng Việt (nhanh, an toàn) — cây widget cần nó.
     try {
       await initializeDateFormatting('vi_VN', null);
     } catch (e) {
       debugPrint('initializeDateFormatting lỗi: $e');
     }
-    debugPrint('>>> BOOT 3: date locale ready');
 
-    // >>> CHẠY APP NGAY. Không await Firebase/Push ở đây.
+    // >>> Firebase PHẢI khởi tạo XONG trước runApp. Nó không treo;
+    //     vẫn bọc try/catch để nếu có lỗi thì app vẫn mở (chỉ mất tính năng
+    //     phụ thuộc Firebase), không màn trắng.
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } catch (e, st) {
+      debugPrint('Khởi tạo Firebase lỗi: $e\n$st');
+    }
+
+    // Firebase đã sẵn sàng -> chạy app.
     runApp(const ProviderScope(child: BaviaApp()));
-    debugPrint('>>> BOOT 4: REACHED runApp  ✅');
 
-    // Firebase + Push chạy NỀN, có timeout -> không bao giờ chặn giao diện.
-    unawaited(_initFirebaseAndPush());
+    // CHỈ Push init chạy nền (thứ duy nhất có thể treo trên iOS).
+    // push_service.dart đã có timeout ở getInitialMessage nên tự thoát.
+    unawaited(_initPush());
   }, (error, stack) {
-    // Nếu thấy dòng này trong Console mà KHÔNG thấy "BOOT 4",
-    // tức là có lỗi async chặn khởi động trước runApp.
     debugPrint('❌ LỖI KHÔNG BẮT ĐƯỢC (zone): $error\n$stack');
   });
 }
 
-/// Firebase/Messaging init tách riêng, có giới hạn thời gian.
-/// Nếu treo/timeout: app VẪN chạy, chỉ là OTP/push tạm thời chưa dùng được.
-Future<void> _initFirebaseAndPush() async {
+Future<void> _initPush() async {
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    ).timeout(const Duration(seconds: 8));
-    debugPrint('>>> Firebase.initializeApp OK');
-
     await PushService.instance.init().timeout(const Duration(seconds: 8));
-    debugPrint('>>> PushService.init OK');
-  } on TimeoutException {
-    debugPrint('⏱️ Firebase/Push init QUÁ THỜI GIAN -> bỏ qua (app vẫn chạy).');
-  } catch (e, st) {
-    debugPrint('Khởi tạo Firebase lỗi: $e\n$st');
+  } catch (e) {
+    debugPrint('PushService.init lỗi/timeout: $e');
   }
 }
