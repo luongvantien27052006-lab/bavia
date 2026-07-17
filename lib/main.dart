@@ -1,18 +1,10 @@
 // ============================================================
-//  lib/main.dart  — BẢN CHẨN ĐOÁN (in log RA MÀN HÌNH điện thoại)
+//  FLUTTER — lib/main.dart  (BẢN GIA CỐ CHỐNG MÀN TRẮNG iOS)
 //
-//  Mục đích: KHÔNG cần Mac, không cần console. Điện thoại tự hiện
-//  từng bước khởi động + lỗi. Cách đọc kết quả:
-//
-//   • Thấy MÀN HÌNH TỐI kèm danh sách log  -> Dart/Flutter CHẠY TỐT.
-//     Nhìn xuống bước nào ghi "TIMEOUT" hoặc "LỖI" -> đó là thủ phạm
-//     làm treo khởi động (thường là Firebase/Push).
-//
-//   • Vẫn TRẮNG TINH (không thấy màn tối này) -> lỗi nằm ở tầng NATIVE
-//     iOS, không phải code Dart. Xem hướng dẫn đọc log thiết bị / dựng
-//     lại iOS trên Windows mà mình gửi kèm.
-//
-//  Dùng xong, thay lại bằng main.dart bản gia cố (runApp-first) để dùng thật.
+//  Nguyên tắc: runApp() PHẢI được gọi và KHÔNG BAO GIỜ bị chặn bởi
+//  Firebase/Push. Mọi init phụ thuộc mạng/native chạy NỀN, có timeout.
+//  Nhờ vậy nếu có gì treo, bạn thấy GIAO DIỆN (hoặc chữ đỏ báo lỗi),
+//  chứ không phải màn trắng.
 // ============================================================
 
 import 'dart:async';
@@ -27,130 +19,74 @@ import 'core/network/api_client.dart';
 import 'firebase_options.dart';
 import 'services/push_service.dart';
 
-// Log hiển thị TRÊN MÀN HÌNH.
-final ValueNotifier<List<String>> _bootLog = ValueNotifier<List<String>>([]);
-void _log(String m) {
-  _bootLog.value = [..._bootLog.value, m];
-  debugPrint(m); // đồng thời in ra console nếu có (idevicesyslog trên Windows)
-}
-
 void main() {
-  // Bắt cả lỗi async ngoài cây widget.
+  // runZonedGuarded bắt cả những lỗi async xảy ra NGOÀI cây widget
+  // (những lỗi mà ErrorWidget.builder không thể thấy).
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
+    debugPrint('>>> BOOT 1: binding ready');
 
-    // Widget lỗi bọc Directionality để hiện được kể cả lỗi tầng cao.
-    ErrorWidget.builder = (d) => Directionality(
-          textDirection: TextDirection.ltr,
-          child: Material(
-            color: Colors.white,
-            child: Container(
-              alignment: Alignment.center,
-              padding: const EdgeInsets.all(20),
-              child: SingleChildScrollView(
-                child: Text('LỖI GIAO DIỆN:\n\n${d.exceptionAsString()}',
-                    style: const TextStyle(color: Colors.red, fontSize: 13)),
+    // Widget lỗi được BỌC Directionality để hiển thị được ngay cả khi
+    // lỗi xảy ra PHÍA TRÊN MaterialApp (nếu không, Text sẽ tự văng ->
+    // rơi về màn trắng).
+    ErrorWidget.builder = (FlutterErrorDetails details) {
+      return Directionality(
+        textDirection: TextDirection.ltr,
+        child: Material(
+          color: Colors.white,
+          child: Container(
+            alignment: Alignment.center,
+            padding: const EdgeInsets.all(20),
+            child: SingleChildScrollView(
+              child: Text(
+                'LỖI GIAO DIỆN:\n\n${details.exceptionAsString()}',
+                style: const TextStyle(color: Colors.red, fontSize: 13),
               ),
             ),
           ),
-        );
+        ),
+      );
+    };
 
-    // >>> VẼ MÀN CHẨN ĐOÁN NGAY. Nếu bạn ĐỌC ĐƯỢC nó -> runApp OK.
-    runApp(const _DiagnosticApp());
-    _log('✅ runApp đã chạy — Dart/Flutter OK.');
-
-    _log('• ApiClient.init …');
+    // Init ĐỒNG BỘ, an toàn, nhanh — không gọi mạng, không đụng native.
     ApiClient.I.init();
-    _log('  ok');
+    debugPrint('>>> BOOT 2: ApiClient ready');
 
-    _log('• initializeDateFormatting(vi_VN) …');
+    // Locale tiền/ngày tiếng Việt: đọc dữ liệu đóng gói sẵn, không treo.
     try {
       await initializeDateFormatting('vi_VN', null);
-      _log('  ok');
     } catch (e) {
-      _log('  LỖI: $e');
+      debugPrint('initializeDateFormatting lỗi: $e');
     }
+    debugPrint('>>> BOOT 3: date locale ready');
 
-    _log('• Firebase.initializeApp (giới hạn 8s) …');
-    try {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      ).timeout(const Duration(seconds: 8));
-      _log('  ok');
-    } on TimeoutException {
-      _log('  ⏱️ TIMEOUT — RẤT CÓ THỂ đây là thủ phạm treo khởi động!');
-    } catch (e) {
-      _log('  LỖI: $e');
-    }
+    // >>> CHẠY APP NGAY. Không await Firebase/Push ở đây.
+    runApp(const ProviderScope(child: BaviaApp()));
+    debugPrint('>>> BOOT 4: REACHED runApp  ✅');
 
-    _log('• PushService.init (giới hạn 8s) …');
-    try {
-      await PushService.instance.init().timeout(const Duration(seconds: 8));
-      _log('  ok');
-    } on TimeoutException {
-      _log('  ⏱️ TIMEOUT — thủ phạm treo khởi động (thường do thiếu '
-          'entitlement Push / APNS)!');
-    } catch (e) {
-      _log('  LỖI: $e');
-    }
-
-    _log('———');
-    _log('XONG init. Bấm "MỞ APP THẬT" để vào app.');
-  }, (e, st) {
-    _log('❌ LỖI ZONE (async): $e');
+    // Firebase + Push chạy NỀN, có timeout -> không bao giờ chặn giao diện.
+    unawaited(_initFirebaseAndPush());
+  }, (error, stack) {
+    // Nếu thấy dòng này trong Console mà KHÔNG thấy "BOOT 4",
+    // tức là có lỗi async chặn khởi động trước runApp.
+    debugPrint('❌ LỖI KHÔNG BẮT ĐƯỢC (zone): $error\n$stack');
   });
 }
 
-class _DiagnosticApp extends StatelessWidget {
-  const _DiagnosticApp();
+/// Firebase/Messaging init tách riêng, có giới hạn thời gian.
+/// Nếu treo/timeout: app VẪN chạy, chỉ là OTP/push tạm thời chưa dùng được.
+Future<void> _initFirebaseAndPush() async {
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    ).timeout(const Duration(seconds: 8));
+    debugPrint('>>> Firebase.initializeApp OK');
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        backgroundColor: const Color(0xFF0E1116), // TỐI để phân biệt với bug trắng
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF161B22),
-          foregroundColor: Colors.white,
-          title: const Text('Chẩn đoán khởi động iOS'),
-          centerTitle: false,
-        ),
-        body: SafeArea(
-          child: ValueListenableBuilder<List<String>>(
-            valueListenable: _bootLog,
-            builder: (context, log, _) {
-              return ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  for (final line in log)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Text(
-                        line,
-                        style: TextStyle(
-                          color: (line.contains('LỖI') ||
-                                  line.contains('TIMEOUT') ||
-                                  line.contains('❌'))
-                              ? const Color(0xFFFF7B72)
-                              : const Color(0xFFC9D1D9),
-                          fontSize: 13,
-                          height: 1.35,
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 20),
-                  FilledButton(
-                    onPressed: () =>
-                        runApp(const ProviderScope(child: BaviaApp())),
-                    child: const Text('MỞ APP THẬT'),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      ),
-    );
+    await PushService.instance.init().timeout(const Duration(seconds: 8));
+    debugPrint('>>> PushService.init OK');
+  } on TimeoutException {
+    debugPrint('⏱️ Firebase/Push init QUÁ THỜI GIAN -> bỏ qua (app vẫn chạy).');
+  } catch (e, st) {
+    debugPrint('Khởi tạo Firebase lỗi: $e\n$st');
   }
 }

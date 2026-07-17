@@ -1,7 +1,7 @@
 // ============================================================
 //  FLUTTER
 //  lib/services/push_service.dart
-//  >> CHEP DE (appNavigatorKey + pendingOrderId + flushPending)
+//  >> ĐÃ VÁ: getInitialMessage() có timeout -> KHÔNG BAO GIỜ treo khởi động
 // ============================================================
 
 // lib/services/push_service.dart
@@ -48,8 +48,13 @@ class PushService {
       // Bấm vào thông báo khi app đang chạy nền.
       FirebaseMessaging.onMessageOpenedApp.listen(_handleOpened);
 
-      // Mở app từ trạng thái tắt hẳn bằng cách bấm thông báo.
-      final initial = await _fcm.getInitialMessage();
+      // ⚠️ QUAN TRỌNG: trên iOS, getInitialMessage() ĐỢI APNS token.
+      // Nếu app chưa có entitlement Push / chưa cấp được APNS token thì
+      // lời gọi này TREO VÔ HẠN -> nếu await trước runApp sẽ ra màn trắng.
+      // Bọc timeout để nó KHÔNG BAO GIỜ chặn khởi động.
+      final initial = await _fcm
+          .getInitialMessage()
+          .timeout(const Duration(seconds: 3), onTimeout: () => null);
       if (initial != null) _handleOpened(initial);
     } catch (e) {
       debugPrint('PushService.init lỗi: $e');
@@ -92,7 +97,10 @@ class PushService {
         return;
       }
 
-      final token = await _fcm.getToken();
+      // getToken() cũng phụ thuộc APNS trên iOS -> bọc timeout cho an toàn.
+      final token = await _fcm
+          .getToken()
+          .timeout(const Duration(seconds: 8), onTimeout: () => null);
       if (token == null) return;
       _token = token;
       await _sendToken(token);
