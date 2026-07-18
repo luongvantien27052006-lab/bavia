@@ -1,22 +1,14 @@
-// lib/services/firebase_auth_service.dart
-//
-// Bọc Firebase Phone Auth thành 2 bước rõ ràng cho UI:
-//   1. sendOtp(phone)  → Firebase gửi SMS, trả verificationId qua callback.
-//   2. verifyOtp(code) → tạo credential, đăng nhập Firebase, lấy idToken.
-//
-// idToken sau đó được AuthRepository đổi lấy phiên Bavia.
+// ============================================================
+//  lib/services/firebase_auth_service.dart
+//  >> BẢN CHẨN ĐOÁN: hiện RÕ mã lỗi Firebase (e.code) ra màn hình,
+//     để biết chính xác vì sao "Gửi mã OTP" thất bại trên iOS.
+//  Sau khi lấy được mã, đổi lại bản thường (message thân thiện) là được.
+// ============================================================
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 import '../utils/formatters.dart';
-
-class OtpSendResult {
-  final String? verificationId; // null nếu auto-verify (Android)
-  final String? autoIdToken; // có giá trị nếu Android tự verify xong
-  final String? error;
-
-  const OtpSendResult({this.verificationId, this.autoIdToken, this.error});
-}
 
 class FirebaseAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -24,8 +16,6 @@ class FirebaseAuthService {
   String? _verificationId;
   int? _resendToken;
 
-  /// Gửi OTP. Trả về verificationId qua callback codeSent.
-  /// Trên Android có thể auto-verify (không cần nhập tay) → onAutoVerified.
   Future<void> sendOtp({
     required String phone,
     required void Function(String verificationId) onCodeSent,
@@ -34,23 +24,28 @@ class FirebaseAuthService {
     int? resendToken,
   }) async {
     final e164 = Formatters.toE164(phone);
+    debugPrint('☎️ verifyPhoneNumber cho: $e164');
 
     await _auth.verifyPhoneNumber(
       phoneNumber: e164,
       forceResendingToken: resendToken,
       timeout: const Duration(seconds: 60),
       verificationCompleted: (PhoneAuthCredential credential) async {
-        // Android: hệ thống tự đọc OTP và verify.
         try {
           final cred = await _auth.signInWithCredential(credential);
           final idToken = await cred.user?.getIdToken();
           if (idToken != null) onAutoVerified(idToken);
         } catch (e) {
-          onError(_mapError(e));
+          onError(_diag(e));
         }
       },
       verificationFailed: (FirebaseAuthException e) {
-        onError(_mapError(e));
+        // In đầy đủ ra console (đọc được qua 3uTools) + hiện lên UI.
+        debugPrint('❌ verifyPhoneNumber FAILED');
+        debugPrint('   code    = ${e.code}');
+        debugPrint('   message = ${e.message}');
+        debugPrint('   details = ${e.toString()}');
+        onError(_diag(e));
       },
       codeSent: (String verificationId, int? token) {
         _verificationId = verificationId;
@@ -65,7 +60,6 @@ class FirebaseAuthService {
 
   int? get resendToken => _resendToken;
 
-  /// Nhập 6 số → đăng nhập Firebase → trả idToken cho backend.
   Future<String> verifyOtp(String smsCode) async {
     final vid = _verificationId;
     if (vid == null) {
@@ -85,18 +79,11 @@ class FirebaseAuthService {
 
   Future<void> signOut() => _auth.signOut();
 
-  String _mapError(Object e) {
+  /// CHẨN ĐOÁN: luôn kèm mã lỗi để nhìn thấy nguyên nhân thật.
+  String _diag(Object e) {
     if (e is FirebaseAuthException) {
-      return switch (e.code) {
-        'invalid-phone-number' => 'Số điện thoại không hợp lệ.',
-        'invalid-verification-code' => 'Mã OTP không đúng.',
-        'session-expired' => 'Mã OTP đã hết hạn. Vui lòng gửi lại.',
-        'too-many-requests' =>
-          'Bạn yêu cầu quá nhiều lần. Vui lòng thử lại sau.',
-        'quota-exceeded' => 'Hệ thống tạm quá tải. Thử lại sau ít phút.',
-        _ => e.message ?? 'Xác thực thất bại. Vui lòng thử lại.',
-      };
+      return 'MÃ LỖI: [${e.code}]\n${e.message ?? ''}';
     }
-    return 'Đã có lỗi xảy ra. Vui lòng thử lại.';
+    return 'Lỗi khác: $e';
   }
 }
