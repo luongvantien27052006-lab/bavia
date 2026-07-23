@@ -49,6 +49,10 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Ứng dụng dùng vị trí của bạn để tính phí giao hàng theo khoảng cách tới quán.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Ứng dụng dùng vị trí của bạn để tính phí giao hàng theo khoảng cách tới quán.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Ứng dụng dùng vị trí của bạn để tính phí giao hàng theo khoảng cách tới quán.</string>
 	<key>UIBackgroundModes</key>
