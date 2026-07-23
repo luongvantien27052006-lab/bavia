@@ -11,7 +11,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-    geolocator: ^10.1.0
+  geolocator: ^10.1.0
   # State management
   flutter_riverpod: ^2.5.1
 
