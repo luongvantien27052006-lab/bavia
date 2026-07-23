@@ -135,7 +135,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Thanh toán v2',
+        title: const Text('Thanh toán',
             style: TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: ListView(
