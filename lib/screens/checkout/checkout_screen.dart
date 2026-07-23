@@ -1,7 +1,7 @@
 // ============================================================
 //  FLUTTER
 //  lib/screens/checkout/checkout_screen.dart
-//  >> CHEP DE (bo 'v2': Thanh toan)
+//  >> CHEP DE (phi ship + dia chi quan o muc chuyen khoan)
 // ============================================================
 
 // ==================================================================
@@ -27,6 +27,7 @@ import '../../models/order_model.dart';
 import '../../providers/address_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/checkout_provider.dart';
+import '../../providers/shipping_provider.dart';
 import '../../providers/loyalty_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/store_provider.dart';
@@ -60,6 +61,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final pointsDiscount = ref.watch(checkoutPointsDiscountProvider);
     final total = ref.watch(checkoutTotalProvider);
     final placing = ref.watch(placeOrderControllerProvider).isLoading;
+
+    // Phí giao hàng theo khoảng cách (hỏi backend). Chỉ áp dụng khi giao hàng.
+    final addr = checkout.deliveryAddress;
+    final shipAsync = ref.watch(shippingQuoteProvider(ShipCoords(
+      checkout.isDelivery ? addr?.latitude : null,
+      checkout.isDelivery ? addr?.longitude : null,
+    )));
+    final ship = shipAsync.asData?.value;
+    final shipFee = checkout.isDelivery ? (ship?.fee ?? 0) : 0;
+    final grandTotal = total + shipFee;
 
     // Chọn sẵn địa chỉ mặc định lần đầu (khi giao hàng).
     final addresses = ref.watch(addressesProvider);
@@ -124,7 +135,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Thanh toán',
+        title: const Text('Thanh toán v2',
             style: TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: ListView(
@@ -161,6 +172,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             title: 'Chuyển khoản QR',
             subtitle: 'Quét VietQR, tự xác nhận khi nhận tiền',
           ),
+          if (checkout.paymentMethod == PaymentMethodType.bankQr) ...[
+            const SizedBox(height: 10),
+            _bankNote(),
+          ],
           const SizedBox(height: 20),
           _sectionTitle('Mã giảm giá'),
           const SizedBox(height: 10),
@@ -170,7 +185,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           const SizedBox(height: 10),
           _pointsSection(subtotal),
           const SizedBox(height: 20),
-          _summaryCard(subtotal, discount, pointsDiscount, total),
+          _summaryCard(subtotal, discount, pointsDiscount, grandTotal,
+              shipFee, ship, checkout.isDelivery),
         ],
       ),
       bottomNavigationBar: SafeArea(
@@ -189,7 +205,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     child: CircularProgressIndicator(
                         strokeWidth: 2.5, color: Colors.white))
                 : Text(isOpen
-                    ? 'Đặt hàng • ${Formatters.money(total)}'
+                    ? 'Đặt hàng • ${Formatters.money(grandTotal)}'
                     : 'Quán đang đóng cửa'),
           ),
         ),
@@ -700,7 +716,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   // ─── Tổng kết ────────────────────────────────────────────────────────
   Widget _summaryCard(
-      int subtotal, int discount, int pointsDiscount, int total) {
+      int subtotal, int discount, int pointsDiscount, int total,
+      int shipFee, dynamic ship, bool isDelivery) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -712,8 +729,81 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           _row('Tạm tính', subtotal),
           if (discount > 0) _row('Giảm voucher', -discount),
           if (pointsDiscount > 0) _row('Giảm bằng điểm', -pointsDiscount),
+          if (isDelivery) _shipRow(shipFee, ship),
           const Divider(height: 18),
           _row('Tổng cộng', total, bold: true),
+        ],
+      ),
+    );
+  }
+
+  /// Dòng phí giao hàng (kèm khoảng cách nếu có).
+  Widget _shipRow(int shipFee, dynamic ship) {
+    final km = ship?.distanceKm as double?;
+    final label = km != null && km > 0
+        ? 'Phí giao hàng (${km.toStringAsFixed(1)} km)'
+        : 'Phí giao hàng';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: AppColors.textMuted)),
+          Text(
+            shipFee == 0 ? 'Miễn phí' : Formatters.money(shipFee),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: shipFee == 0 ? Colors.green.shade700 : AppColors.textDark,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Lưu ý khi chuyển khoản — kèm địa chỉ quán để khách đối chiếu.
+  Widget _bankNote() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.cream,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.coffee.withOpacity(0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.info_outline_rounded,
+                  size: 18, color: AppColors.coffee),
+              SizedBox(width: 6),
+              Text('Lưu ý khi chuyển khoản',
+                  style: TextStyle(fontWeight: FontWeight.w800)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '• Chuyển đúng số tiền và giữ nguyên nội dung chuyển khoản để '
+            'hệ thống tự xác nhận đơn.\n'
+            '• Đơn được xử lý ngay sau khi nhận được tiền.',
+            style: TextStyle(fontSize: 13, height: 1.5),
+          ),
+          const SizedBox(height: 10),
+          const Divider(height: 1),
+          const SizedBox(height: 10),
+          const Text('Địa chỉ quán',
+              style: TextStyle(
+                  fontWeight: FontWeight.w700, fontSize: 13)),
+          const SizedBox(height: 4),
+          const Text(
+            'Số 207, đường Thủy Nguyên, Ecopark, thị trấn Văn Giang, '
+            'tỉnh Hưng Yên',
+            style: TextStyle(fontSize: 13, height: 1.45),
+          ),
+          const SizedBox(height: 6),
+          const Text('Hỗ trợ: 0338316893',
+              style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
         ],
       ),
     );

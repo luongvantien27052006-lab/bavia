@@ -1,3 +1,9 @@
+// ============================================================
+//  FLUTTER
+//  lib/models/address_model.dart
+//  >> CHEP DE (them latitude/longitude)
+// ============================================================
+
 // lib/models/address_model.dart
 //
 // Địa chỉ giao hàng — map cho GET/POST/PATCH/DELETE /api/addresses.
@@ -16,6 +22,9 @@ class AddressModel {
   final String phone; // map ↔ receiver_phone / receiverPhone
   final String detailedAddress; // địa chỉ đầy đủ 1 chuỗi
   final bool isDefault;
+  /// Toạ độ — dùng để tính phí giao hàng theo khoảng cách.
+  final double? latitude;
+  final double? longitude;
 
   const AddressModel({
     required this.id,
@@ -23,7 +32,11 @@ class AddressModel {
     required this.phone,
     required this.detailedAddress,
     this.isDefault = false,
+    this.latitude,
+    this.longitude,
   });
+
+  bool get hasCoords => latitude != null && longitude != null;
 
   factory AddressModel.fromJson(Map<String, dynamic> json) {
     return AddressModel(
@@ -35,6 +48,8 @@ class AddressModel {
       detailedAddress: JsonX.str(
           json, ['detailed_address', 'detailedAddress', 'address']),
       isDefault: JsonX.boolVal(json, ['is_default', 'isDefault']),
+      latitude: _toDouble(json['latitude'] ?? json['lat']),
+      longitude: _toDouble(json['longitude'] ?? json['lng']),
     );
   }
 
@@ -44,6 +59,8 @@ class AddressModel {
         'receiverPhone': phone,
         'detailedAddress': detailedAddress,
         'isDefault': isDefault,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
       };
 
   /// Object đính kèm khi đặt đơn giao hàng (deliveryAddress — JSONB tự do).
@@ -51,6 +68,9 @@ class AddressModel {
         'receiverName': recipientName,
         'receiverPhone': phone,
         'detailedAddress': detailedAddress,
+        // Backend dùng 2 trường này để tính phí ship theo khoảng cách.
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
       };
 
   AddressModel copyWith({
@@ -58,6 +78,8 @@ class AddressModel {
     String? phone,
     String? detailedAddress,
     bool? isDefault,
+    double? latitude,
+    double? longitude,
   }) {
     return AddressModel(
       id: id,
@@ -65,6 +87,14 @@ class AddressModel {
       phone: phone ?? this.phone,
       detailedAddress: detailedAddress ?? this.detailedAddress,
       isDefault: isDefault ?? this.isDefault,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
     );
   }
+}
+
+double? _toDouble(dynamic v) {
+  if (v == null) return null;
+  if (v is num) return v.toDouble();
+  return double.tryParse(v.toString());
 }

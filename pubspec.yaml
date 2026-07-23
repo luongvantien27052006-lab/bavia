@@ -3,6 +3,8 @@ description: Bavia Coffee - App đặt món khách hàng
 publish_to: 'none'
 version: 1.0.0+20
 
+geolocator: ^10.1.0
+
 environment:
   sdk: '>=3.3.0 <4.0.0'
 

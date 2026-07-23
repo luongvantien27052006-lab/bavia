@@ -1,3 +1,9 @@
+// ============================================================
+//  FLUTTER
+//  lib/screens/address/address_form_screen.dart
+//  >> CHEP DE (nut Ghim vi tri)
+// ============================================================
+
 // lib/screens/address/address_form_screen.dart
 //
 // Form thêm/sửa địa chỉ. Nếu [existing] != null → chế độ sửa.
@@ -7,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../models/address_model.dart';
+import '../../services/location_service.dart';
 import '../../providers/address_provider.dart';
 
 class AddressFormScreen extends ConsumerStatefulWidget {
@@ -23,8 +30,12 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
   late final TextEditingController _phone;
   late final TextEditingController _address;
   late bool _isDefault;
+  double? _lat;
+  double? _lng;
+  bool _locating = false;
 
   bool get _isEdit => widget.existing != null;
+  bool get _hasCoords => _lat != null && _lng != null;
 
   @override
   void initState() {
@@ -34,6 +45,8 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
     _phone = TextEditingController(text: e?.phone ?? '');
     _address = TextEditingController(text: e?.detailedAddress ?? '');
     _isDefault = e?.isDefault ?? false;
+    _lat = e?.latitude;
+    _lng = e?.longitude;
   }
 
   @override
@@ -56,6 +69,8 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
         'receiverPhone': _phone.text.trim(),
         'detailedAddress': _address.text.trim(),
         'isDefault': _isDefault,
+        if (_lat != null) 'latitude': _lat,
+        if (_lng != null) 'longitude': _lng,
       });
     } else {
       ok = await controller.create(AddressModel(
@@ -64,6 +79,8 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
         phone: _phone.text.trim(),
         detailedAddress: _address.text.trim(),
         isDefault: _isDefault,
+        latitude: _lat,
+        longitude: _lng,
       ));
     }
 
@@ -103,6 +120,8 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
             const SizedBox(height: 14),
             _field(_address, 'Địa chỉ đầy đủ', Icons.location_on_outlined,
                 required: true, maxLines: 2),
+            const SizedBox(height: 12),
+            _locationCard(),
             const SizedBox(height: 8),
             SwitchListTile(
               value: _isDefault,
@@ -130,6 +149,92 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
         ),
       ),
     );
+  }
+
+  /// Ô lấy toạ độ — dùng để tính phí giao hàng theo khoảng cách.
+  Widget _locationCard() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _hasCoords ? AppColors.cream : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: _hasCoords
+              ? AppColors.coffee.withOpacity(0.35)
+              : Colors.grey.shade300,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            _hasCoords ? Icons.check_circle_rounded : Icons.my_location_rounded,
+            color: _hasCoords ? AppColors.coffee : AppColors.textMuted,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _hasCoords ? 'Đã ghim vị trí' : 'Chưa ghim vị trí',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _hasCoords
+                      ? 'Dùng để tính phí giao hàng chính xác.'
+                      : 'Ghim vị trí để tính đúng phí giao hàng.',
+                  style: const TextStyle(
+                      fontSize: 12, color: AppColors.textMuted),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: _locating ? null : _pickLocation,
+            child: _locating
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : Text(_hasCoords ? 'Cập nhật' : 'Ghim vị trí'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickLocation() async {
+    setState(() => _locating = true);
+    final res = await LocationService.instance.getCurrent();
+    if (!mounted) return;
+    setState(() {
+      _locating = false;
+      if (res != null) {
+        _lat = res.latitude;
+        _lng = res.longitude;
+      }
+    });
+    if (res == null) {
+      final svc = LocationService.instance;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(svc.lastErrorMessage),
+          backgroundColor: AppColors.delivery,
+          action: svc.lastError == LocationError.deniedForever
+              ? SnackBarAction(
+                  label: 'Cài đặt',
+                  textColor: Colors.white,
+                  onPressed: svc.openSettings,
+                )
+              : null,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đã ghim vị trí giao hàng')),
+      );
+    }
   }
 
   Widget _field(

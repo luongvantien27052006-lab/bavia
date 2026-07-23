@@ -24,19 +24,6 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLName</key>
-			<string>firebase-phone-auth</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>app-1-860557615585-ios-6a4096b63b54688bd5b2a0</string>
-			</array>
-		</dict>
-	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
@@ -62,12 +49,14 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Ứng dụng dùng vị trí của bạn để tính phí giao hàng theo khoảng cách tới quán.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
