@@ -12,6 +12,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/product.dart';
+import '../core/menu_pricing.dart';
 
 class CartItem {
   final Product product;
@@ -24,9 +25,15 @@ class CartItem {
     this.options = const [],
   });
 
-  /// Giá 1 đơn vị = giá món + tổng giá topping.
-  int get unitPrice =>
-      product.price + options.fold(0, (s, o) => s + o.price);
+  /// Giá 1 đơn vị.
+  /// - Danh mục "Trái cây chấm muối": = giá size đã chọn (THAY) + topping ngoài size.
+  /// - Danh mục khác: = giá món + tổng giá topping (cộng dồn như cũ).
+  int get unitPrice {
+    if (isFruitCategory(product.category)) {
+      return fruitUnitPrice(product, options);
+    }
+    return product.price + options.fold(0, (s, o) => s + o.price);
+  }
 
   int get lineTotal => unitPrice * quantity;
 
