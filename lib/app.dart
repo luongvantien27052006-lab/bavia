@@ -26,6 +26,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/network/api_client.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
+import 'providers/theme_provider.dart';
 import 'screens/main_shell.dart';
 import 'screens/orders/order_detail_screen.dart';
 import 'screens/splash_screen.dart';
@@ -74,12 +75,16 @@ class _BaviaAppState extends ConsumerState<BaviaApp> {
   @override
   Widget build(BuildContext context) {
     final status = ref.watch(authProvider).status;
+    final mode = ref.watch(themeModeProvider);
+    AppColors.dark = mode == ThemeMode.dark;
 
     return MaterialApp(
       navigatorKey: appNavigatorKey,
       title: 'Mọng Fruits',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: mode,
       home: switch (status) {
         AuthStatus.unknown => const SplashScreen(),
         // Khách chưa đăng nhập vẫn vào thẳng app;

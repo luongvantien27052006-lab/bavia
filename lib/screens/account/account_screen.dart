@@ -20,6 +20,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../utils/formatters.dart';
 import '../auth/login_screen.dart';
 import '../address/address_list_screen.dart';
@@ -42,7 +43,7 @@ class AccountScreen extends ConsumerWidget {
             style: TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: user == null
-          ? _guestView(context)
+          ? _guestView(context, ref)
           : ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -103,6 +104,8 @@ class AccountScreen extends ConsumerWidget {
               'Nhận voucher & điểm khi mời bạn', const ReferralScreen()),
           _tile(context, Icons.privacy_tip_rounded, 'Chính sách & Điều khoản',
               'Điều khoản sử dụng và quyền riêng tư', const LegalScreen()),
+          const SizedBox(height: 6),
+          _themeTile(context, ref),
           const SizedBox(height: 16),
           OutlinedButton.icon(
             onPressed: () => ref.read(authProvider.notifier).logout(),
@@ -121,7 +124,7 @@ class AccountScreen extends ConsumerWidget {
     );
   }
 
-  Widget _guestView(BuildContext context) {
+  Widget _guestView(BuildContext context, WidgetRef ref) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -138,7 +141,7 @@ class AccountScreen extends ConsumerWidget {
             const Text('Bạn chưa đăng nhập',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Đăng nhập để quản lý tài khoản, xem đơn hàng và nhận ưu đãi.',
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textMuted),
@@ -158,10 +161,42 @@ class AccountScreen extends ConsumerWidget {
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const LegalScreen()),
               ),
-              child: const Text('Chính sách & Điều khoản',
+              child: Text('Chính sách & Điều khoản',
                   style: TextStyle(color: AppColors.textMuted)),
             ),
+            const SizedBox(height: 8),
+            _themeTile(context, ref),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _themeTile(BuildContext context, WidgetRef ref) {
+    final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: SwitchListTile(
+        value: isDark,
+        onChanged: (v) => ref
+            .read(themeModeProvider.notifier)
+            .setMode(v ? ThemeMode.dark : ThemeMode.light),
+        activeColor: AppColors.coffee,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        secondary: Icon(
+          isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+          color: AppColors.coffee,
+        ),
+        title: const Text('Chế độ tối',
+            style: TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: Text(
+          isDark ? 'Đang bật — nền tối' : 'Đang tắt — nền sáng',
+          style: TextStyle(color: AppColors.textMuted, fontSize: 12),
         ),
       ),
     );
@@ -172,7 +207,7 @@ class AccountScreen extends ConsumerWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       clipBehavior: Clip.antiAlias,
@@ -181,8 +216,8 @@ class AccountScreen extends ConsumerWidget {
         title: Text(title,
             style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text(subtitle,
-            style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
-        trailing: const Icon(Icons.chevron_right_rounded,
+            style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+        trailing: Icon(Icons.chevron_right_rounded,
             color: AppColors.textMuted),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => destination),
