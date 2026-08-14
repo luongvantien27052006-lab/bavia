@@ -15,7 +15,7 @@ class ScanScreen extends StatelessWidget {
         title: const Text('Quét mã',
             style: TextStyle(fontWeight: FontWeight.w800)),
       ),
-      body: const Center(
+      body: Center(
         child: Padding(
           padding: EdgeInsets.all(24),
           child: Column(

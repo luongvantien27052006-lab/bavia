@@ -27,7 +27,7 @@ class LegalScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Chính sách & Điều khoản'),
-          bottom: const TabBar(
+          bottom: TabBar(
             labelColor: AppColors.coffee,
             unselectedLabelColor: AppColors.textMuted,
             indicatorColor: AppColors.coffee,
@@ -145,7 +145,7 @@ class _UpdatedAt extends StatelessWidget {
   const _UpdatedAt();
   @override
   Widget build(BuildContext context) {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.only(bottom: 18),
       child: Text('Cập nhật lần cuối: 07/2026',
           style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
@@ -166,7 +166,7 @@ class _Section extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textDark)),
@@ -184,7 +184,7 @@ class _Section extends StatelessWidget {
                   ),
                   Expanded(
                     child: Text(p,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 14,
                             height: 1.55,
                             color: AppColors.textDark)),
@@ -210,7 +210,7 @@ class _ContactBox extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.coffee.withOpacity(0.2)),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Liên hệ',

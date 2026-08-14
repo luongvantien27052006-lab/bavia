@@ -103,7 +103,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           SliverAppBar(
             expandedHeight: 280,
             pinned: true,
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.surface,
             foregroundColor: AppColors.textDark,
             flexibleSpace: FlexibleSpaceBar(
               background: Hero(
@@ -149,7 +149,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   if (p.description.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     Text(p.description,
-                        style: const TextStyle(
+                        style: TextStyle(
                             color: AppColors.textMuted,
                             fontSize: 15,
                             height: 1.5)),
@@ -222,7 +222,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         margin: const EdgeInsets.only(top: 10),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          color: selected ? AppColors.coffee.withOpacity(0.08) : Colors.white,
+          color:
+              selected ? AppColors.coffee.withOpacity(0.08) : AppColors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected ? AppColors.coffee : const Color(0xFFE5DDD7),
@@ -277,7 +278,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       widgets.add(Padding(
         padding: const EdgeInsets.only(top: 12, bottom: 4),
         child: Text(g,
-            style: const TextStyle(
+            style: TextStyle(
                 color: AppColors.textMuted,
                 fontSize: 13,
                 fontWeight: FontWeight.w700)),
@@ -328,7 +329,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   Widget _qtyStepper() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE5DDD7)),
       ),

@@ -159,14 +159,14 @@ class _QrPaymentScreenState extends ConsumerState<QrPaymentScreen> {
           if (!expired)
             Center(
               child: Text('Tự động xác nhận • còn $_countdownText',
-                  style: const TextStyle(color: AppColors.textMuted)),
+                  style: TextStyle(color: AppColors.textMuted)),
             ),
           const SizedBox(height: 16),
           Center(
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: const Color(0xFFE5DDD7)),
               ),
@@ -181,7 +181,7 @@ class _QrPaymentScreenState extends ConsumerState<QrPaymentScreen> {
                       width: 240,
                       height: 240,
                       child: Center(child: CircularProgressIndicator())),
-                  errorWidget: (_, __, ___) => const SizedBox(
+                  errorWidget: (_, __, ___) => SizedBox(
                     width: 240,
                     height: 240,
                     child: Icon(Icons.broken_image_rounded,
@@ -244,7 +244,7 @@ class _QrPaymentScreenState extends ConsumerState<QrPaymentScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -268,7 +268,7 @@ class _QrPaymentScreenState extends ConsumerState<QrPaymentScreen> {
           SizedBox(
             width: 110,
             child: Text(label,
-                style: const TextStyle(color: AppColors.textMuted)),
+                style: TextStyle(color: AppColors.textMuted)),
           ),
           Expanded(
             child: Text(value,

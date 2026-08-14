@@ -35,14 +35,14 @@ class NewsListScreen extends ConsumerWidget {
               const SizedBox(height: 120),
               Center(
                 child: Text('Không tải được tin: $e',
-                    style: const TextStyle(color: AppColors.textMuted)),
+                    style: TextStyle(color: AppColors.textMuted)),
               ),
             ],
           ),
           data: (list) {
             if (list.isEmpty) {
               return ListView(
-                children: const [
+                children: [
                   SizedBox(height: 120),
                   Center(
                     child: Text('Chưa có tin nào.',
@@ -70,7 +70,7 @@ class NewsListScreen extends ConsumerWidget {
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
@@ -100,14 +100,14 @@ class NewsListScreen extends ConsumerWidget {
                     Text(n.summary!,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                             color: AppColors.textMuted,
                             fontSize: 13,
                             height: 1.35)),
                   ],
                   const SizedBox(height: 8),
                   Text(Formatters.date(n.publishedAt),
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.textMuted, fontSize: 11)),
                 ],
               ),

@@ -43,18 +43,18 @@ class NewsDetailScreen extends StatelessWidget {
                         height: 1.3)),
                 const SizedBox(height: 8),
                 Text(Formatters.date(news.publishedAt),
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: AppColors.textMuted, fontSize: 12)),
                 const SizedBox(height: 16),
                 if (news.content.isNotEmpty)
                   Text(news.content,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 15,
                           height: 1.55,
                           color: AppColors.textDark))
                 else if (news.summary != null)
                   Text(news.summary!,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 15,
                           height: 1.55,
                           color: AppColors.textDark)),

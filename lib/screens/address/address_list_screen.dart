@@ -36,7 +36,7 @@ class AddressListScreen extends ConsumerWidget {
         error: (e, _) => _error(ref, e.toString()),
         data: (list) {
           if (list.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -66,7 +66,7 @@ class AddressListScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: a.isDefault
             ? Border.all(color: AppColors.coffee, width: 1.5)
@@ -81,7 +81,7 @@ class AddressListScreen extends ConsumerWidget {
                   style: const TextStyle(fontWeight: FontWeight.w800)),
               const SizedBox(width: 8),
               Text(a.phone,
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: AppColors.textMuted, fontSize: 13)),
               const Spacer(),
               if (a.isDefault)
@@ -102,7 +102,7 @@ class AddressListScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 6),
           Text(a.detailedAddress,
-              style: const TextStyle(color: AppColors.textDark, height: 1.4)),
+              style: TextStyle(color: AppColors.textDark, height: 1.4)),
           const Divider(height: 20),
           Row(
             children: [
@@ -165,12 +165,12 @@ class AddressListScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off_rounded,
+            Icon(Icons.cloud_off_rounded,
                 size: 48, color: AppColors.textMuted),
             const SizedBox(height: 12),
             Text(msg,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textMuted)),
+                style: TextStyle(color: AppColors.textMuted)),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => ref.invalidate(addressesProvider),

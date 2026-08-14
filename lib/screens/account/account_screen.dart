@@ -21,6 +21,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../widgets/theme_switcher.dart';
 import '../../utils/formatters.dart';
 import '../auth/login_screen.dart';
 import '../address/address_list_screen.dart';
@@ -183,9 +184,12 @@ class AccountScreen extends ConsumerWidget {
       clipBehavior: Clip.antiAlias,
       child: SwitchListTile(
         value: isDark,
-        onChanged: (v) => ref
-            .read(themeModeProvider.notifier)
-            .setMode(v ? ThemeMode.dark : ThemeMode.light),
+        onChanged: (v) => ThemeSwitcher.run(
+          context,
+          () => ref
+              .read(themeModeProvider.notifier)
+              .setMode(v ? ThemeMode.dark : ThemeMode.light),
+        ),
         activeColor: AppColors.coffee,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         secondary: Icon(

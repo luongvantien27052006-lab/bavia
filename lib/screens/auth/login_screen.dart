@@ -140,7 +140,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Container(
                       padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.surface,
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
@@ -182,7 +182,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               color: AppColors.coffee, size: 44),
         ),
         const SizedBox(height: 14),
-        const Text(
+        Text(
           'Mọng Fruits',
           style: TextStyle(
             color: AppColors.textDark,
@@ -191,7 +191,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'Đặt món & tích điểm mỗi ngày',
           style: TextStyle(color: AppColors.textMuted),
         ),
@@ -205,7 +205,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       key: const ValueKey('phone'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('Số điện thoại',
+        Text('Số điện thoại',
             style: TextStyle(
                 color: AppColors.textDark, fontWeight: FontWeight.w700)),
         const SizedBox(height: 10),
@@ -241,7 +241,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       key: const ValueKey('otp'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('Xác thực OTP',
+        Text('Xác thực OTP',
             style: TextStyle(
                 color: AppColors.textDark,
                 fontSize: 20,
@@ -250,7 +250,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         const SizedBox(height: 6),
         Text(
           'Mã 6 số vừa gửi tới ${Formatters.prettyPhone(Formatters.toE164(state.phone))}',
-          style: const TextStyle(color: AppColors.textMuted),
+          style: TextStyle(color: AppColors.textMuted),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
@@ -267,7 +267,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     enabled: !state.loading,
                     keyboardType: TextInputType.number,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textDark,
@@ -325,7 +325,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'Nhập mã của bạn bè để họ nhận thưởng khi bạn dùng app.',
           style: TextStyle(fontSize: 12, color: AppColors.textMuted),
         ),
@@ -349,10 +349,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ? null
                   : () =>
                       ref.read(loginControllerProvider.notifier).backToPhone(),
-              child: const Text('Đổi số',
+              child: Text('Đổi số',
                   style: TextStyle(color: AppColors.textMuted)),
             ),
-            const Text('•', style: TextStyle(color: AppColors.textMuted)),
+            Text('•', style: TextStyle(color: AppColors.textMuted)),
             TextButton(
               onPressed: state.loading
                   ? null

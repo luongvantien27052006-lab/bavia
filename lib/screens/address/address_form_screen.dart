@@ -184,7 +184,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                   _hasCoords
                       ? 'Dùng để tính phí giao hàng chính xác.'
                       : 'Ghim vị trí để tính đúng phí giao hàng.',
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 12, color: AppColors.textMuted),
                 ),
               ],

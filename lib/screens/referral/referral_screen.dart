@@ -43,7 +43,7 @@ class ReferralScreen extends ConsumerWidget {
                   style:
                       TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Bạn bè nhập mã và đăng nhập trên thiết bị của họ mới được tính.',
                 style: TextStyle(fontSize: 12, color: AppColors.textMuted),
               ),
@@ -146,7 +146,7 @@ class ReferralScreen extends ConsumerWidget {
             child: RichText(
               text: TextSpan(
                 style:
-                    const TextStyle(color: AppColors.textDark, fontSize: 15),
+                    TextStyle(color: AppColors.textDark, fontSize: 15),
                 children: [
                   const TextSpan(text: 'Bạn đã giới thiệu thành công\n'),
                   TextSpan(
@@ -172,7 +172,7 @@ class ReferralScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: done
@@ -209,7 +209,7 @@ class ReferralScreen extends ConsumerWidget {
                             fontWeight: FontWeight.w800, fontSize: 15)),
                     Text(
                       'Voucher ${m.voucherCode} + ${m.points} điểm',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 13, color: AppColors.textMuted),
                     ),
                   ],
@@ -237,7 +237,7 @@ class ReferralScreen extends ConsumerWidget {
           const SizedBox(height: 6),
           Text(
             done ? 'Hoàn thành 🎉' : '${total.clamp(0, m.count)}/${m.count} người',
-            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
           ),
         ],
       ),
@@ -286,7 +286,7 @@ class _Step extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
               child: Text(text,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 13, color: AppColors.textDark))),
         ],
       ),
@@ -303,7 +303,7 @@ class _ErrorView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('Không tải được thông tin giới thiệu',
+          Text('Không tải được thông tin giới thiệu',
               style: TextStyle(color: AppColors.textMuted)),
           const SizedBox(height: 12),
           OutlinedButton(onPressed: onRetry, child: const Text('Thử lại')),

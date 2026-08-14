@@ -101,10 +101,10 @@ class LoyaltyScreen extends ConsumerWidget {
         child: Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Text('Không tải được lịch sử: $e',
-          style: const TextStyle(color: AppColors.textMuted)),
+          style: TextStyle(color: AppColors.textMuted)),
       data: (list) {
         if (list.isEmpty) {
-          return const Padding(
+          return Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
             child: Center(
               child: Text('Chưa có giao dịch điểm nào',
@@ -124,7 +124,7 @@ class LoyaltyScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -153,7 +153,7 @@ class LoyaltyScreen extends ConsumerWidget {
                     style: const TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
                 Text(Formatters.dateTime(t.createdAt),
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: AppColors.textMuted, fontSize: 12)),
               ],
             ),

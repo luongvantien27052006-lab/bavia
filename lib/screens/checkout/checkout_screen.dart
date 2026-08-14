@@ -239,7 +239,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           color: AppColors.delivery)),
                   const SizedBox(height: 2),
                   Text(reason,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 13, color: AppColors.textMuted)),
                 ],
               ),
@@ -259,7 +259,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: selected ? color : const Color(0xFFE5DDD7),
@@ -301,7 +301,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.delivery.withOpacity(0.4)),
           ),
@@ -327,7 +327,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -345,7 +345,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               const TextStyle(fontWeight: FontWeight.w700)),
                       const SizedBox(width: 8),
                       Text(selected.phone,
-                          style: const TextStyle(
+                          style: TextStyle(
                               color: AppColors.textMuted, fontSize: 13)),
                     ],
                   ),
@@ -353,7 +353,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   Text(selected.detailedAddress,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.textMuted, fontSize: 13)),
                 ],
               ),
@@ -370,7 +370,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   void _openAddressPicker() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -396,10 +396,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         child: Center(child: CircularProgressIndicator()),
                       ),
                       error: (e, _) => Text('Lỗi: $e',
-                          style: const TextStyle(color: AppColors.textMuted)),
+                          style: TextStyle(color: AppColors.textMuted)),
                       data: (list) {
                         if (list.isEmpty) {
-                          return const Padding(
+                          return Padding(
                             padding: EdgeInsets.symmetric(vertical: 16),
                             child: Text('Chưa có địa chỉ nào',
                                 textAlign: TextAlign.center,
@@ -463,7 +463,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected ? AppColors.coffee : const Color(0xFFE5DDD7),
@@ -484,7 +484,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       style: const TextStyle(fontWeight: FontWeight.w700)),
                   const SizedBox(height: 2),
                   Text(subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.textMuted, fontSize: 12)),
                 ],
               ),
@@ -591,7 +591,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ),
       ),
       error: (e, _) => _pointsCard(
-        child: const Text('Không tải được điểm thưởng',
+        child: Text('Không tải được điểm thưởng',
             style: TextStyle(color: AppColors.textMuted)),
       ),
       data: (balance) {
@@ -603,7 +603,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           return _pointsCard(
             child: Row(
               children: [
-                const Icon(Icons.card_giftcard_outlined,
+                Icon(Icons.card_giftcard_outlined,
                     color: AppColors.textMuted, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
@@ -611,7 +611,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     balance.balance <= 0
                         ? 'Bạn có 0 điểm. Hoàn tất đơn để tích điểm và dùng giảm giá ở lần sau.'
                         : 'Đơn chưa đủ điều kiện dùng điểm.',
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: AppColors.textMuted, fontSize: 13),
                   ),
                 ),
@@ -677,7 +677,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ),
               const SizedBox(height: 4),
               Text('1 điểm = ${Formatters.money(LoyaltyConfig.pointValue)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                       color: AppColors.textMuted, fontSize: 11)),
             ],
           ),
@@ -708,7 +708,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Widget _pointsCard({required Widget child}) => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
         ),
         child: child,
@@ -721,7 +721,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -748,7 +748,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: AppColors.textMuted)),
+          Text(label, style: TextStyle(color: AppColors.textMuted)),
           Text(
             shipFee == 0 ? 'Miễn phí' : Formatters.money(shipFee),
             style: TextStyle(
@@ -802,7 +802,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             style: TextStyle(fontSize: 13, height: 1.45),
           ),
           const SizedBox(height: 6),
-          const Text('Hỗ trợ: 0338316893',
+          Text('Hỗ trợ: 0338316893',
               style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
         ],
       ),

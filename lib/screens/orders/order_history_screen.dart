@@ -28,7 +28,7 @@ class OrderHistoryScreen extends ConsumerWidget {
         error: (e, _) => _error(ref, e.toString()),
         data: (list) {
           if (list.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -65,7 +65,7 @@ class OrderHistoryScreen extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -81,14 +81,14 @@ class OrderHistoryScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(Formatters.dateTime(order.createdAt),
-                style: const TextStyle(
+                style: TextStyle(
                     color: AppColors.textMuted, fontSize: 12)),
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(order.paymentMethod?.label ?? '',
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: AppColors.textMuted, fontSize: 13)),
                 Text(Formatters.money(order.finalAmount),
                     style: const TextStyle(
@@ -129,12 +129,12 @@ class OrderHistoryScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off_rounded,
+            Icon(Icons.cloud_off_rounded,
                 size: 48, color: AppColors.textMuted),
             const SizedBox(height: 12),
             Text(msg,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textMuted)),
+                style: TextStyle(color: AppColors.textMuted)),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => ref.invalidate(ordersProvider),

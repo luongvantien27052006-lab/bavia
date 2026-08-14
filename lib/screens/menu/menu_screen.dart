@@ -81,7 +81,7 @@ class MenuScreen extends ConsumerWidget {
             ref.read(selectedCategoryProvider.notifier).state = value,
         showCheckmark: false,
         selectedColor: AppColors.coffee,
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         labelStyle: TextStyle(
           color: selected ? Colors.white : AppColors.textDark,
           fontWeight: FontWeight.w600,
@@ -97,7 +97,7 @@ class MenuScreen extends ConsumerWidget {
 
   Widget _grid(BuildContext context, List<Product> list) {
     if (list.isEmpty) {
-      return const Center(
+      return Center(
         child: Text('Chưa có sản phẩm trong nhóm này.',
             style: TextStyle(color: AppColors.textMuted)),
       );
@@ -128,12 +128,12 @@ class MenuScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off_rounded,
+            Icon(Icons.cloud_off_rounded,
                 size: 48, color: AppColors.textMuted),
             const SizedBox(height: 12),
             Text(msg,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textMuted)),
+                style: TextStyle(color: AppColors.textMuted)),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => ref.invalidate(productsProvider),

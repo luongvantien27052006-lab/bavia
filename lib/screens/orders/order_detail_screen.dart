@@ -83,7 +83,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             padding: const EdgeInsets.all(24),
             child: Text('Không tải được đơn: $e',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textMuted)),
+                style: TextStyle(color: AppColors.textMuted)),
           ),
         ),
         data: (order) => _content(order),
@@ -109,7 +109,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -232,7 +232,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -240,7 +240,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         children: [
           if (stage == 0) ...[
             Row(
-              children: const [
+              children: [
                 SizedBox(
                   width: 16,
                   height: 16,
@@ -344,7 +344,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

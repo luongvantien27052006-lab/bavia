@@ -30,6 +30,7 @@ import 'providers/theme_provider.dart';
 import 'screens/main_shell.dart';
 import 'screens/orders/order_detail_screen.dart';
 import 'screens/splash_screen.dart';
+import 'widgets/theme_switcher.dart';
 import 'services/push_service.dart';
 
 class BaviaApp extends ConsumerStatefulWidget {
@@ -85,6 +86,8 @@ class _BaviaAppState extends ConsumerState<BaviaApp> {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: mode,
+      builder: (context, child) =>
+          ThemeSwitcher(child: child ?? const SizedBox.shrink()),
       home: switch (status) {
         AuthStatus.unknown => const SplashScreen(),
         // Khách chưa đăng nhập vẫn vào thẳng app;

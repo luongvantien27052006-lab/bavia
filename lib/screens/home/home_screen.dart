@@ -144,11 +144,11 @@ class HomeScreen extends ConsumerWidget {
                                   color: AppColors.delivery)),
                           const SizedBox(height: 2),
                           Text(store.closedReason,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 13, color: AppColors.textDark)),
                           const SizedBox(height: 2),
                           Text('Giờ mở cửa: ${store.hoursLabel}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 12, color: AppColors.textMuted)),
                         ],
                       ),
@@ -265,7 +265,7 @@ class HomeScreen extends ConsumerWidget {
           const Icon(Icons.person_outline_rounded,
               color: AppColors.coffee, size: 20),
           const SizedBox(width: 8),
-          const Expanded(
+          Expanded(
             child: Text('Đặt món & nhận ưu đãi ngay',
                 style: TextStyle(
                     color: AppColors.textDark,
@@ -308,7 +308,7 @@ class HomeScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
@@ -332,7 +332,7 @@ class HomeScreen extends ConsumerWidget {
                     fontSize: 15)),
             const SizedBox(height: 2),
             Text(subtitle,
-                style: const TextStyle(
+                style: TextStyle(
                     color: AppColors.textMuted, fontSize: 12)),
           ],
         ),
@@ -349,11 +349,11 @@ class HomeScreen extends ConsumerWidget {
       error: (e, _) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Text('Không tải được món: $e',
-            style: const TextStyle(color: AppColors.textMuted)),
+            style: TextStyle(color: AppColors.textMuted)),
       ),
       data: (list) {
         if (list.isEmpty) {
-          return const Padding(
+          return Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Text('Chưa có món nổi bật.',
                 style: TextStyle(color: AppColors.textMuted)),
@@ -382,7 +382,7 @@ class HomeScreen extends ConsumerWidget {
       child: Container(
         width: 180,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
@@ -477,7 +477,7 @@ class HomeScreen extends ConsumerWidget {
       child: Container(
         width: 260,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
@@ -506,7 +506,7 @@ class HomeScreen extends ConsumerWidget {
                           height: 1.25)),
                   const SizedBox(height: 4),
                   Text(Formatters.date(n.publishedAt),
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppColors.textMuted, fontSize: 11)),
                 ],
               ),

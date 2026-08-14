@@ -43,7 +43,7 @@ class _VoucherWalletScreenState extends ConsumerState<VoucherWalletScreen> {
         onRefresh: () async => ref.invalidate(availableVouchersProvider),
         child: async.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => ListView(children: const [
+          error: (e, _) => ListView(children: [
             SizedBox(height: 120),
             Center(
                 child: Text('Không tải được voucher',
@@ -67,7 +67,7 @@ class _VoucherWalletScreenState extends ConsumerState<VoucherWalletScreen> {
                 ]),
                 const SizedBox(height: 16),
                 if (list.isEmpty)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(top: 60),
                     child: Center(
                         child: Text('Chưa có voucher.',
@@ -102,7 +102,7 @@ class _VoucherWalletScreenState extends ConsumerState<VoucherWalletScreen> {
             const Text('Đăng nhập để xem voucher',
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
-            const Text('Nhận ngay ưu đãi dành cho khách hàng mới.',
+            Text('Nhận ngay ưu đãi dành cho khách hàng mới.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.textMuted)),
             const SizedBox(height: 20),
@@ -163,7 +163,7 @@ class _VoucherWalletScreenState extends ConsumerState<VoucherWalletScreen> {
       opacity: v.isUsable ? 1 : 0.6,
       child: Container(
         decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
@@ -229,7 +229,7 @@ class _VoucherWalletScreenState extends ConsumerState<VoucherWalletScreen> {
         const SizedBox(width: 8),
         Expanded(
             child: Text(text,
-                style: const TextStyle(
+                style: TextStyle(
                     color: AppColors.textDark, fontSize: 14))),
       ]),
     );

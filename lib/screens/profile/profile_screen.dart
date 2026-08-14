@@ -118,7 +118,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             value: user != null ? Formatters.prettyPhone(user.phone) : '—',
           ),
           const SizedBox(height: 4),
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(left: 4),
             child: Text('Số điện thoại là định danh đăng nhập, không thể đổi.',
                 style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
@@ -155,7 +155,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 6),
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(horizontal: 24),
             child: Text(
               'Tài khoản và thông tin cá nhân sẽ bị xoá vĩnh viễn. '
@@ -246,7 +246,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           Icon(icon, color: AppColors.textMuted),
           const SizedBox(width: 12),
           Text(value,
-              style: const TextStyle(
+              style: TextStyle(
                   fontWeight: FontWeight.w600, color: AppColors.textDark)),
         ],
       ),

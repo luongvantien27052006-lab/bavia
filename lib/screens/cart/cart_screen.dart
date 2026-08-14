@@ -62,7 +62,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   }
 
   Widget _emptyView() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -84,7 +84,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         const SizedBox(height: 8),
         Row(
           children: [
-            const Icon(Icons.local_offer_outlined,
+            Icon(Icons.local_offer_outlined,
                 size: 16, color: AppColors.textMuted),
             const SizedBox(width: 6),
             Text('Mã giảm giá & điểm thưởng áp ở bước Thanh toán',
@@ -102,7 +102,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -134,7 +134,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 ],
                 const SizedBox(height: 4),
                 Text(Formatters.money(item.unitPrice),
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: AppColors.textMuted, fontSize: 13)),
               ],
             ),
@@ -183,7 +183,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           boxShadow: [
             BoxShadow(
                 color: Colors.black.withOpacity(0.05),

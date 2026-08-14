@@ -49,7 +49,7 @@ class OrderSuccessScreen extends StatelessWidget {
                     ? 'Cảm ơn bạn! Đơn hàng đang được chuẩn bị.'
                     : 'Đơn của bạn đã được tiếp nhận.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textMuted),
+                style: TextStyle(color: AppColors.textMuted),
               ),
               const SizedBox(height: 24),
               _detailCard(),
@@ -72,7 +72,7 @@ class OrderSuccessScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -94,7 +94,7 @@ class OrderSuccessScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: AppColors.textMuted)),
+        Text(label, style: TextStyle(color: AppColors.textMuted)),
         Text(value,
             style: TextStyle(
                 fontWeight: FontWeight.w700,
