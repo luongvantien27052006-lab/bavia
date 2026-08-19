@@ -14,6 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme/app_theme.dart';
 import '../providers/cart_provider.dart';
+import '../services/location_service.dart';
 import '../providers/realtime_order_provider.dart';
 import '../utils/formatters.dart';
 import 'account/account_screen.dart';
@@ -31,6 +32,16 @@ class MainShell extends ConsumerStatefulWidget {
 
 class _MainShellState extends ConsumerState<MainShell> {
   int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Mở app lần đầu -> xin quyền vị trí (để tính phí ship chính xác).
+    // (Quyền thông báo đã được PushService xin sẵn.)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      LocationService.instance.requestPermissionIfNeeded();
+    });
+  }
 
   void _goToMenu() => setState(() => _index = 1);
 
@@ -99,7 +110,7 @@ class _MainShellState extends ConsumerState<MainShell> {
             children: [
               Badge(
                 label: Text('$count'),
-                backgroundColor: AppColors.surface,
+                backgroundColor: Colors.white,
                 textColor: AppColors.coffee,
                 child: const Icon(Icons.shopping_cart_rounded,
                     color: Colors.white),
@@ -128,7 +139,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     return NavigationBar(
       selectedIndex: _index,
       onDestinationSelected: (i) => setState(() => _index = i),
-      backgroundColor: AppColors.surface,
+      backgroundColor: Colors.white,
       indicatorColor: AppColors.coffee.withOpacity(0.12),
       destinations: [
         const NavigationDestination(

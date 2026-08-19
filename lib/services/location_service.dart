@@ -28,6 +28,19 @@ class LocationService {
   LocationError? lastError;
 
   /// Xin quyền + lấy toạ độ hiện tại. Trả null nếu không lấy được.
+  /// Xin quyền vị trí khi MỞ APP LẦN ĐẦU (chỉ hỏi quyền, không lấy toạ độ).
+  /// iOS/Android chỉ hiện hộp thoại 1 lần; gọi mỗi lần mở app vẫn an toàn.
+  Future<void> requestPermissionIfNeeded() async {
+    try {
+      final serviceOn = await Geolocator.isLocationServiceEnabled();
+      if (!serviceOn) return;
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        await Geolocator.requestPermission();
+      }
+    } catch (_) {}
+  }
+
   Future<LocationResult?> getCurrent() async {
     lastError = null;
     try {

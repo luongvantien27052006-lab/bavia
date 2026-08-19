@@ -8,10 +8,13 @@
 //
 // Form thêm/sửa địa chỉ. Nếu [existing] != null → chế độ sửa.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/network/api_client.dart';
 import '../../models/address_model.dart';
 import '../../services/location_service.dart';
 import '../../providers/address_provider.dart';
@@ -33,6 +36,9 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
   double? _lat;
   double? _lng;
   bool _locating = false;
+  final List<Map<String, String>> _suggestions = [];
+  Timer? _debounce;
+  bool _searching = false;
 
   bool get _isEdit => widget.existing != null;
   bool get _hasCoords => _lat != null && _lng != null;
@@ -54,6 +60,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
     _name.dispose();
     _phone.dispose();
     _address.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
@@ -119,7 +126,8 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
                 required: true, keyboard: TextInputType.phone),
             const SizedBox(height: 14),
             _field(_address, 'Địa chỉ đầy đủ', Icons.location_on_outlined,
-                required: true, maxLines: 2),
+                required: true, maxLines: 2, onChanged: _onAddressChanged),
+            _suggestionList(),
             const SizedBox(height: 6),
             _gpsButton(),
             const SizedBox(height: 8),
@@ -183,6 +191,91 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
     );
   }
 
+
+  // ── Gợi ý địa chỉ (Goong autocomplete) ──
+  void _onAddressChanged(String text) {
+    _debounce?.cancel();
+    // Khách gõ lại -> toạ độ cũ không còn đúng, xoá để tính lại theo địa chỉ mới.
+    _lat = null;
+    _lng = null;
+    if (text.trim().length < 2) {
+      setState(() => _suggestions.clear());
+      return;
+    }
+    _debounce = Timer(const Duration(milliseconds: 350),
+        () => _searchAddress(text.trim()));
+  }
+
+  Future<void> _searchAddress(String input) async {
+    setState(() => _searching = true);
+    try {
+      final data = await ApiClient.I.get('/goong/autocomplete',
+          query: {'input': input}, skipAuth: true);
+      final preds = (data is Map && data['predictions'] is List)
+          ? (data['predictions'] as List)
+          : const [];
+      if (!mounted) return;
+      setState(() {
+        _suggestions
+          ..clear()
+          ..addAll(preds.map((p) => <String, String>{
+                'description': '${p['description'] ?? ''}',
+                'placeId': '${p['placeId'] ?? ''}',
+              }));
+      });
+    } catch (_) {
+      // im lặng — vẫn cho nhập tay
+    } finally {
+      if (mounted) setState(() => _searching = false);
+    }
+  }
+
+  Future<void> _pickSuggestion(Map<String, String> s) async {
+    FocusScope.of(context).unfocus();
+    _address.text = s['description'] ?? _address.text;
+    setState(() => _suggestions.clear());
+    final pid = s['placeId'] ?? '';
+    if (pid.isEmpty) return;
+    try {
+      final data = await ApiClient.I.get('/goong/place',
+          query: {'placeId': pid}, skipAuth: true);
+      if (data is Map && mounted) {
+        final lat = (data['lat'] as num?)?.toDouble();
+        final lng = (data['lng'] as num?)?.toDouble();
+        final addr = '${data['address'] ?? ''}';
+        setState(() {
+          _lat = lat;
+          _lng = lng;
+          if (addr.isNotEmpty) _address.text = addr;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Widget _suggestionList() {
+    if (_suggestions.isEmpty) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: _suggestions.take(5).map((s) {
+          return ListTile(
+            dense: true,
+            leading:
+                const Icon(Icons.place_outlined, size: 18, color: AppColors.coffee),
+            title: Text(s['description'] ?? '',
+                style: const TextStyle(fontSize: 13)),
+            onTap: () => _pickSuggestion(s),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Future<void> _pickLocation() async {
     setState(() => _locating = true);
     final res = await LocationService.instance.getCurrent();
@@ -192,8 +285,21 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
       if (res != null) {
         _lat = res.latitude;
         _lng = res.longitude;
+        _suggestions.clear();
       }
     });
+    if (res != null) {
+      // Lấy địa chỉ chữ từ toạ độ GPS để ghi vào ô (khách xem/sửa được).
+      try {
+        final data = await ApiClient.I.get('/goong/reverse',
+            query: {'lat': '${res.latitude}', 'lng': '${res.longitude}'},
+            skipAuth: true);
+        if (data is Map && mounted) {
+          final addr = '${data['address'] ?? ''}';
+          if (addr.isNotEmpty) _address.text = addr;
+        }
+      } catch (_) {}
+    }
     if (res == null) {
       final svc = LocationService.instance;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -223,9 +329,11 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
     bool required = false,
     int maxLines = 1,
     TextInputType? keyboard,
+    ValueChanged<String>? onChanged,
   }) {
     return TextFormField(
       controller: controller,
+      onChanged: onChanged,
       keyboardType: keyboard,
       maxLines: maxLines,
       decoration: InputDecoration(
