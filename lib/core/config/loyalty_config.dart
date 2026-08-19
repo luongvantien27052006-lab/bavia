@@ -1,7 +1,7 @@
 // ============================================================
 //  FLUTTER
 //  lib/core/config/loyalty_config.dart
-//  >> CHEP DE — doi 1 diem = 200d (truoc la 1000d) khi TIEU diem
+//  >> CHEP DE — doi 1 diem = 100d khi TIEU diem
 // ============================================================
 
 // lib/core/config/loyalty_config.dart
@@ -18,8 +18,8 @@
 class LoyaltyConfig {
   LoyaltyConfig._();
 
-  /// 1 điểm đổi được bao nhiêu VND khi dùng. (Khớp LOYALTY_POINT_VALUE backend.)
-  static const int pointValue = 200;
+  /// 1 điểm đổi được bao nhiêu VND khi dùng. (Khớp LOYALTY_POINT_VALUE backend = 100.)
+  static const int pointValue = 100;
 
   /// Tối đa được giảm bằng điểm = % của tạm tính.
   static const double maxRedeemPercent = 0.5;
