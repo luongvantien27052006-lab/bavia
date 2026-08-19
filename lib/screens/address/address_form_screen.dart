@@ -120,8 +120,8 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
             const SizedBox(height: 14),
             _field(_address, 'Địa chỉ đầy đủ', Icons.location_on_outlined,
                 required: true, maxLines: 2),
-            const SizedBox(height: 12),
-            _locationCard(),
+            const SizedBox(height: 6),
+            _gpsButton(),
             const SizedBox(height: 8),
             SwitchListTile(
               value: _isDefault,
@@ -151,55 +151,34 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
     );
   }
 
-  /// Ô lấy toạ độ — dùng để tính phí giao hàng theo khoảng cách.
-  Widget _locationCard() {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _hasCoords ? AppColors.cream : Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: _hasCoords
-              ? AppColors.coffee.withOpacity(0.35)
-              : Colors.grey.shade300,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            _hasCoords ? Icons.check_circle_rounded : Icons.my_location_rounded,
+  /// Nút TUỲ CHỌN: lấy vị trí hiện tại (GPS) để tính phí ship chính xác hơn.
+  /// Không bắt buộc — nếu bỏ qua, hệ thống tự tính phí theo địa chỉ đã nhập.
+  Widget _gpsButton() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: _locating ? null : _pickLocation,
+        style: TextButton.styleFrom(padding: EdgeInsets.zero),
+        icon: _locating
+            ? const SizedBox(
+                width: 16, height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2))
+            : Icon(
+                _hasCoords
+                    ? Icons.check_circle_rounded
+                    : Icons.my_location_rounded,
+                size: 18,
+                color: _hasCoords ? AppColors.coffee : AppColors.textMuted,
+              ),
+        label: Text(
+          _hasCoords
+              ? 'Đã lấy vị trí hiện tại (phí ship chính xác)'
+              : 'Dùng vị trí hiện tại để tính phí chính xác hơn',
+          style: TextStyle(
+            fontSize: 13,
             color: _hasCoords ? AppColors.coffee : AppColors.textMuted,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _hasCoords ? 'Đã ghim vị trí' : 'Chưa ghim vị trí',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _hasCoords
-                      ? 'Dùng để tính phí giao hàng chính xác.'
-                      : 'Ghim vị trí để tính đúng phí giao hàng.',
-                  style: TextStyle(
-                      fontSize: 12, color: AppColors.textMuted),
-                ),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: _locating ? null : _pickLocation,
-            child: _locating
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : Text(_hasCoords ? 'Cập nhật' : 'Ghim vị trí'),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -232,7 +211,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã ghim vị trí giao hàng')),
+        const SnackBar(content: Text('Đã lấy vị trí hiện tại')),
       );
     }
   }

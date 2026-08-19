@@ -17,7 +17,7 @@ import 'repository_providers.dart';
 /// Tải toàn bộ sản phẩm (1 lần, cache qua FutureProvider).
 final productsProvider = FutureProvider<List<Product>>((ref) async {
   final repo = ref.watch(productRepositoryProvider);
-  final page = await repo.fetchProducts(limit: 100);
+  final page = await repo.fetchProducts(limit: 500);
   final items = [...page.items]
     ..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
   return items;

@@ -63,6 +63,9 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: _onRequest,
+        // 401 đi qua onResponse (vì validateStatus < 500 coi 401 là "response",
+        // KHÔNG phải error) — nên phải refresh ở đây, không phải onError.
+        onResponse: _onResponse,
         onError: _onError,
       ),
     );
@@ -85,6 +88,40 @@ class ApiClient {
     handler.next(options);
   }
 
+  /// 401 tới đây (vì validateStatus < 500). Đây là nơi refresh token thật sự.
+  Future<void> _onResponse(
+    Response response,
+    ResponseInterceptorHandler handler,
+  ) async {
+    final status = response.statusCode ?? 0;
+    final opts = response.requestOptions;
+    final skipAuth = opts.extra['skipAuth'] == true;
+    final alreadyRetried = opts.extra['retried'] == true;
+
+    // Chỉ refresh khi: 401 + không phải request auth (login/refresh) + chưa retry.
+    if (status == 401 && !skipAuth && !alreadyRetried) {
+      try {
+        final newToken = await _refreshToken();
+        if (newToken == null) {
+          // Refresh hỏng/hết hạn → kết thúc session
+          await _handleSessionExpired();
+          return handler.next(response); // 401 đi tiếp → _request ném lỗi
+        }
+        // Retry request gốc với token mới
+        opts.extra['retried'] = true;
+        opts.headers['Authorization'] = 'Bearer $newToken';
+        final clone = await _dio.fetch(opts);
+        return handler.resolve(clone);
+      } catch (_) {
+        await _handleSessionExpired();
+        return handler.next(response);
+      }
+    }
+
+    handler.next(response);
+  }
+
+  /// Fallback: nếu vì cấu hình khác mà 401 lại tới dưới dạng error.
   Future<void> _onError(
     DioException err,
     ErrorInterceptorHandler handler,
@@ -94,21 +131,16 @@ class ApiClient {
     final skipAuth = err.requestOptions.extra['skipAuth'] == true;
     final alreadyRetried = err.requestOptions.extra['retried'] == true;
 
-    // Chỉ thử refresh khi: 401 + không phải request auth + chưa retry lần nào.
     if (isUnauthorized && !skipAuth && !alreadyRetried) {
       try {
         final newToken = await _refreshToken();
         if (newToken == null) {
-          // Refresh hỏng → kết thúc session
           await _handleSessionExpired();
           return handler.next(err);
         }
-
-        // Retry request gốc với token mới
         final opts = err.requestOptions;
         opts.extra['retried'] = true;
         opts.headers['Authorization'] = 'Bearer $newToken';
-
         final clone = await _dio.fetch(opts);
         return handler.resolve(clone);
       } catch (_) {
