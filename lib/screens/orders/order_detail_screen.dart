@@ -3,6 +3,7 @@
 // Chi tiết đơn + huỷ đơn (chỉ khi đang PENDING). Huỷ gọi POST /orders/:id/cancel.
 
 import 'package:flutter/material.dart';
+import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/api_exception.dart';
@@ -71,7 +72,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   Widget build(BuildContext context) {
     final detail = ref.watch(orderDetailProvider(widget.orderId));
 
-    return Scaffold(
+    return GlassBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        
       appBar: AppBar(
         title: const Text('Chi tiết đơn',
             style: TextStyle(fontWeight: FontWeight.w800)),
@@ -88,7 +92,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         ),
         data: (order) => _content(order),
       ),
-    );
+    ));
   }
 
   Widget _content(OrderModel order) {
@@ -109,7 +113,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -232,7 +236,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -344,7 +348,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

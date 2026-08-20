@@ -9,6 +9,7 @@
 // Màn danh sách tất cả tin đã đăng (mở từ "Xem thêm" ở Trang chủ).
 
 import 'package:flutter/material.dart';
+import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -24,7 +25,10 @@ class NewsListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(newsListProvider);
-    return Scaffold(
+    return GlassBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        
       appBar: AppBar(title: const Text('Tin tức')),
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(newsListProvider),
@@ -60,7 +64,7 @@ class NewsListScreen extends ConsumerWidget {
           },
         ),
       ),
-    );
+    ));
   }
 
   Widget _card(BuildContext context, NewsModel n) {
@@ -70,7 +74,7 @@ class NewsListScreen extends ConsumerWidget {
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(

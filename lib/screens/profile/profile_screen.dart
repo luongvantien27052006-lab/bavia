@@ -12,6 +12,7 @@
 // Nếu backend chưa hỗ trợ, nút Lưu sẽ báo lỗi rõ ràng (không làm hỏng gì khác).
 
 import 'package:flutter/material.dart';
+import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/api_exception.dart';
@@ -86,7 +87,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
 
-    return Scaffold(
+    return GlassBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        
       appBar: AppBar(
         title: const Text('Hồ sơ cá nhân',
             style: TextStyle(fontWeight: FontWeight.w800)),
@@ -181,7 +185,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   Future<void> _confirmDelete() async {

@@ -3,6 +3,7 @@
 // Màn xác nhận đặt đơn thành công. [paid] = true khi đã nhận thanh toán QR.
 
 import 'package:flutter/material.dart';
+import '../../widgets/glass_card.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../models/order_model.dart';
@@ -20,7 +21,10 @@ class OrderSuccessScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return GlassBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -65,14 +69,14 @@ class OrderSuccessScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 
   Widget _detailCard() {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(

@@ -7,6 +7,7 @@
 // lib/screens/voucher/voucher_wallet_screen.dart
 // Ví voucher của khách (thay tab Scan). Chia Khả dụng / Hết hạn.
 import 'package:flutter/material.dart';
+import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -30,10 +31,13 @@ class _VoucherWalletScreenState extends ConsumerState<VoucherWalletScreen> {
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
     if (user == null) {
-      return Scaffold(
+      return GlassBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        
         appBar: AppBar(title: const Text('Voucher')),
         body: _guestPrompt(context),
-      );
+      ));
     }
 
     final async = ref.watch(availableVouchersProvider);
@@ -163,7 +167,7 @@ class _VoucherWalletScreenState extends ConsumerState<VoucherWalletScreen> {
       opacity: v.isUsable ? 1 : 0.6,
       child: Container(
         decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
@@ -206,7 +210,7 @@ class _VoucherWalletScreenState extends ConsumerState<VoucherWalletScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-                color: AppColors.cream,
+                color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
                 borderRadius: BorderRadius.circular(8),
                 border:
                     Border.all(color: AppColors.coffee.withOpacity(0.25))),

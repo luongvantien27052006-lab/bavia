@@ -33,17 +33,24 @@ class ProductCard extends ConsumerWidget {
       ),
     );
 
+    final dark = AppColors.dark;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: dark
+              ? Colors.white.withOpacity(0.06)
+              : Colors.white.withOpacity(0.60),
           borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+              color: dark
+                  ? Colors.white.withOpacity(0.12)
+                  : Colors.white.withOpacity(0.70)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withOpacity(dark ? 0.22 : 0.05),
               blurRadius: 12,
-              offset: const Offset(0, 4),
+              offset: const Offset(0, 5),
             ),
           ],
         ),
@@ -64,8 +71,10 @@ class ProductCard extends ConsumerWidget {
                     product.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: 14),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: AppColors.textDark),
                   ),
                   const SizedBox(height: 2),
                   Text(

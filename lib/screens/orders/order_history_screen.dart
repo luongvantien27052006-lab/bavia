@@ -3,6 +3,7 @@
 // Lịch sử đơn hàng của khách. Lấy từ ordersProvider (GET /orders).
 
 import 'package:flutter/material.dart';
+import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -18,7 +19,10 @@ class OrderHistoryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final orders = ref.watch(ordersProvider);
 
-    return Scaffold(
+    return GlassBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        
       appBar: AppBar(
         title: const Text('Lịch sử đơn hàng',
             style: TextStyle(fontWeight: FontWeight.w800)),
@@ -52,7 +56,7 @@ class OrderHistoryScreen extends ConsumerWidget {
           );
         },
       ),
-    );
+    ));
   }
 
   Widget _orderCard(BuildContext context, OrderModel order) {
@@ -65,7 +69,7 @@ class OrderHistoryScreen extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(

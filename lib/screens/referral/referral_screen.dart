@@ -10,6 +10,7 @@
 // và tiến độ 3 mốc thưởng.
 
 import 'package:flutter/material.dart';
+import '../../widgets/glass_card.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -23,7 +24,10 @@ class ReferralScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(referralSummaryProvider);
-    return Scaffold(
+    return GlassBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        
       appBar: AppBar(title: const Text('Giới thiệu bạn bè')),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -55,7 +59,7 @@ class ReferralScreen extends ConsumerWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 
   Widget _codeCard(BuildContext context, String code) {
@@ -135,7 +139,7 @@ class ReferralScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.cream,
+        color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -172,7 +176,7 @@ class ReferralScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: done
@@ -248,7 +252,7 @@ class ReferralScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cream,
+        color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(

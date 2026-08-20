@@ -22,6 +22,7 @@
 // xem tạm tính - giảm - tổng. Nút "Thanh toán" sang màn Checkout.
 
 import 'package:flutter/material.dart';
+import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -50,11 +51,16 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     final total = ref.watch(checkoutTotalProvider);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: const Text('Giỏ hàng',
             style: TextStyle(fontWeight: FontWeight.w800)),
       ),
-      body: cart.isEmpty ? _emptyView() : _content(cart),
+      body: GlassBackground(
+        child: cart.isEmpty ? _emptyView() : _content(cart),
+      ),
       bottomNavigationBar: cart.isEmpty
           ? null
           : _bottomBar(subtotal, discount, total),
@@ -102,8 +108,14 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.dark
+            ? Colors.white.withOpacity(0.06)
+            : Colors.white.withOpacity(0.55),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+            color: AppColors.dark
+                ? Colors.white.withOpacity(0.12)
+                : Colors.white.withOpacity(0.70)),
       ),
       child: Row(
         children: [
@@ -183,11 +195,18 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.dark
+              ? const Color(0xFF221A15).withOpacity(0.92)
+              : Colors.white.withOpacity(0.85),
+          border: Border(
+              top: BorderSide(
+                  color: AppColors.dark
+                      ? Colors.white.withOpacity(0.10)
+                      : Colors.white.withOpacity(0.70))),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 12,
+                color: Colors.black.withOpacity(AppColors.dark ? 0.3 : 0.06),
+                blurRadius: 14,
                 offset: const Offset(0, -2)),
           ],
         ),

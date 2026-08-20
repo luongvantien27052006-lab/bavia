@@ -15,6 +15,7 @@ import '../../core/theme/app_theme.dart';
 import '../../models/product.dart';
 import '../../providers/menu_provider.dart';
 import '../../widgets/product_card.dart';
+import '../../widgets/glass_card.dart';
 import '../product/product_detail_screen.dart';
 
 class MenuScreen extends ConsumerWidget {
@@ -27,12 +28,16 @@ class MenuScreen extends ConsumerWidget {
     final filtered = ref.watch(filteredProductsProvider);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: const Text('Menu',
             style: TextStyle(fontWeight: FontWeight.w800)),
       ),
-      body: Column(
-        children: [
+      body: GlassBackground(
+        child: Column(
+          children: [
           _categoryBar(ref, selected, categories),
           Expanded(
             child: filtered.when(
@@ -42,7 +47,8 @@ class MenuScreen extends ConsumerWidget {
               data: (list) => _grid(context, list),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -81,7 +87,9 @@ class MenuScreen extends ConsumerWidget {
             ref.read(selectedCategoryProvider.notifier).state = value,
         showCheckmark: false,
         selectedColor: AppColors.coffee,
-        backgroundColor: AppColors.surface,
+        backgroundColor: (AppColors.dark
+            ? Colors.white.withOpacity(0.08)
+            : Colors.white.withOpacity(0.55)),
         labelStyle: TextStyle(
           color: selected ? Colors.white : AppColors.textDark,
           fontWeight: FontWeight.w600,

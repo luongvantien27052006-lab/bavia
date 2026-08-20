@@ -118,7 +118,7 @@ class _MainShellState extends ConsumerState<MainShell> {
             children: [
               Badge(
                 label: Text('$count'),
-                backgroundColor: Colors.white,
+                backgroundColor: AppColors.surface,
                 textColor: AppColors.coffee,
                 child: const Icon(Icons.shopping_cart_rounded,
                     color: Colors.white),
@@ -147,8 +147,9 @@ class _MainShellState extends ConsumerState<MainShell> {
     return NavigationBar(
       selectedIndex: _index,
       onDestinationSelected: (i) => setState(() => _index = i),
-      backgroundColor: Colors.white,
-      indicatorColor: AppColors.coffee.withOpacity(0.12),
+      backgroundColor: AppColors.surface,
+      surfaceTintColor: Colors.transparent,
+      indicatorColor: AppColors.coffee.withOpacity(0.18),
       destinations: [
         const NavigationDestination(
           icon: Icon(Icons.home_outlined),

@@ -9,6 +9,7 @@ import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../widgets/glass_card.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -137,7 +138,10 @@ class _QrPaymentScreenState extends ConsumerState<QrPaymentScreen> {
   Widget build(BuildContext context) {
     final expired = _remaining == Duration.zero;
 
-    return Scaffold(
+    return GlassBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        
       appBar: AppBar(
         title: const Text('Thanh toán QR',
             style: TextStyle(fontWeight: FontWeight.w800)),
@@ -166,7 +170,7 @@ class _QrPaymentScreenState extends ConsumerState<QrPaymentScreen> {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: const Color(0xFFE5DDD7)),
               ),
@@ -215,7 +219,7 @@ class _QrPaymentScreenState extends ConsumerState<QrPaymentScreen> {
           ),
         ],
       ),
-    );
+    ));
   }
 
   Widget _amountCard() {
@@ -244,7 +248,7 @@ class _QrPaymentScreenState extends ConsumerState<QrPaymentScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(

@@ -3,6 +3,7 @@
 // Sổ địa chỉ giao hàng: xem, đặt mặc định, sửa, xoá, thêm mới.
 
 import 'package:flutter/material.dart';
+import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -17,7 +18,10 @@ class AddressListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final addresses = ref.watch(addressesProvider);
 
-    return Scaffold(
+    return GlassBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        
       appBar: AppBar(
         title: const Text('Sổ địa chỉ',
             style: TextStyle(fontWeight: FontWeight.w800)),
@@ -57,7 +61,7 @@ class AddressListScreen extends ConsumerWidget {
           );
         },
       ),
-    );
+    ));
   }
 
   Widget _addressCard(
@@ -66,7 +70,7 @@ class AddressListScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
         borderRadius: BorderRadius.circular(16),
         border: a.isDefault
             ? Border.all(color: AppColors.coffee, width: 1.5)

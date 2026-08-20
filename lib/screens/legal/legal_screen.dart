@@ -10,6 +10,7 @@
 // Dùng chung 1 màn, chọn tab: Điều khoản / Chính sách bảo mật.
 
 import 'package:flutter/material.dart';
+import '../../widgets/glass_card.dart';
 
 import '../../core/theme/app_theme.dart';
 
@@ -24,7 +25,10 @@ class LegalScreen extends StatelessWidget {
     return DefaultTabController(
       length: 2,
       initialIndex: initialTab,
-      child: Scaffold(
+      child: GlassBackground(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          
         appBar: AppBar(
           title: const Text('Chính sách & Điều khoản'),
           bottom: TabBar(
@@ -40,7 +44,7 @@ class LegalScreen extends StatelessWidget {
         body: const TabBarView(
           children: [_TermsTab(), _PrivacyTab()],
         ),
-      ),
+      )),
     );
   }
 }
@@ -206,7 +210,7 @@ class _ContactBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cream,
+        color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.coffee.withOpacity(0.2)),
       ),

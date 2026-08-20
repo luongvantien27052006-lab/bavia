@@ -3,6 +3,7 @@
 // Điểm thưởng: số dư + lịch sử cộng/trừ điểm.
 
 import 'package:flutter/material.dart';
+import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -18,7 +19,10 @@ class LoyaltyScreen extends ConsumerWidget {
     final balance = ref.watch(loyaltyBalanceProvider);
     final history = ref.watch(loyaltyHistoryProvider);
 
-    return Scaffold(
+    return GlassBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        
       appBar: AppBar(
         title: const Text('Điểm thưởng',
             style: TextStyle(fontWeight: FontWeight.w800)),
@@ -40,7 +44,7 @@ class LoyaltyScreen extends ConsumerWidget {
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _balanceCard(AsyncValue<LoyaltyBalance> balance) {
@@ -124,7 +128,7 @@ class LoyaltyScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

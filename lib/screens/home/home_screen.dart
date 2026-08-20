@@ -1,24 +1,10 @@
 // ============================================================
-//  FLUTTER
-//  lib/screens/home/home_screen.dart
-//  >> CHEP DE (bao quan dong cua ngay o Trang chu)
+//  FLUTTER — lib/screens/home/home_screen.dart
+//  >> CHEP DE — giao diện "kính mờ" (glassmorphism).
+//     GIỮ NGUYÊN toàn bộ chức năng: header banner (tin mới / đăng nhập),
+//     thông báo đóng cửa, 2 lựa chọn Giao/Tự lấy, Món hot, Tin tức,
+//     pull-to-refresh, mọi điều hướng.
 // ============================================================
-
-// ============================================================
-//  FLUTTER
-//  lib/screens/home/home_screen.dart
-//  >> CHEP DE (header theo trang thai + Xem them + noi Tin tuc)
-// ============================================================
-
-// ============================================================
-//  FLUTTER
-//  lib/screens/home/home_screen.dart
-//  >> CHEP DE (the 'Mon hot' to hon: rong 180, chu lon hon)
-// ============================================================
-
-// lib/screens/home/home_screen.dart
-//
-// Trang chủ: lời chào, 2 lựa chọn Giao hàng / Tự lấy, danh sách Món hot.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,6 +15,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/menu_provider.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/product_image.dart';
+import '../../widgets/glass_card.dart';
 import '../product/product_detail_screen.dart';
 import '../auth/login_screen.dart';
 import '../../models/user_model.dart';
@@ -50,65 +37,71 @@ class HomeScreen extends ConsumerWidget {
     final hot = ref.watch(hotProductsProvider);
 
     return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(productsProvider),
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            _header(context, ref, user),
-            const SizedBox(height: 16),
-            _closedNotice(ref),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _modeCard(
-                      title: 'GIAO HÀNG',
-                      subtitle: 'Freeship 0đ',
-                      icon: Icons.delivery_dining_rounded,
-                      color: AppColors.delivery,
-                      onTap: onBrowseMenu,
+      // Nền gradient kính mờ (tự đổi theo Sáng/Tối) đặt sau toàn bộ nội dung.
+      backgroundColor: Colors.transparent,
+      body: GlassBackground(
+        child: RefreshIndicator(
+          onRefresh: () async => ref.invalidate(productsProvider),
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              _header(context, ref, user),
+              const SizedBox(height: 16),
+              _closedNotice(ref),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _modeCard(
+                        title: 'GIAO HÀNG',
+                        subtitle: 'Freeship 0đ',
+                        icon: Icons.delivery_dining_rounded,
+                        color: AppColors.delivery,
+                        onTap: onBrowseMenu,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _modeCard(
-                      title: 'TỰ LẤY',
-                      subtitle: 'Không xếp hàng',
-                      icon: Icons.storefront_rounded,
-                      color: AppColors.pickup,
-                      onTap: onBrowseMenu,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _modeCard(
+                        title: 'TỰ LẤY',
+                        subtitle: 'Không xếp hàng',
+                        icon: Icons.storefront_rounded,
+                        color: AppColors.pickup,
+                        onTap: onBrowseMenu,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('🔥 Món hot hôm nay',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-                  GestureDetector(
-                    onTap: onBrowseMenu,
-                    child: const Text('Xem thêm',
+              const SizedBox(height: 24),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('🔥 Món hot hôm nay',
                         style: TextStyle(
-                            color: AppColors.coffee,
-                            fontWeight: FontWeight.w600)),
-                  ),
-                ],
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textDark)),
+                    GestureDetector(
+                      onTap: onBrowseMenu,
+                      child: const Text('Xem thêm',
+                          style: TextStyle(
+                              color: AppColors.coffee,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            _hotList(context, hot),
-            const SizedBox(height: 28),
-            _newsSection(context, ref),
-            const SizedBox(height: 24),
-          ],
+              const SizedBox(height: 12),
+              _hotList(context, hot),
+              const SizedBox(height: 28),
+              _newsSection(context, ref),
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );
@@ -121,14 +114,12 @@ class HomeScreen extends ConsumerWidget {
             if (store.isOpen) return const SizedBox.shrink();
             return Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Container(
+              child: GlassCard(
+                radius: 16,
+                blur: 12,
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.delivery.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(14),
-                  border:
-                      Border.all(color: AppColors.delivery.withOpacity(0.4)),
-                ),
+                tint: AppColors.delivery.withOpacity(0.12),
+                borderColor: AppColors.delivery.withOpacity(0.4),
                 child: Row(
                   children: [
                     const Icon(Icons.do_not_disturb_on_rounded,
@@ -223,24 +214,40 @@ class HomeScreen extends ConsumerWidget {
                         fontWeight: FontWeight.w600),
                   ),
                   if (loggedIn)
-                    Row(
-                      children: [
-                        const Icon(Icons.campaign_rounded,
-                            color: Colors.white, size: 18),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            latest?.title ?? 'Tin tức & ưu đãi mới',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700),
+                    // Dải tin mới nhất dạng kính mờ (nối tới Tin tức).
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                              color: Colors.white.withOpacity(0.3)),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.campaign_rounded,
+                                  color: Colors.white, size: 18),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  latest?.title ?? 'Tin tức & ưu đãi mới',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                              const Icon(Icons.chevron_right_rounded,
+                                  color: Colors.white70),
+                            ],
                           ),
                         ),
-                        const Icon(Icons.chevron_right_rounded,
-                            color: Colors.white70),
-                      ],
+                      ),
                     )
                   else
                     _loginPill(context),
@@ -303,39 +310,28 @@ class HomeScreen extends ConsumerWidget {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return GlassCard(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 4)),
-          ],
-        ),
-        child: Column(
-          children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: color.withOpacity(0.12),
-              child: Icon(icon, color: color, size: 30),
-            ),
-            const SizedBox(height: 12),
-            Text(title,
-                style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15)),
-            const SizedBox(height: 2),
-            Text(subtitle,
-                style: TextStyle(
-                    color: AppColors.textMuted, fontSize: 12)),
-          ],
-        ),
+      radius: 18,
+      blur: 14,
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: color.withOpacity(0.16),
+            child: Icon(icon, color: color, size: 30),
+          ),
+          const SizedBox(height: 12),
+          Text(title,
+              style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15)),
+          const SizedBox(height: 2),
+          Text(subtitle,
+              style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+        ],
       ),
     );
   }
@@ -354,7 +350,7 @@ class HomeScreen extends ConsumerWidget {
       data: (list) {
         if (list.isEmpty) {
           return Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text('Chưa có món nổi bật.',
                 style: TextStyle(color: AppColors.textMuted)),
           );
@@ -374,29 +370,26 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _hotCard(BuildContext context, Product p) {
-    return GestureDetector(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(
-            builder: (_) => ProductDetailScreen(product: p)),
-      ),
-      child: Container(
-        width: 180,
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 4)),
-          ],
+    // Trong list cuộn dùng blur=0 (nhẹ) — vẫn giữ vẻ kính mờ bằng nền + viền.
+    return SizedBox(
+      width: 180,
+      child: GlassCard(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+              builder: (_) => ProductDetailScreen(product: p)),
         ),
-        clipBehavior: Clip.antiAlias,
+        radius: 18,
+        blur: 0,
+        padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AspectRatio(
-                aspectRatio: 1.3, child: ProductImage(product: p)),
+            ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(18)),
+              child: AspectRatio(
+                  aspectRatio: 1.3, child: ProductImage(product: p)),
+            ),
             Padding(
               padding: const EdgeInsets.all(10),
               child: Column(
@@ -405,8 +398,10 @@ class HomeScreen extends ConsumerWidget {
                   Text(p.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 14)),
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: AppColors.textDark)),
                   const SizedBox(height: 4),
                   Text(Formatters.money(p.price),
                       style: const TextStyle(
@@ -435,9 +430,11 @@ class HomeScreen extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Tin tức',
+                  Text('Tin tức',
                       style: TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.w800)),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textDark)),
                   GestureDetector(
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
@@ -470,28 +467,24 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _newsCard(BuildContext context, NewsModel n) {
-    return GestureDetector(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => NewsDetailScreen(news: n)),
-      ),
-      child: Container(
-        width: 260,
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 4)),
-          ],
+    return SizedBox(
+      width: 260,
+      child: GlassCard(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => NewsDetailScreen(news: n)),
         ),
-        clipBehavior: Clip.antiAlias,
+        radius: 18,
+        blur: 0,
+        padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AspectRatio(
-                aspectRatio: 16 / 9, child: NewsImage(imageUrl: n.imageUrl)),
+            ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(18)),
+              child: AspectRatio(
+                  aspectRatio: 16 / 9, child: NewsImage(imageUrl: n.imageUrl)),
+            ),
             Padding(
               padding: const EdgeInsets.all(10),
               child: Column(
@@ -500,10 +493,11 @@ class HomeScreen extends ConsumerWidget {
                   Text(n.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 13,
-                          height: 1.25)),
+                          height: 1.25,
+                          color: AppColors.textDark)),
                   const SizedBox(height: 4),
                   Text(Formatters.date(n.publishedAt),
                       style: TextStyle(

@@ -11,6 +11,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -109,7 +110,10 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
   Widget build(BuildContext context) {
     final saving = ref.watch(addressControllerProvider).isLoading;
 
-    return Scaffold(
+    return GlassBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        
       appBar: AppBar(
         title: Text(_isEdit ? 'Sửa địa chỉ' : 'Thêm địa chỉ',
             style: const TextStyle(fontWeight: FontWeight.w800)),
@@ -156,7 +160,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   /// Nút TUỲ CHỌN: lấy vị trí hiện tại (GPS) để tính phí ship chính xác hơn.
@@ -257,7 +261,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
     return Container(
       margin: const EdgeInsets.only(top: 4),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
       ),

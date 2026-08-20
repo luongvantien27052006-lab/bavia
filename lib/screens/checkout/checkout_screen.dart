@@ -17,6 +17,7 @@
 // BANK_QR → màn QR; COD → màn thành công.
 
 import 'package:flutter/material.dart';
+import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/config/loyalty_config.dart';
@@ -134,7 +135,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         isOpen &&
         !(checkout.isDelivery && checkout.deliveryAddress == null);
 
-    return Scaffold(
+    return GlassBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        
       appBar: AppBar(
         title: const Text('Thanh toán',
             style: TextStyle(fontWeight: FontWeight.w800)),
@@ -211,7 +215,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   Widget _sectionTitle(String text) => Text(text,
@@ -767,7 +771,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.cream,
+        color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.coffee.withOpacity(0.25)),
       ),

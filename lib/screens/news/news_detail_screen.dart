@@ -9,6 +9,7 @@
 // Màn chi tiết 1 tin: ảnh bìa + tiêu đề + ngày + nội dung.
 
 import 'package:flutter/material.dart';
+import '../../widgets/glass_card.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../models/news.dart';
@@ -21,7 +22,10 @@ class NewsDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return GlassBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        
       appBar: AppBar(title: const Text('Tin tức')),
       body: ListView(
         padding: EdgeInsets.zero,
@@ -63,6 +67,6 @@ class NewsDetailScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 }

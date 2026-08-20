@@ -14,6 +14,7 @@ import '../../models/product.dart';
 import '../../providers/cart_provider.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/product_image.dart';
+import '../../widgets/glass_card.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final Product product;
@@ -98,7 +99,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     final headlinePrice = _isFruit ? _unitPrice : p.price;
 
     return Scaffold(
-      body: CustomScrollView(
+      backgroundColor: Colors.transparent,
+      body: GlassBackground(
+        child: CustomScrollView(
         slivers: [
           SliverAppBar(
             expandedHeight: 280,
@@ -172,6 +175,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             ),
           ),
         ],
+        ),
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
@@ -223,7 +227,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
           color:
-              selected ? AppColors.coffee.withOpacity(0.08) : AppColors.surface,
+              selected
+              ? AppColors.coffee.withOpacity(0.12)
+              : (AppColors.dark
+                  ? Colors.white.withOpacity(0.05)
+                  : Colors.white.withOpacity(0.50)),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected ? AppColors.coffee : const Color(0xFFE5DDD7),
@@ -329,9 +337,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   Widget _qtyStepper() {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.dark
+            ? Colors.white.withOpacity(0.05)
+            : Colors.white.withOpacity(0.50),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5DDD7)),
+        border: Border.all(
+            color: AppColors.dark
+                ? Colors.white.withOpacity(0.12)
+                : const Color(0xFFE5DDD7)),
       ),
       child: Row(
         children: [
