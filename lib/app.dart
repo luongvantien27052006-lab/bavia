@@ -86,6 +86,9 @@ class _BaviaAppState extends ConsumerState<BaviaApp> {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: mode,
+      // Đổi màu nền/theme tức thì bên dưới; độ mượt do ThemeSwitcher
+      // (chụp ảnh cũ rồi mờ dần) đảm nhiệm -> tránh animate 2 lớp.
+      themeAnimationDuration: Duration.zero,
       builder: (context, child) =>
           ThemeSwitcher(child: child ?? const SizedBox.shrink()),
       home: switch (status) {

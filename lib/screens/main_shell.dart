@@ -15,6 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/app_theme.dart';
 import '../providers/cart_provider.dart';
 import '../services/location_service.dart';
+import '../providers/theme_provider.dart';
 import '../providers/realtime_order_provider.dart';
 import '../utils/formatters.dart';
 import 'account/account_screen.dart';
@@ -49,6 +50,9 @@ class _MainShellState extends ConsumerState<MainShell> {
   Widget build(BuildContext context) {
     final cartCount = ref.watch(cartCountProvider);
     final cartSubtotal = ref.watch(cartSubtotalProvider);
+    // Theo dõi chế độ Sáng/Tối: đổi -> key IndexedStack đổi -> các tab rebuild
+    // đồng loạt sang màu mới (không cần chạm từng thẻ).
+    final themeMode = ref.watch(themeModeProvider);
 
     // Giữ provider realtime sống suốt phiên đăng nhập.
     ref.watch(realtimeOrderProvider);
@@ -86,7 +90,11 @@ class _MainShellState extends ConsumerState<MainShell> {
     ];
 
     return Scaffold(
-      body: IndexedStack(index: _index, children: tabs),
+      body: IndexedStack(
+        key: ValueKey(themeMode),
+        index: _index,
+        children: tabs,
+      ),
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
