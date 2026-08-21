@@ -3,6 +3,7 @@
 // Điểm thưởng: số dư + lịch sử cộng/trừ điểm.
 
 import 'package:flutter/material.dart';
+import '../../widgets/anim.dart';
 import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -82,7 +83,7 @@ class LoyaltyScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
               children: [
-                Text('${b.balance}',
+                CountUpText(b.balance,
                     style: const TextStyle(
                         color: Colors.white,
                         fontSize: 40,

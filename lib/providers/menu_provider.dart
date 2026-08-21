@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/product.dart';
 import 'repository_providers.dart';
+import 'favorites_provider.dart';
 
 /// Tải toàn bộ sản phẩm (1 lần, cache qua FutureProvider).
 final productsProvider = FutureProvider<List<Product>>((ref) async {
@@ -26,13 +27,33 @@ final productsProvider = FutureProvider<List<Product>>((ref) async {
 /// Category đang chọn ở màn Menu (null = Tất cả). Là TÊN danh mục.
 final selectedCategoryProvider = StateProvider<String?>((_) => null);
 
-/// Danh sách đã lọc theo category đang chọn.
+/// Từ khoá tìm kiếm ở màn Menu.
+final searchQueryProvider = StateProvider<String>((_) => '');
+
+/// Chỉ hiện món yêu thích.
+final showFavoritesOnlyProvider = StateProvider<bool>((_) => false);
+
+/// Danh sách đã lọc theo category + từ khoá + yêu thích.
 final filteredProductsProvider = Provider<AsyncValue<List<Product>>>((ref) {
   final async = ref.watch(productsProvider);
   final selected = ref.watch(selectedCategoryProvider);
+  final query = ref.watch(searchQueryProvider).trim().toLowerCase();
+  final favOnly = ref.watch(showFavoritesOnlyProvider);
+  final favs = ref.watch(favoritesProvider);
   return async.whenData((list) {
-    if (selected == null) return list;
-    return list.where((p) => p.category == selected).toList();
+    var out = list;
+    if (selected != null) {
+      out = out.where((p) => p.category == selected).toList();
+    }
+    if (query.isNotEmpty) {
+      out = out
+          .where((p) => p.name.toLowerCase().contains(query))
+          .toList();
+    }
+    if (favOnly) {
+      out = out.where((p) => favs.contains(p.id)).toList();
+    }
+    return out;
   });
 });
 

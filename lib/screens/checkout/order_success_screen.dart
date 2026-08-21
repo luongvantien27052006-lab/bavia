@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/anim.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../models/order_model.dart';
@@ -31,16 +32,7 @@ class OrderSuccessScreen extends StatelessWidget {
           child: Column(
             children: [
               const Spacer(),
-              Container(
-                width: 110,
-                height: 110,
-                decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.check_circle_rounded,
-                    color: AppColors.success, size: 72),
-              ),
+              const SuccessCheck(size: 110),
               const SizedBox(height: 24),
               Text(
                 paid ? 'Thanh toán thành công!' : 'Đặt hàng thành công!',

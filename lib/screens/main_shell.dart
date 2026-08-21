@@ -16,6 +16,7 @@ import '../core/theme/app_theme.dart';
 import '../providers/cart_provider.dart';
 import '../services/location_service.dart';
 import '../providers/theme_provider.dart';
+import '../widgets/anim.dart';
 import '../providers/realtime_order_provider.dart';
 import '../utils/formatters.dart';
 import 'account/account_screen.dart';
@@ -182,10 +183,13 @@ class _MainShellState extends ConsumerState<MainShell> {
       color: selected ? AppColors.coffee : null,
     );
     if (count == 0) return icon;
-    return Badge(
-      label: Text('$count'),
-      backgroundColor: AppColors.delivery,
-      child: icon,
+    return PopOnChange(
+      value: count,
+      child: Badge(
+        label: Text('$count'),
+        backgroundColor: AppColors.delivery,
+        child: icon,
+      ),
     );
   }
 }

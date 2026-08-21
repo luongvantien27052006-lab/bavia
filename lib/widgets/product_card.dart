@@ -16,12 +16,16 @@ import '../models/product.dart';
 import '../providers/cart_provider.dart';
 import '../utils/formatters.dart';
 import 'product_image.dart';
+import 'favorite_button.dart';
 
 class ProductCard extends ConsumerWidget {
   final Product product;
+  final String? heroTag;
   final VoidCallback onTap;
 
-  const ProductCard({super.key, required this.product, required this.onTap});
+  const ProductCard({super.key, required this.product, required this.onTap,
+    this.heroTag,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -58,9 +62,18 @@ class ProductCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AspectRatio(
-              aspectRatio: 1.2,
-              child: ProductImage(product: product),
+            Stack(
+              children: [
+                AspectRatio(
+                  aspectRatio: 1.2,
+                  child: ProductImage(heroTag: heroTag, product: product),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: FavoriteButton(productId: product.id, size: 18),
+                ),
+              ],
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),

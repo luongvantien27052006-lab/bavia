@@ -22,6 +22,7 @@
 // xem tạm tính - giảm - tổng. Nút "Thanh toán" sang màn Checkout.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -30,6 +31,10 @@ import '../../providers/cart_provider.dart';
 import '../../providers/checkout_provider.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/product_image.dart';
+import '../../widgets/empty_state.dart';
+import '../../providers/menu_provider.dart';
+import '../product/product_detail_screen.dart';
+import '../../models/product.dart';
 import '../checkout/checkout_screen.dart';
 import '../auth/login_screen.dart';
 import '../../providers/auth_provider.dart';
@@ -68,17 +73,12 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   }
 
   Widget _emptyView() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.shopping_cart_outlined,
-              size: 72, color: AppColors.textMuted),
-          SizedBox(height: 12),
-          Text('Giỏ hàng đang trống',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 16)),
-        ],
-      ),
+    return EmptyState(
+      icon: Icons.shopping_cart_outlined,
+      title: 'Giỏ hàng đang trống',
+      subtitle: 'Thêm vài món ngon để bắt đầu đơn hàng nhé!',
+      actionLabel: 'Xem thực đơn',
+      onAction: () => Navigator.of(context).maybePop(),
     );
   }
 
@@ -99,7 +99,123 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                     fontSize: 12)),
           ],
         ),
+        _suggestions(cart),
       ],
+    );
+  }
+
+  /// #1 Gợi ý món ăn kèm (tăng giá trị đơn) — món chưa có trong giỏ.
+  Widget _suggestions(List<CartItem> cart) {
+    final inCart = cart.map((c) => c.product.id).toSet();
+    final async = ref.watch(productsProvider);
+    return async.maybeWhen(
+      data: (all) {
+        final sugg =
+            all.where((p) => !inCart.contains(p.id)).take(8).toList();
+        if (sugg.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 22),
+            Text('Thêm bánh nhé? 🥐',
+                style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                    color: AppColors.textDark)),
+            const SizedBox(height: 2),
+            Text('Gợi ý món ngon ăn kèm',
+                style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 172,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: sugg.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (_, i) => _suggCard(sugg[i]),
+              ),
+            ),
+          ],
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _suggCard(Product p) {
+    return SizedBox(
+      width: 132,
+      child: GlassCard(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+              builder: (_) => ProductDetailScreen(product: p)),
+        ),
+        radius: 16,
+        blur: 0,
+        padding: EdgeInsets.zero,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
+              child: AspectRatio(
+                  aspectRatio: 1.3, child: ProductImage(product: p)),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(p.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12.5,
+                          color: AppColors.textDark)),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(Formatters.money(p.price),
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                color: AppColors.coffee,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12.5)),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          ref.read(cartProvider.notifier).add(p);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Đã thêm ${p.name}'),
+                              duration: const Duration(milliseconds: 900),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: AppColors.coffee,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.add,
+                              color: Colors.white, size: 16),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

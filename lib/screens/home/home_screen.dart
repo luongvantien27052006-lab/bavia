@@ -16,6 +16,7 @@ import '../../providers/menu_provider.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/product_image.dart';
 import '../../widgets/glass_card.dart';
+import '../../widgets/anim.dart';
 import '../product/product_detail_screen.dart';
 import '../auth/login_screen.dart';
 import '../../models/user_model.dart';
@@ -338,9 +339,27 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _hotList(BuildContext context, AsyncValue<List<Product>> hot) {
     return hot.when(
-      loading: () => const SizedBox(
+      loading: () => SizedBox(
         height: 224,
-        child: Center(child: CircularProgressIndicator()),
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: 4,
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemBuilder: (_, __) => const SizedBox(
+            width: 180,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ShimmerBox(height: 138, width: 180, radius: 18),
+                SizedBox(height: 8),
+                ShimmerBox(height: 14, width: 120),
+                SizedBox(height: 6),
+                ShimmerBox(height: 14, width: 70),
+              ],
+            ),
+          ),
+        ),
       ),
       error: (e, _) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -362,7 +381,8 @@ class HomeScreen extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: list.length,
             separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (_, i) => _hotCard(context, list[i]),
+            itemBuilder: (_, i) =>
+                FadeSlideIn(index: i, child: _hotCard(context, list[i])),
           ),
         );
       },
@@ -456,7 +476,8 @@ class HomeScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: list.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (_, i) => _newsCard(context, list[i]),
+                itemBuilder: (_, i) =>
+                  FadeSlideIn(index: i, child: _newsCard(context, list[i])),
               ),
             ),
           ],

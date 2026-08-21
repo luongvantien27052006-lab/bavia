@@ -3,6 +3,7 @@
 // Chi tiết đơn + huỷ đơn (chỉ khi đang PENDING). Huỷ gọi POST /orders/:id/cancel.
 
 import 'package:flutter/material.dart';
+import '../../widgets/star_rating.dart';
 import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -131,6 +132,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           ),
         ),
         const SizedBox(height: 20),
+        _ratingSection(order),
         if (order.status.isCancellable)
           OutlinedButton.icon(
             onPressed: _cancelling ? null : () => _confirmCancel(order),
@@ -150,6 +152,60 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             ),
           ),
       ],
+    );
+  }
+
+  /// #3 Đánh giá món — chỉ hiện khi đơn ĐÃ GIAO.
+  Widget _ratingSection(OrderModel order) {
+    if (order.status != OrderStatus.delivered || order.items.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Container(
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: AppColors.dark
+            ? Colors.white.withOpacity(0.06)
+            : Colors.white.withOpacity(0.55),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.star_rounded, color: Color(0xFFF5A623)),
+              const SizedBox(width: 8),
+              Text('Đánh giá món',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      color: AppColors.textDark)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text('Cảm ơn bạn! Đánh giá giúp quán phục vụ tốt hơn.',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+          const SizedBox(height: 8),
+          for (final it in order.items)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(it.productName,
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textDark)),
+                  ),
+                  const SizedBox(width: 8),
+                  StarRating(ratingKey: it.productId, size: 24),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -242,6 +298,26 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Thanh tiến trình ngang tổng quan.
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(
+                  begin: 0, end: (stage / 4).clamp(0.0, 1.0).toDouble()),
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeOut,
+              builder: (context, v, _) => LinearProgressIndicator(
+                value: v,
+                minHeight: 8,
+                backgroundColor: AppColors.dark
+                    ? Colors.white.withOpacity(0.10)
+                    : Colors.black.withOpacity(0.06),
+                valueColor:
+                    const AlwaysStoppedAnimation(AppColors.coffee),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           if (stage == 0) ...[
             Row(
               children: [

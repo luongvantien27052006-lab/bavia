@@ -3,6 +3,7 @@
 // Lịch sử đơn hàng của khách. Lấy từ ordersProvider (GET /orders).
 
 import 'package:flutter/material.dart';
+import '../../widgets/empty_state.dart';
 import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -32,16 +33,17 @@ class OrderHistoryScreen extends ConsumerWidget {
         error: (e, _) => _error(ref, e.toString()),
         data: (list) {
           if (list.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.receipt_long_outlined,
-                      size: 72, color: AppColors.textMuted),
-                  SizedBox(height: 12),
-                  Text('Chưa có đơn hàng nào',
-                      style:
-                          TextStyle(color: AppColors.textMuted, fontSize: 16)),
+            return RefreshIndicator(
+              onRefresh: () async => ref.invalidate(ordersProvider),
+              child: ListView(
+                children: const [
+                  SizedBox(height: 60),
+                  EmptyState(
+                    icon: Icons.receipt_long_outlined,
+                    title: 'Chưa có đơn hàng nào',
+                    subtitle:
+                        'Các đơn bạn đặt sẽ hiện ở đây để theo dõi & đặt lại.',
+                  ),
                 ],
               ),
             );

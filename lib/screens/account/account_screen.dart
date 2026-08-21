@@ -27,6 +27,7 @@ import '../../utils/formatters.dart';
 import '../auth/login_screen.dart';
 import '../address/address_list_screen.dart';
 import '../loyalty/loyalty_screen.dart';
+import 'checkin_screen.dart';
 import '../orders/order_history_screen.dart';
 import '../profile/profile_screen.dart';
 import '../legal/legal_screen.dart';
@@ -105,6 +106,8 @@ class AccountScreen extends ConsumerWidget {
               'Quản lý địa chỉ giao hàng', const AddressListScreen()),
           _tile(context, Icons.card_giftcard_rounded, 'Điểm thưởng',
               'Số dư & lịch sử điểm', const LoyaltyScreen()),
+          _tile(context, Icons.event_available_rounded, 'Điểm danh nhận quà',
+              'Chuỗi ngày & phần thưởng mỗi ngày', const CheckinScreen()),
           _tile(context, Icons.groups_rounded, 'Giới thiệu bạn bè',
               'Nhận voucher & điểm khi mời bạn', const ReferralScreen()),
           _tile(context, Icons.privacy_tip_rounded, 'Chính sách & Điều khoản',

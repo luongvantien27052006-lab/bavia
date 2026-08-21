@@ -6,6 +6,7 @@
 // ================================================================
 
 import 'package:flutter/material.dart';
+import '../../widgets/favorite_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -18,7 +19,10 @@ import '../../widgets/glass_card.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final Product product;
-  const ProductDetailScreen({super.key, required this.product});
+  final String? heroTag;
+  const ProductDetailScreen({super.key, required this.product,
+    this.heroTag,
+  });
 
   @override
   ConsumerState<ProductDetailScreen> createState() =>
@@ -99,7 +103,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     final headlinePrice = _isFruit ? _unitPrice : p.price;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor:
+          AppColors.dark ? const Color(0xFF16110E) : const Color(0xFFDFF3EE),
       body: GlassBackground(
         child: CustomScrollView(
         slivers: [
@@ -108,6 +113,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             pinned: true,
             backgroundColor: AppColors.surface,
             foregroundColor: AppColors.textDark,
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Center(
+                    child: FavoriteButton(productId: p.id, size: 22)),
+              ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Hero(
                 tag: 'product-${p.id}',
@@ -177,7 +189,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         ],
         ),
       ),
-      bottomNavigationBar: SafeArea(
+      bottomNavigationBar: ColoredBox(
+        color: AppColors.dark
+            ? const Color(0xFF16110E)
+            : const Color(0xFFDFF3EE),
+        child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: ElevatedButton(
@@ -192,7 +208,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             ),
           ),
         ),
-      ),
+      )),
     );
   }
 
@@ -222,7 +238,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     return InkWell(
       onTap: () => setState(() => _selectedSizeId = o.id),
       borderRadius: BorderRadius.circular(12),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
         margin: const EdgeInsets.only(top: 10),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(

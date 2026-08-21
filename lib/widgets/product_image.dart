@@ -20,6 +20,7 @@ class ProductImage extends StatelessWidget {
   final double? width;
   final double? height;
   final BoxFit fit;
+  final String? heroTag; // #1 Hero: bay ảnh sang trang chi tiết
 
   const ProductImage({
     super.key,
@@ -27,12 +28,14 @@ class ProductImage extends StatelessWidget {
     this.width,
     this.height,
     this.fit = BoxFit.cover,
+    this.heroTag,
   });
 
   @override
   Widget build(BuildContext context) {
+    Widget img;
     if (product.hasImage) {
-      return CachedNetworkImage(
+      img = CachedNetworkImage(
         imageUrl: product.imageUrl!,
         width: width,
         height: height,
@@ -40,8 +43,13 @@ class ProductImage extends StatelessWidget {
         placeholder: (_, __) => _placeholder(),
         errorWidget: (_, __, ___) => _placeholder(),
       );
+    } else {
+      img = _placeholder();
     }
-    return _placeholder();
+    if (heroTag != null) {
+      return Hero(tag: heroTag!, child: img);
+    }
+    return img;
   }
 
   /// Đoán icon + màu theo tên danh mục (không cần enum cố định).

@@ -21,6 +21,7 @@
 // khi backend từ chối refresh token.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/network/api_client.dart';
@@ -77,7 +78,16 @@ class _BaviaAppState extends ConsumerState<BaviaApp> {
   Widget build(BuildContext context) {
     final status = ref.watch(authProvider).status;
     final mode = ref.watch(themeModeProvider);
-    AppColors.dark = mode == ThemeMode.dark;
+    final _dark = mode == ThemeMode.dark;
+    AppColors.dark = _dark;
+    // Thanh điều hướng + trạng thái hệ thống đổi theo chế độ (khớp nền gradient).
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      systemNavigationBarColor:
+          _dark ? const Color(0xFF16110E) : const Color(0xFFDFF3EE),
+      systemNavigationBarIconBrightness:
+          _dark ? Brightness.light : Brightness.dark,
+    ));
 
     return MaterialApp(
       navigatorKey: appNavigatorKey,

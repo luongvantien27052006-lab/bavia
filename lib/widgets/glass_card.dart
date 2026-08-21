@@ -11,6 +11,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../core/theme/app_theme.dart';
+import 'anim.dart';
 
 class GlassCard extends StatelessWidget {
   final Widget child;
@@ -81,7 +82,7 @@ class GlassCard extends StatelessWidget {
     );
 
     if (onTap != null) {
-      card = GestureDetector(onTap: onTap, child: card);
+      card = PressEffect(onTap: onTap, child: card);
     }
     return card;
   }

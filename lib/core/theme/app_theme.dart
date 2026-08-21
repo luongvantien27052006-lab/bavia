@@ -84,6 +84,13 @@ class AppTheme {
   }) {
     return ThemeData(
       useMaterial3: true,
+      // #8 Chuyển trang mượt (zoom/fade) cho cả Android & iOS.
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: ZoomPageTransitionsBuilder(),
+          TargetPlatform.iOS: ZoomPageTransitionsBuilder(),
+        },
+      ),
       colorScheme: scheme,
       scaffoldBackgroundColor: scaffold,
       fontFamily: 'Roboto',
