@@ -22,6 +22,7 @@ enum OrderStatus {
   confirmed('CONFIRMED', 'Đã xác nhận'),
   inProgress('IN_PROGRESS', 'Đang pha chế'),
   ready('READY', 'Sẵn sàng'),
+  delivering('DELIVERING', 'Đang giao'),
   delivered('DELIVERED', 'Đã giao'),
   cancelled('CANCELLED', 'Đã huỷ'),
   refunded('REFUNDED', 'Đã hoàn tiền'),

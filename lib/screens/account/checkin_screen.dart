@@ -31,7 +31,9 @@ class CheckinScreen extends ConsumerWidget {
             style: TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: GlassBackground(
-        child: ListView(
+        child: st.loading
+            ? const Center(child: CircularProgressIndicator())
+            : ListView(
           padding: const EdgeInsets.all(16),
           children: [
             GlassCard(
@@ -50,10 +52,6 @@ class CheckinScreen extends ConsumerWidget {
                   ),
                   Text('ngày liên tiếp',
                       style: TextStyle(color: AppColors.textMuted)),
-                  const SizedBox(height: 4),
-                  Text('Tổng ${st.totalDays} ngày đã điểm danh',
-                      style:
-                          TextStyle(color: AppColors.textMuted, fontSize: 12)),
                 ],
               ),
             ),
@@ -78,11 +76,13 @@ class CheckinScreen extends ConsumerWidget {
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: can
-                  ? () {
+                  ? () async {
                       HapticFeedback.mediumImpact();
-                      final reward =
-                          ref.read(checkinProvider.notifier).checkIn();
-                      if (reward != null) _celebrate(context, reward);
+                      final pts =
+                          await ref.read(checkinProvider.notifier).checkIn();
+                      if (pts != null && context.mounted) {
+                        _celebrate(context, pts);
+                      }
                     }
                   : null,
               icon: Icon(can
@@ -147,7 +147,7 @@ class CheckinScreen extends ConsumerWidget {
             size: 22,
           ),
           const SizedBox(height: 4),
-          Text(kCheckinRewards[i],
+          Text('+${kCheckinRewards[i]}đ',
               textAlign: TextAlign.center,
               style: TextStyle(
                   fontSize: 10,
@@ -158,7 +158,7 @@ class CheckinScreen extends ConsumerWidget {
     );
   }
 
-  void _celebrate(BuildContext context, String reward) {
+  void _celebrate(BuildContext context, int points) {
     showDialog(
       context: context,
       builder: (_) => Dialog(
@@ -177,7 +177,7 @@ class CheckinScreen extends ConsumerWidget {
                       fontWeight: FontWeight.w800,
                       color: AppColors.textDark)),
               const SizedBox(height: 6),
-              Text('Phần thưởng hôm nay: $reward',
+              Text('Bạn nhận được +$points điểm 🎉',
                   style: TextStyle(color: AppColors.textMuted)),
               const SizedBox(height: 18),
               SizedBox(

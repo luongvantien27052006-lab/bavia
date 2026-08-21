@@ -3,11 +3,13 @@
 // Chi tiết đơn + huỷ đơn (chỉ khi đang PENDING). Huỷ gọi POST /orders/:id/cancel.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../widgets/star_rating.dart';
 import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/api_exception.dart';
+import '../../core/network/api_client.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/order_model.dart';
 import '../../providers/order_provider.dart';
@@ -62,6 +64,39 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.message), backgroundColor: AppColors.delivery),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _cancelling = false);
+    }
+  }
+
+  Future<void> _confirmReceived(OrderModel order) async {
+    setState(() => _cancelling = true);
+    try {
+      HapticFeedback.mediumImpact();
+      await ApiClient.I.post('/orders/${order.id}/received');
+      ref.invalidate(orderDetailProvider(order.id));
+      ref.invalidate(ordersProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Đã xác nhận nhận hàng. Cảm ơn bạn! 🎉'),
+              backgroundColor: AppColors.success),
+        );
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(e.message), backgroundColor: AppColors.delivery),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Lỗi: $e'), backgroundColor: AppColors.delivery),
         );
       }
     } finally {
@@ -133,6 +168,27 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         ),
         const SizedBox(height: 20),
         _ratingSection(order),
+        if (order.status == OrderStatus.delivering) ...[
+          ElevatedButton.icon(
+            onPressed: _cancelling ? null : () => _confirmReceived(order),
+            icon: _cancelling
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.check_circle_outline_rounded),
+            label: const Text('Đã nhận hàng'),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+              backgroundColor: AppColors.success,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         if (order.status.isCancellable)
           OutlinedButton.icon(
             onPressed: _cancelling ? null : () => _confirmCancel(order),
@@ -251,8 +307,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         return 2;
       case OrderStatus.ready:
         return 3;
-      case OrderStatus.delivered:
+      case OrderStatus.delivering:
         return 4;
+      case OrderStatus.delivered:
+        return 5;
       default:
         return -1;
     }
@@ -286,6 +344,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       (label: 'Đã xác nhận', icon: Icons.receipt_long_rounded),
       (label: 'Đang pha chế', icon: Icons.local_cafe_rounded),
       (label: 'Sẵn sàng', icon: Icons.shopping_bag_rounded),
+      (label: 'Đang giao', icon: Icons.delivery_dining_rounded),
       (label: 'Hoàn thành', icon: Icons.check_circle_rounded),
     ];
 
@@ -303,7 +362,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             borderRadius: BorderRadius.circular(8),
             child: TweenAnimationBuilder<double>(
               tween: Tween(
-                  begin: 0, end: (stage / 4).clamp(0.0, 1.0).toDouble()),
+                  begin: 0, end: (stage / 5).clamp(0.0, 1.0).toDouble()),
               duration: const Duration(milliseconds: 500),
               curve: Curves.easeOut,
               builder: (context, v, _) => LinearProgressIndicator(
