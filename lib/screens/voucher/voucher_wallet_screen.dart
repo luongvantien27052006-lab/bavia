@@ -131,7 +131,11 @@ class _VoucherWalletScreenState extends ConsumerState<VoucherWalletScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: active ? AppColors.coffee.withOpacity(0.12) : Colors.white,
+          color: active
+              ? AppColors.coffee.withOpacity(0.12)
+              : (AppColors.dark
+                  ? Colors.white.withOpacity(0.06)
+                  : Colors.white),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
               color: active

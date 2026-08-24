@@ -56,7 +56,8 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     final total = ref.watch(checkoutTotalProvider);
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor:
+          AppColors.dark ? const Color(0xFF1E1510) : const Color(0xFFFFEEDD),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

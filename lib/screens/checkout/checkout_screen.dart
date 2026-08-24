@@ -264,7 +264,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.dark
+              ? Colors.white.withOpacity(0.06)
+              : Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: selected ? color : const Color(0xFFE5DDD7),
@@ -306,7 +308,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.dark
+              ? Colors.white.withOpacity(0.06)
+              : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.delivery.withOpacity(0.4)),
           ),
@@ -332,7 +336,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.dark
+              ? Colors.white.withOpacity(0.06)
+              : Colors.white,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -375,7 +381,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   void _openAddressPicker() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -468,7 +474,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.dark
+              ? Colors.white.withOpacity(0.06)
+              : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected ? AppColors.coffee : const Color(0xFFE5DDD7),
@@ -713,7 +721,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Widget _pointsCard({required Widget child}) => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.dark
+              ? Colors.white.withOpacity(0.06)
+              : Colors.white,
           borderRadius: BorderRadius.circular(16),
         ),
         child: child,
@@ -726,7 +736,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.dark
+              ? Colors.white.withOpacity(0.06)
+              : Colors.white,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
