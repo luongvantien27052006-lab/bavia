@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../widgets/star_rating.dart';
+import '../../widgets/product_review_tile.dart';
 import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -244,21 +245,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
           const SizedBox(height: 8),
           for (final it in order.items)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(it.productName,
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textDark)),
-                  ),
-                  const SizedBox(width: 8),
-                  StarRating(ratingKey: it.productId, size: 24),
-                ],
-              ),
+            ProductReviewTile(
+              productId: it.productId,
+              productName: it.productName,
+              orderId: order.id,
             ),
         ],
       ),

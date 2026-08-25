@@ -55,6 +55,35 @@ class RatingsNotifier extends Notifier<Map<String, int>> {
   }
 
   /// Gửi đánh giá lên backend (best-effort, không chặn UI).
+  /// Gửi đánh giá ĐẦY ĐỦ (kèm nhận xét). Cần đã chọn sao trước.
+  /// Trả về true nếu gửi thành công.
+  Future<bool> submitReview(
+    String productId, {
+    String? productName,
+    String? orderId,
+    String? comment,
+  }) async {
+    final stars = ratingOf(productId);
+    if (stars <= 0) return false;
+    // lưu sao vào máy luôn (nếu chưa)
+    state = {...state, productId: stars};
+    _save();
+    try {
+      await ApiClient.I.post('/reviews', data: {
+        'productId': productId,
+        'stars': stars,
+        if (productName != null && productName.isNotEmpty)
+          'productName': productName,
+        if (orderId != null && orderId.isNotEmpty) 'orderId': orderId,
+        if (comment != null && comment.trim().isNotEmpty)
+          'comment': comment.trim(),
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> _syncToServer(
     String productId,
     int stars, {
