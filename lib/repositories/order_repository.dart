@@ -31,9 +31,13 @@ class OrderRepository {
     String? validationToken,
     int? pointsToRedeem,
     Map<String, dynamic>? deliveryAddress,
+    String? idempotencyKey,
   }) async {
     final data = await _api.post(
       '/orders',
+      headers: idempotencyKey != null && idempotencyKey.isNotEmpty
+          ? {'Idempotency-Key': idempotencyKey}
+          : null,
       data: {
         'items': items
             .map((i) => {

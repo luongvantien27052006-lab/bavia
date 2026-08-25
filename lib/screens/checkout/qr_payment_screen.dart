@@ -172,7 +172,10 @@ class _QrPaymentScreenState extends ConsumerState<QrPaymentScreen> {
               decoration: BoxDecoration(
                 color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFE5DDD7)),
+                border: Border.all(
+                    color: AppColors.dark
+                        ? Colors.white.withOpacity(0.12)
+                        : const Color(0xFFE5DDD7)),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),

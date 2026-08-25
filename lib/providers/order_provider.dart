@@ -9,6 +9,8 @@
 // Đặt đơn + tải lịch sử/chi tiết đơn. Place order là controller có state
 // loading/success/error để màn Checkout phản hồi.
 
+import 'dart:math';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/order_model.dart';
@@ -21,6 +23,10 @@ class PlaceOrderController
   @override
   AsyncValue<PlaceOrderResult?> build() => const AsyncData(null);
 
+  // Key chống trùng: giữ nguyên qua các lần thử lại của CÙNG lần đặt;
+  // chỉ đổi khi đặt thành công (đơn mới -> key mới).
+  String? _idempotencyKey;
+
   Future<PlaceOrderResult?> placeOrder() async {
     final cart = ref.read(cartProvider);
     if (cart.isEmpty) {
@@ -30,6 +36,8 @@ class PlaceOrderController
     final checkout = ref.read(checkoutProvider);
 
     state = const AsyncLoading();
+    _idempotencyKey ??=
+        'ord-${DateTime.now().microsecondsSinceEpoch}-${Random().nextInt(0x7fffffff)}';
     try {
       final result = await ref.read(orderRepositoryProvider).placeOrder(
             items: cart
@@ -48,8 +56,10 @@ class PlaceOrderController
                 checkout.isDelivery && checkout.deliveryAddress != null
                     ? checkout.deliveryAddress!.toDeliveryJson()
                     : null,
+            idempotencyKey: _idempotencyKey,
           );
-      // Đặt thành công → dọn giỏ + reset voucher.
+      // Đặt thành công → đổi key (đơn sau dùng key mới) + dọn giỏ + reset voucher.
+      _idempotencyKey = null;
       ref.read(cartProvider.notifier).clear();
       ref.read(checkoutProvider.notifier).reset();
       state = AsyncData(result);

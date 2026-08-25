@@ -3,6 +3,7 @@
 // Lịch sử đơn hàng của khách. Lấy từ ordersProvider (GET /orders).
 
 import 'package:flutter/material.dart';
+import '../../widgets/anim.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,7 +30,7 @@ class OrderHistoryScreen extends ConsumerWidget {
             style: TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: orders.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const ShimmerList(height: 104),
         error: (e, _) => _error(ref, e.toString()),
         data: (list) {
           if (list.isEmpty) {

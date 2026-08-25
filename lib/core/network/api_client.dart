@@ -240,11 +240,12 @@ class ApiClient {
     String path, {
     Object? data,
     bool skipAuth = false,
+    Map<String, dynamic>? headers,
   }) =>
       _request(() => _dio.post(
             path,
             data: data,
-            options: Options(extra: {'skipAuth': skipAuth}),
+            options: Options(extra: {'skipAuth': skipAuth}, headers: headers),
           ));
 
   Future<dynamic> patch(String path, {Object? data}) =>

@@ -9,6 +9,7 @@
 // Màn danh sách tất cả tin đã đăng (mở từ "Xem thêm" ở Trang chủ).
 
 import 'package:flutter/material.dart';
+import '../../widgets/anim.dart';
 import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,7 +34,7 @@ class NewsListScreen extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(newsListProvider),
         child: async.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const ShimmerList(height: 200),
           error: (e, _) => ListView(
             children: [
               const SizedBox(height: 120),
@@ -47,10 +48,26 @@ class NewsListScreen extends ConsumerWidget {
             if (list.isEmpty) {
               return ListView(
                 children: [
-                  SizedBox(height: 120),
+                  const SizedBox(height: 90),
                   Center(
-                    child: Text('Chưa có tin nào.',
-                        style: TextStyle(color: AppColors.textMuted)),
+                    child: Container(
+                      width: 96,
+                      height: 96,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.coffee.withOpacity(0.12),
+                      ),
+                      child: Icon(Icons.newspaper_rounded,
+                          size: 44, color: AppColors.coffee),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Text('Chưa có tin nào',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textDark)),
                   ),
                 ],
               );

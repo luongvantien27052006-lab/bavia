@@ -7,6 +7,7 @@
 // lib/screens/voucher/voucher_wallet_screen.dart
 // Ví voucher của khách (thay tab Scan). Chia Khả dụng / Hết hạn.
 import 'package:flutter/material.dart';
+import '../../widgets/anim.dart';
 import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -46,7 +47,7 @@ class _VoucherWalletScreenState extends ConsumerState<VoucherWalletScreen> {
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(availableVouchersProvider),
         child: async.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const ShimmerList(height: 96),
           error: (e, _) => ListView(children: [
             SizedBox(height: 120),
             Center(
@@ -72,10 +73,29 @@ class _VoucherWalletScreenState extends ConsumerState<VoucherWalletScreen> {
                 const SizedBox(height: 16),
                 if (list.isEmpty)
                   Padding(
-                    padding: EdgeInsets.only(top: 60),
-                    child: Center(
-                        child: Text('Chưa có voucher.',
-                            style: TextStyle(color: AppColors.textMuted))),
+                    padding: const EdgeInsets.only(top: 48),
+                    child: Column(children: [
+                      Container(
+                        width: 96,
+                        height: 96,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.coffee.withOpacity(0.12),
+                        ),
+                        child: Icon(Icons.card_giftcard_rounded,
+                            size: 44, color: AppColors.coffee),
+                      ),
+                      const SizedBox(height: 16),
+                      Text('Chưa có voucher',
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textDark)),
+                      const SizedBox(height: 6),
+                      Text('Voucher & ưu đãi sẽ xuất hiện ở đây',
+                          style:
+                              TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                    ]),
                   )
                 else
                   ...list.map((v) => Padding(

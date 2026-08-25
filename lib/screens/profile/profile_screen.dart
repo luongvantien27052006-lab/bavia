@@ -242,7 +242,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1ECE8),
+        color: AppColors.dark
+            ? Colors.white.withOpacity(0.06)
+            : const Color(0xFFF1ECE8),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(

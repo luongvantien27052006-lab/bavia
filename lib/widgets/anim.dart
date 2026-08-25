@@ -314,3 +314,25 @@ class _SuccessCheckState extends State<SuccessCheck>
     );
   }
 }
+/// Danh sách khung xương (shimmer) khi tải list.
+class ShimmerList extends StatelessWidget {
+  final int count;
+  final double height;
+  final EdgeInsetsGeometry padding;
+  const ShimmerList({
+    super.key,
+    this.count = 5,
+    this.height = 92,
+    this.padding = const EdgeInsets.all(16),
+  });
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: padding,
+      itemCount: count,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (_, __) => ShimmerBox(
+          width: double.infinity, height: height, radius: 16),
+    );
+  }
+}
