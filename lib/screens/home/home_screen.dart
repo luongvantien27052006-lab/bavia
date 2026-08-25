@@ -7,6 +7,10 @@
 // ============================================================
 
 import 'package:flutter/material.dart';
+import '../../providers/order_provider.dart';
+import '../../models/order_model.dart';
+import '../orders/order_detail_screen.dart';
+import '../../widgets/delivery_timeline_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -37,17 +41,50 @@ class HomeScreen extends ConsumerWidget {
     final user = ref.watch(authProvider).user;
     final hot = ref.watch(hotProductsProvider);
 
+    // Đơn đang xử lý (mới nhất) -> hiện timeline giao hàng ở đầu Home.
+    OrderModel? activeOrder;
+    final ordersAsync = ref.watch(ordersProvider);
+    if (ordersAsync.hasValue) {
+      for (final o in ordersAsync.value!) {
+        if (o.status == OrderStatus.confirmed ||
+            o.status == OrderStatus.inProgress ||
+            o.status == OrderStatus.ready ||
+            o.status == OrderStatus.delivering) {
+          activeOrder = o;
+          break;
+        }
+      }
+    }
+
     return Scaffold(
       // Nền gradient kính mờ (tự đổi theo Sáng/Tối) đặt sau toàn bộ nội dung.
       backgroundColor: Colors.transparent,
       body: GlassBackground(
         child: RefreshIndicator(
-          onRefresh: () async => ref.invalidate(productsProvider),
+          onRefresh: () async {
+            ref.invalidate(productsProvider);
+            ref.invalidate(ordersProvider);
+          },
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
               _header(context, ref, user),
               const SizedBox(height: 16),
+              if (activeOrder != null) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: DeliveryTimelineCard(
+                    order: activeOrder,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            OrderDetailScreen(orderId: activeOrder!.id),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               _closedNotice(ref),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
