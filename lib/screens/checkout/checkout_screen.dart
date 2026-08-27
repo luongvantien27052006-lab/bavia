@@ -60,7 +60,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final subtotal = ref.watch(cartSubtotalProvider);
     final discount = ref.watch(checkoutDiscountProvider);
     final pointsDiscount = ref.watch(checkoutPointsDiscountProvider);
-    final total = ref.watch(checkoutTotalProvider);
     final placing = ref.watch(placeOrderControllerProvider).isLoading;
 
     // Phí giao hàng theo khoảng cách (hỏi backend). Chỉ áp dụng khi giao hàng.
@@ -72,7 +71,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     )));
     final ship = shipAsync.asData?.value;
     final shipFee = checkout.isDelivery ? (ship?.fee ?? 0) : 0;
-    final grandTotal = total + shipFee;
+    // Voucher giảm phí ship: cắt tối đa bằng phí ship thực; loại khác giảm tiền món.
+    final isShipVoucher = checkout.voucher?.appliesToShipping ?? false;
+    final itemDiscount = isShipVoucher ? 0 : discount;
+    final shipDiscount =
+        isShipVoucher ? (discount < shipFee ? discount : shipFee) : 0;
+    final grandTotalRaw =
+        subtotal - itemDiscount - pointsDiscount + (shipFee - shipDiscount);
+    final grandTotal = grandTotalRaw < 0 ? 0 : grandTotalRaw;
 
     // Chọn sẵn địa chỉ mặc định lần đầu (khi giao hàng).
     final addresses = ref.watch(addressesProvider);
@@ -190,8 +196,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           const SizedBox(height: 10),
           _pointsSection(subtotal),
           const SizedBox(height: 20),
-          _summaryCard(subtotal, discount, pointsDiscount, grandTotal,
-              shipFee, ship, checkout.isDelivery),
+          _summaryCard(subtotal, itemDiscount, pointsDiscount, grandTotal,
+              shipFee, ship, checkout.isDelivery, shipDiscount),
         ],
       ),
       bottomNavigationBar: SafeArea(
@@ -732,7 +738,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   // ─── Tổng kết ────────────────────────────────────────────────────────
   Widget _summaryCard(
       int subtotal, int discount, int pointsDiscount, int total,
-      int shipFee, dynamic ship, bool isDelivery) {
+      int shipFee, dynamic ship, bool isDelivery, int shipDiscount) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -747,6 +753,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           if (discount > 0) _row('Giảm voucher', -discount),
           if (pointsDiscount > 0) _row('Giảm bằng điểm', -pointsDiscount),
           if (isDelivery) _shipRow(shipFee, ship),
+          if (shipDiscount > 0) _row('Giảm phí ship', -shipDiscount),
           const Divider(height: 18),
           _row('Tổng cộng', total, bold: true),
         ],

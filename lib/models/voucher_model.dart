@@ -16,6 +16,7 @@ class VoucherValidation {
   final int finalAmount; // tổng sau giảm (VND)
   final String? validationToken;
   final String? message; // lý do nếu không hợp lệ
+  final bool appliesToShipping; // true = voucher giảm phí ship
 
   const VoucherValidation({
     required this.valid,
@@ -25,6 +26,7 @@ class VoucherValidation {
     this.voucherName,
     this.validationToken,
     this.message,
+    this.appliesToShipping = false,
   });
 
   factory VoucherValidation.fromJson(Map<String, dynamic> json) {
@@ -37,6 +39,8 @@ class VoucherValidation {
       validationToken:
           JsonX.strOrNull(json, ['validationToken', 'validation_token']),
       message: JsonX.strOrNull(json, ['message']),
+      appliesToShipping:
+          JsonX.boolVal(json, ['appliesToShipping', 'applies_to_shipping']),
     );
   }
 }
