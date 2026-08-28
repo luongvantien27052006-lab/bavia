@@ -28,6 +28,8 @@ import '../../models/order_model.dart';
 import '../../providers/address_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/checkout_provider.dart';
+import '../../providers/voucher_wallet_provider.dart';
+import '../../models/voucher_wallet.dart';
 import '../../providers/shipping_provider.dart';
 import '../../providers/loyalty_provider.dart';
 import '../../providers/order_provider.dart';
@@ -71,11 +73,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     )));
     final ship = shipAsync.asData?.value;
     final shipFee = checkout.isDelivery ? (ship?.fee ?? 0) : 0;
-    // Voucher giảm phí ship: cắt tối đa bằng phí ship thực; loại khác giảm tiền món.
-    final isShipVoucher = checkout.voucher?.appliesToShipping ?? false;
-    final itemDiscount = isShipVoucher ? 0 : discount;
-    final shipDiscount =
-        isShipVoucher ? (discount < shipFee ? discount : shipFee) : 0;
+    // Chồng voucher: 'discount' (mã giảm giá món) + 'shippingVoucher' (freeship).
+    final itemDiscount = discount;
+    final rawShipDiscount =
+        checkout.hasShippingVoucher ? checkout.shippingVoucher!.discount : 0;
+    final shipDiscount = rawShipDiscount < shipFee ? rawShipDiscount : shipFee;
     final grandTotalRaw =
         subtotal - itemDiscount - pointsDiscount + (shipFee - shipDiscount);
     final grandTotal = grandTotalRaw < 0 ? 0 : grandTotalRaw;
@@ -522,48 +524,63 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   // ─── Dùng điểm ───────────────────────────────────────────────────────
   // ─── Mã giảm giá ─────────────────────────────────────────────────────
-  Widget _voucherSection(CheckoutState checkout) {
-    if (checkout.hasVoucher) {
-      return Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.success.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.success.withOpacity(0.4)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.local_offer_rounded,
-                color: AppColors.success, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Đã áp dụng ${checkout.appliedCode}'
-                ' (−${Formatters.money(checkout.voucher!.discount)})',
+  Widget _voucherChip(String label, VoidCallback onRemove) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: AppColors.success.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.success.withOpacity(0.4)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.local_offer_rounded,
+              color: AppColors.success, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(label,
                 style: const TextStyle(
-                    color: AppColors.success, fontWeight: FontWeight.w600),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                _voucherController.clear();
-                ref.read(checkoutProvider.notifier).removeVoucher();
-              },
-              child: const Text('Bỏ'),
-            ),
-          ],
-        ),
-      );
-    }
+                    color: AppColors.success, fontWeight: FontWeight.w600)),
+          ),
+          TextButton(onPressed: onRemove, child: const Text('Bỏ')),
+        ],
+      ),
+    );
+  }
 
-    return Row(
+  Widget _voucherSection(CheckoutState checkout) {
+    final bothApplied = checkout.hasVoucher && checkout.hasShippingVoucher;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (checkout.hasVoucher)
+          _voucherChip(
+            'Đã áp dụng ${checkout.appliedCode}'
+            ' (−${Formatters.money(checkout.voucher!.discount)})',
+            () {
+              _voucherController.clear();
+              ref.read(checkoutProvider.notifier).removeVoucher();
+            },
+          ),
+        if (checkout.hasShippingVoucher)
+          _voucherChip(
+            'Freeship ${checkout.shippingCode}'
+            ' (−${Formatters.money(checkout.shippingVoucher!.discount)} phí ship)',
+            () {
+              _voucherController.clear();
+              ref.read(checkoutProvider.notifier).removeShippingVoucher();
+            },
+          ),
+        if (!bothApplied)
+          Row(
+            children: [
         Expanded(
           child: TextField(
             controller: _voucherController,
             textCapitalization: TextCapitalization.characters,
             decoration: const InputDecoration(
-              hintText: 'Nhập mã giảm giá',
+              hintText: 'Nhập mã giảm giá / freeship',
               prefixIcon: Icon(Icons.local_offer_outlined),
             ),
           ),
@@ -591,7 +608,106 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           ),
         ),
       ],
+          ),
+        _walletPicker(checkout),
+      ],
     );
+  }
+
+  // Gợi ý voucher trong ví — bấm 1 chạm để áp.
+  Widget _walletPicker(CheckoutState checkout) {
+    final async = ref.watch(availableVouchersProvider);
+    return async.maybeWhen(
+      data: (list) {
+        final usable = list
+            .where((v) =>
+                v.remainingForMe > 0 &&
+                v.code != checkout.appliedCode &&
+                v.code != checkout.shippingCode)
+            .toList();
+        if (usable.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 14),
+            Text('Voucher của bạn',
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textDark)),
+            const SizedBox(height: 8),
+            ...usable.map((v) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: InkWell(
+                    onTap: checkout.validatingVoucher
+                        ? null
+                        : () => ref
+                            .read(checkoutProvider.notifier)
+                            .applyVoucher(v.code),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.dark
+                            ? Colors.white.withOpacity(0.05)
+                            : Colors.white.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: AppColors.coffee.withOpacity(0.25)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                              v.type == 'SHIPPING'
+                                  ? Icons.local_shipping_rounded
+                                  : Icons.confirmation_number_rounded,
+                              color: AppColors.coffee,
+                              size: 22),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(v.name,
+                                    style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textDark)),
+                                const SizedBox(height: 2),
+                                Text(_walletVoucherDesc(v),
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.textMuted)),
+                              ],
+                            ),
+                          ),
+                          Text('Dùng',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.coffee)),
+                        ],
+                      ),
+                    ),
+                  ),
+                )),
+          ],
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
+
+  String _walletVoucherDesc(VoucherWallet v) {
+    final d = v.type == 'PERCENTAGE'
+        ? 'Giảm ${v.discountValue}%'
+        : v.type == 'SHIPPING'
+            ? 'Giảm ship ${Formatters.money(v.discountValue)}'
+            : 'Giảm ${Formatters.money(v.discountValue)}';
+    if (v.minOrderValue > 0) {
+      return '$d · Đơn từ ${Formatters.money(v.minOrderValue)}';
+    }
+    return d;
   }
 
   // ─── Dùng điểm ───────────────────────────────────────────────────────

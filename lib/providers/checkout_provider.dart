@@ -28,8 +28,10 @@ class CheckoutState {
   final FulfillmentType fulfillment;
   final AddressModel? deliveryAddress; // chỉ dùng khi fulfillment = delivery
   final int pointsToRedeem; // 0 = không dùng điểm
-  final VoucherValidation? voucher; // null = chưa áp mã
-  final String? appliedCode; // mã người dùng đã nhập (vd WELCOME10)
+  final VoucherValidation? voucher; // mã giảm giá món (null = chưa áp)
+  final String? appliedCode; // mã giảm giá đã nhập
+  final VoucherValidation? shippingVoucher; // mã freeship (null = chưa áp)
+  final String? shippingCode; // mã freeship đã nhập
   final bool validatingVoucher;
   final String? voucherError;
 
@@ -40,11 +42,15 @@ class CheckoutState {
     this.pointsToRedeem = 0,
     this.voucher,
     this.appliedCode,
+    this.shippingVoucher,
+    this.shippingCode,
     this.validatingVoucher = false,
     this.voucherError,
   });
 
   bool get hasVoucher => voucher != null && voucher!.valid;
+  bool get hasShippingVoucher =>
+      shippingVoucher != null && shippingVoucher!.valid;
   bool get isDelivery => fulfillment == FulfillmentType.delivery;
 
   CheckoutState copyWith({
@@ -54,6 +60,8 @@ class CheckoutState {
     int? pointsToRedeem,
     Object? voucher = _sentinel,
     Object? appliedCode = _sentinel,
+    Object? shippingVoucher = _sentinel,
+    Object? shippingCode = _sentinel,
     bool? validatingVoucher,
     Object? voucherError = _sentinel,
   }) {
@@ -70,6 +78,12 @@ class CheckoutState {
       appliedCode: identical(appliedCode, _sentinel)
           ? this.appliedCode
           : appliedCode as String?,
+      shippingVoucher: identical(shippingVoucher, _sentinel)
+          ? this.shippingVoucher
+          : shippingVoucher as VoucherValidation?,
+      shippingCode: identical(shippingCode, _sentinel)
+          ? this.shippingCode
+          : shippingCode as String?,
       validatingVoucher: validatingVoucher ?? this.validatingVoucher,
       voucherError: identical(voucherError, _sentinel)
           ? this.voucherError
@@ -87,10 +101,14 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
     // cũ không còn hợp lệ với giỏ mới).
     ref.listen(cartProvider, (prev, next) {
       if (prev == null) return;
-      if (state.hasVoucher || state.pointsToRedeem > 0) {
+      if (state.hasVoucher ||
+          state.hasShippingVoucher ||
+          state.pointsToRedeem > 0) {
         state = state.copyWith(
             voucher: null,
             appliedCode: null,
+            shippingVoucher: null,
+            shippingCode: null,
             voucherError: null,
             pointsToRedeem: 0);
       }
@@ -136,11 +154,19 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
                 .toList(),
           );
       if (result.valid) {
-        state = state.copyWith(
-            voucher: result,
-            appliedCode: code.trim().toUpperCase(),
-            validatingVoucher: false,
-            voucherError: null);
+        if (result.appliesToShipping) {
+          state = state.copyWith(
+              shippingVoucher: result,
+              shippingCode: code.trim().toUpperCase(),
+              validatingVoucher: false,
+              voucherError: null);
+        } else {
+          state = state.copyWith(
+              voucher: result,
+              appliedCode: code.trim().toUpperCase(),
+              validatingVoucher: false,
+              voucherError: null);
+        }
       } else {
         state = state.copyWith(
           voucher: null,
@@ -160,6 +186,11 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
 
   void removeVoucher() {
     state = state.copyWith(voucher: null, appliedCode: null, voucherError: null);
+  }
+
+  void removeShippingVoucher() {
+    state = state.copyWith(
+        shippingVoucher: null, shippingCode: null, voucherError: null);
   }
 
   void reset() => state = const CheckoutState();

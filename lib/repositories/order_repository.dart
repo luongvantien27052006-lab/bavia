@@ -29,6 +29,8 @@ class OrderRepository {
     required PaymentMethodType paymentMethod,
     String? voucherCode,
     String? validationToken,
+    String? shippingVoucherCode,
+    String? shippingValidationToken,
     int? pointsToRedeem,
     Map<String, dynamic>? deliveryAddress,
     String? idempotencyKey,
@@ -51,6 +53,10 @@ class OrderRepository {
         if (voucherCode != null && voucherCode.isNotEmpty)
           'voucherCode': voucherCode.trim().toUpperCase(),
         if (validationToken != null) 'validationToken': validationToken,
+        if (shippingVoucherCode != null && shippingVoucherCode.isNotEmpty)
+          'shippingVoucherCode': shippingVoucherCode.trim().toUpperCase(),
+        if (shippingValidationToken != null)
+          'shippingValidationToken': shippingValidationToken,
         if (pointsToRedeem != null && pointsToRedeem > 0)
           'pointsToRedeem': pointsToRedeem,
         if (deliveryAddress != null) 'deliveryAddress': deliveryAddress,

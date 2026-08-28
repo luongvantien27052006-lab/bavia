@@ -50,6 +50,10 @@ class PlaceOrderController
             paymentMethod: checkout.paymentMethod,
             voucherCode: checkout.hasVoucher ? checkout.appliedCode : null,
             validationToken: checkout.voucher?.validationToken,
+            shippingVoucherCode:
+                checkout.hasShippingVoucher ? checkout.shippingCode : null,
+            shippingValidationToken:
+                checkout.shippingVoucher?.validationToken,
             pointsToRedeem:
                 checkout.pointsToRedeem > 0 ? checkout.pointsToRedeem : null,
             deliveryAddress:
