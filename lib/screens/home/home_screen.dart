@@ -27,6 +27,9 @@ import '../../models/user_model.dart';
 import '../../models/news.dart';
 import '../../providers/news_provider.dart';
 import '../../providers/store_provider.dart';
+import '../../providers/loyalty_provider.dart';
+import '../../models/membership_rank.dart';
+import '../membership/membership_rank_screen.dart';
 import '../../widgets/news_image.dart';
 import '../news/news_list_screen.dart';
 import '../news/news_detail_screen.dart';
@@ -64,10 +67,12 @@ class HomeScreen extends ConsumerWidget {
           onRefresh: () async {
             ref.invalidate(productsProvider);
             ref.invalidate(ordersProvider);
+            ref.invalidate(membershipRankProvider);
           },
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
+              _topBar(context, ref, user),
               _header(context, ref, user),
               const SizedBox(height: 16),
               if (activeOrder != null) ...[
@@ -86,33 +91,7 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
               ],
               _closedNotice(ref),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _modeCard(
-                        title: 'GIAO HÀNG',
-                        subtitle: 'Freeship 0đ',
-                        icon: Icons.delivery_dining_rounded,
-                        color: AppColors.delivery,
-                        onTap: onBrowseMenu,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _modeCard(
-                        title: 'TỰ LẤY',
-                        subtitle: 'Không xếp hàng',
-                        icon: Icons.storefront_rounded,
-                        color: AppColors.pickup,
-                        onTap: onBrowseMenu,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
@@ -191,8 +170,76 @@ class HomeScreen extends ConsumerWidget {
         );
   }
 
-  Widget _header(BuildContext context, WidgetRef ref, UserModel? user) {
+  String _greeting() {
+    final h = DateTime.now().hour;
+    if (h < 11) return 'Chào buổi sáng ☀️';
+    if (h < 14) return 'Chào buổi trưa';
+    if (h < 18) return 'Chào buổi chiều';
+    return 'Chào buổi tối 🌙';
+  }
+
+  Widget _topBar(BuildContext context, WidgetRef ref, UserModel? user) {
     final topPad = MediaQuery.of(context).padding.top;
+    final loggedIn = user != null;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(18, topPad + 14, 18, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(_greeting(),
+                    style:
+                        TextStyle(fontSize: 12.5, color: AppColors.textMuted)),
+                const SizedBox(height: 2),
+                Text(loggedIn ? user!.displayName : 'Mọng Fruits',
+                    style: TextStyle(
+                        fontSize: 21,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textDark)),
+              ],
+            ),
+          ),
+          if (loggedIn) _rankBadge(context, ref),
+        ],
+      ),
+    );
+  }
+
+  Widget _rankBadge(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(membershipRankProvider);
+    return async.maybeWhen(
+      data: (r) => GestureDetector(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const MembershipRankScreen()),
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: r.tier.tint,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: r.tier.color.withOpacity(0.35)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(r.tier.icon, color: r.tier.color, size: 16),
+              const SizedBox(width: 6),
+              Text('Hạng ${r.rankName}',
+                  style: TextStyle(
+                      color: r.tier.color,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12.5)),
+            ],
+          ),
+        ),
+      ),
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _header(BuildContext context, WidgetRef ref, UserModel? user) {
     final loggedIn = user != null;
     final latest = ref.watch(latestNewsProvider).maybeWhen(
       data: (l) => l.isNotEmpty ? l.first : null,
@@ -209,7 +256,7 @@ class HomeScreen extends ConsumerWidget {
     return GestureDetector(
       onTap: loggedIn ? openNews : null,
       child: Container(
-        height: topPad + 210,
+        height: 178,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -238,19 +285,11 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
             Padding(
-              padding: EdgeInsets.fromLTRB(20, topPad + 18, 20, 18),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Text(
-                    loggedIn
-                        ? 'Xin chào, ${user!.displayName} 👋'
-                        : 'Mọng Fruits',
-                    style: TextStyle(
-                        color: Colors.white.withOpacity(0.95),
-                        fontWeight: FontWeight.w600),
-                  ),
                   if (loggedIn)
                     // Dải tin mới nhất dạng kính mờ (nối tới Tin tức).
                     ClipRRect(
@@ -336,39 +375,6 @@ class HomeScreen extends ConsumerWidget {
                       fontSize: 13)),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _modeCard({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GlassCard(
-      onTap: onTap,
-      radius: 18,
-      blur: 14,
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: color.withOpacity(0.16),
-            child: Icon(icon, color: color, size: 30),
-          ),
-          const SizedBox(height: 12),
-          Text(title,
-              style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15)),
-          const SizedBox(height: 2),
-          Text(subtitle,
-              style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
         ],
       ),
     );

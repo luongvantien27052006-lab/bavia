@@ -7,6 +7,7 @@
 
 import '../core/network/api_client.dart';
 import '../models/loyalty_model.dart';
+import '../models/membership_rank.dart';
 
 class LoyaltyRepository {
   final ApiClient _api = ApiClient.I;
@@ -18,6 +19,15 @@ class LoyaltyRepository {
         ? Map<String, dynamic>.from(map['balance'] as Map)
         : map;
     return LoyaltyBalance.fromJson(inner);
+  }
+
+  Future<MembershipRank> fetchRank() async {
+    final data = await _api.get('/loyalty/rank');
+    final map = Map<String, dynamic>.from(data as Map);
+    final inner = map['rank'] is Map
+        ? Map<String, dynamic>.from(map['rank'] as Map)
+        : map;
+    return MembershipRank.fromJson(inner);
   }
 
   Future<List<LoyaltyTransaction>> fetchHistory({

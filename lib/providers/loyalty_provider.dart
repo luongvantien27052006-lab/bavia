@@ -5,6 +5,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/loyalty_model.dart';
+import '../models/membership_rank.dart';
 import 'repository_providers.dart';
 
 final loyaltyBalanceProvider =
@@ -15,4 +16,9 @@ final loyaltyBalanceProvider =
 final loyaltyHistoryProvider =
     FutureProvider.autoDispose<List<LoyaltyTransaction>>((ref) async {
   return ref.watch(loyaltyRepositoryProvider).fetchHistory();
+});
+
+final membershipRankProvider =
+    FutureProvider.autoDispose<MembershipRank>((ref) async {
+  return ref.watch(loyaltyRepositoryProvider).fetchRank();
 });
