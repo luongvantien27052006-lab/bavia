@@ -34,6 +34,7 @@ class CheckoutState {
   final String? shippingCode; // mã freeship đã nhập
   final bool validatingVoucher;
   final String? voucherError;
+  final DateTime? scheduledFor; // null = giao ngay
 
   const CheckoutState({
     this.paymentMethod = PaymentMethodType.cod,
@@ -46,6 +47,7 @@ class CheckoutState {
     this.shippingCode,
     this.validatingVoucher = false,
     this.voucherError,
+    this.scheduledFor,
   });
 
   bool get hasVoucher => voucher != null && voucher!.valid;
@@ -64,6 +66,7 @@ class CheckoutState {
     Object? shippingCode = _sentinel,
     bool? validatingVoucher,
     Object? voucherError = _sentinel,
+    Object? scheduledFor = _sentinel,
   }) {
     return CheckoutState(
       paymentMethod: paymentMethod ?? this.paymentMethod,
@@ -88,6 +91,9 @@ class CheckoutState {
       voucherError: identical(voucherError, _sentinel)
           ? this.voucherError
           : voucherError as String?,
+      scheduledFor: identical(scheduledFor, _sentinel)
+          ? this.scheduledFor
+          : scheduledFor as DateTime?,
     );
   }
 
@@ -135,6 +141,11 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
 
   void setPointsToRedeem(int points) {
     state = state.copyWith(pointsToRedeem: points < 0 ? 0 : points);
+  }
+
+  /// Đặt giờ hẹn nhận (null = giao ngay).
+  void setScheduledFor(DateTime? when) {
+    state = state.copyWith(scheduledFor: when);
   }
 
   Future<void> applyVoucher(String code) async {

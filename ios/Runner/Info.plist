@@ -36,6 +36,16 @@
 				<string>app-1-860557615585-ios-6a4096b63b54688bd5b2a0</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.mongfruits.app.invite</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>mongfruits</string>
+			</array>
+		</dict>
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>

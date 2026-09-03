@@ -21,6 +21,7 @@
 // khi backend từ chối refresh token.
 
 import 'package:flutter/material.dart';
+import 'screens/group/group_start_screen.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,6 +34,7 @@ import 'screens/orders/order_detail_screen.dart';
 import 'screens/splash_screen.dart';
 import 'widgets/theme_switcher.dart';
 import 'services/push_service.dart';
+import 'core/realtime/deep_link_service.dart';
 
 class BaviaApp extends ConsumerStatefulWidget {
   const BaviaApp({super.key});
@@ -52,8 +54,12 @@ class _BaviaAppState extends ConsumerState<BaviaApp> {
 
     // Bấm vào thông báo đơn hàng → mở màn chi tiết đơn.
     PushService.instance.onOpenOrder = _openOrder;
+    // Link mời đặt chung → mở màn nhập mã (đã điền sẵn).
+    DeepLinkService.instance.onJoinCode = _openJoin;
+    DeepLinkService.instance.init();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       PushService.instance.flushPending();
+      DeepLinkService.instance.flushPending();
     });
     // Kiểm tra phiên cũ sau frame đầu.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -72,6 +78,16 @@ class _BaviaAppState extends ConsumerState<BaviaApp> {
     nav.push(
       MaterialPageRoute(builder: (_) => OrderDetailScreen(orderId: orderId)),
     );
+  }
+
+  void _openJoin(String code) {
+    final nav = appNavigatorKey.currentState;
+    if (nav == null) {
+      DeepLinkService.instance.pendingCode = code;
+      return;
+    }
+    nav.push(MaterialPageRoute(
+        builder: (_) => GroupStartScreen(prefillCode: code)));
   }
 
   @override

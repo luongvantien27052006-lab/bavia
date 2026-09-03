@@ -37,6 +37,9 @@ class PushService {
   /// Callback khi người dùng bấm vào thông báo (nhận orderId).
   void Function(String orderId)? onOpenOrder;
 
+  /// Callback khi người dùng bấm vào thông báo TIN TỨC (nhận newsId).
+  void Function(String newsId)? onOpenNews;
+
   StreamSubscription<String>? _refreshSub;
 
   /// Gọi 1 lần lúc khởi động app (sau Firebase.initializeApp).
@@ -64,7 +67,27 @@ class PushService {
   /// orderId chờ mở khi app vừa khởi động từ thông báo (navigator chưa sẵn sàng).
   String? pendingOrderId;
 
+  /// newsId chờ mở khi app vừa khởi động từ thông báo tin tức.
+  String? pendingNewsId;
+
   void _handleOpened(RemoteMessage m) {
+    final type = m.data['type'];
+
+    // Tin tức -> mở bài viết.
+    if (type == 'news') {
+      final newsId = m.data['newsId'];
+      if (newsId is String && newsId.isNotEmpty) {
+        final cb = onOpenNews;
+        if (cb != null) {
+          cb(newsId);
+        } else {
+          pendingNewsId = newsId;
+        }
+      }
+      return;
+    }
+
+    // Mặc định: đơn hàng -> mở chi tiết đơn.
     final orderId = m.data['orderId'];
     if (orderId is! String || orderId.isEmpty) return;
     final cb = onOpenOrder;
@@ -77,10 +100,15 @@ class PushService {
 
   /// Gọi khi app đã dựng xong navigator: mở đơn còn treo (nếu có).
   void flushPending() {
-    final id = pendingOrderId;
-    if (id != null && onOpenOrder != null) {
+    final oid = pendingOrderId;
+    if (oid != null && onOpenOrder != null) {
       pendingOrderId = null;
-      onOpenOrder!(id);
+      onOpenOrder!(oid);
+    }
+    final nid = pendingNewsId;
+    if (nid != null && onOpenNews != null) {
+      pendingNewsId = null;
+      onOpenNews!(nid);
     }
   }
 

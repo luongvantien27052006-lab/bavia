@@ -13,6 +13,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/menu_pricing.dart';
 import '../../models/product.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/group_order_provider.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/product_image.dart';
 import '../../widgets/glass_card.dart';
@@ -31,6 +32,7 @@ class ProductDetailScreen extends ConsumerStatefulWidget {
 
 class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   int _qty = 1;
+  final _noteCtrl = TextEditingController();
   final Set<String> _selectedIds = {}; // topping (ngoai size)
   String? _selectedSizeId; // size dang chon (chi danh muc trai cay)
 
@@ -71,7 +73,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     });
   }
 
-  void _addToCart() {
+  @override
+  void dispose() {
+    _noteCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _addToCart() async {
     final selected = <ProductOption>[];
     // Trai cay: kem size da chon vao gio (de tinh gia + validate backend).
     if (_isFruit && _selectedSizeId != null) {
@@ -80,11 +88,46 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     }
     selected.addAll(_nonSizeOpts.where((o) => _selectedIds.contains(o.id)));
 
+    // Chế độ ĐẶT CHUNG: thêm vào phòng thay vì giỏ cá nhân.
+    final groupId = ref.read(activeGroupProvider);
+    if (groupId != null) {
+      try {
+        await ref.read(groupOrderRepositoryProvider).addItem(
+              groupId,
+              productId: widget.product.id,
+              quantity: _qty,
+              options: selected,
+              unitPrice: _unitPrice,
+              productName: widget.product.name,
+              note: _noteCtrl.text,
+            );
+        if (!mounted) return;
+        ref.invalidate(groupRoomProvider(groupId));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đã thêm $_qty ${widget.product.name} vào phòng'),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        Navigator.of(context).pop();
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: const Text('Thêm vào phòng thất bại'),
+              backgroundColor: AppColors.delivery),
+        );
+      }
+      return;
+    }
+
     ref.read(cartProvider.notifier).add(
           widget.product,
           quantity: _qty,
           options: selected,
         );
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Đã thêm $_qty ${widget.product.name} vào giỏ'),
@@ -93,6 +136,94 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       ),
     );
     Navigator.of(context).pop();
+  }
+
+  Widget _seasonalBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.success.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.success.withOpacity(0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('🍑', style: TextStyle(fontSize: 14)),
+          const SizedBox(width: 6),
+          Text('Trái cây theo mùa',
+              style: TextStyle(
+                  color: AppColors.success,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13)),
+        ],
+      ),
+    );
+  }
+
+  Widget _nutritionSection(Product p) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.eco_rounded, size: 18, color: AppColors.success),
+              const SizedBox(width: 8),
+              Text('Dinh dưỡng',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                      color: AppColors.textDark)),
+            ],
+          ),
+          if (p.calories != null) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(Icons.local_fire_department_rounded,
+                    size: 16, color: AppColors.hot),
+                const SizedBox(width: 6),
+                Text('${p.calories} kcal',
+                    style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textDark)),
+              ],
+            ),
+          ],
+          if (p.healthTags.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: p.healthTags
+                  .map((t) => Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(t,
+                            style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.success)),
+                      ))
+                  .toList(),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   @override
@@ -169,10 +300,40 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                             fontSize: 15,
                             height: 1.5)),
                   ],
+                  if (p.isSeasonal) ...[
+                    const SizedBox(height: 14),
+                    _seasonalBadge(),
+                  ],
+                  if (p.hasNutrition) ...[
+                    const SizedBox(height: 16),
+                    _nutritionSection(p),
+                  ],
                   // Chon size (chi danh muc trai cay)
                   if (_isFruit && _sizeOpts.isNotEmpty) ..._sizeSection(),
                   // Topping (ngoai size) — cho moi danh muc
                   if (_nonSizeOpts.isNotEmpty) ..._optionSection(_nonSizeOpts),
+                  if (ref.watch(activeGroupProvider) != null) ...[
+                    const SizedBox(height: 20),
+                    Text('Ghi chú (ít đá, ít đường...)',
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textDark)),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _noteCtrl,
+                      maxLength: 80,
+                      decoration: InputDecoration(
+                        hintText: 'VD: ít đá, ít ngọt',
+                        filled: true,
+                        fillColor: AppColors.surface,
+                        counterText: '',
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: AppColors.border)),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   Row(
                     children: [
@@ -201,9 +362,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.shopping_cart_rounded, size: 20),
+                Icon(
+                    ref.watch(activeGroupProvider) != null
+                        ? Icons.group_add_rounded
+                        : Icons.shopping_cart_rounded,
+                    size: 20),
                 const SizedBox(width: 8),
-                Text('Thêm vào giỏ • ${Formatters.money(lineTotal)}'),
+                Text(
+                    '${ref.watch(activeGroupProvider) != null ? 'Thêm vào phòng' : 'Thêm vào giỏ'} • ${Formatters.money(lineTotal)}'),
               ],
             ),
           ),

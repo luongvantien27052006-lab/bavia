@@ -1,7 +1,7 @@
 name: bavia
 description: Bavia Coffee - App đặt món khách hàng
 publish_to: 'none'
-version: 1.2.3+17
+version: 1.2.3+18
 
 
 
@@ -28,6 +28,9 @@ dependencies:
   firebase_messaging: ^14.7.19
   package_info_plus: ^5.0.1
   url_launcher: ^6.2.5
+  app_links: ^3.5.1        # bản hệ cũ (tương thích web <0.5.0)
+  qr_flutter: ^4.1.0
+  share_plus: ^7.2.2       # ^10 xung đột package_info_plus 5.x
 
   # UI helpers
   cached_network_image: ^3.3.1

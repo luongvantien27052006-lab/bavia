@@ -143,6 +143,7 @@ class OrderModel {
   final String? voucherId;
   final List<OrderItem> items;
   final DateTime? createdAt;
+  final DateTime? scheduledFor; // giờ hẹn nhận (null = giao ngay)
 
   const OrderModel({
     required this.id,
@@ -155,6 +156,7 @@ class OrderModel {
     this.voucherId,
     this.items = const [],
     this.createdAt,
+    this.scheduledFor,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -181,6 +183,7 @@ class OrderModel {
           .map((e) => OrderItem.fromJson(Map<String, dynamic>.from(e)))
           .toList(),
       createdAt: JsonX.dateTime(json, ['created_at', 'createdAt']),
+      scheduledFor: JsonX.dateTime(json, ['scheduled_for', 'scheduledFor']),
     );
   }
 }

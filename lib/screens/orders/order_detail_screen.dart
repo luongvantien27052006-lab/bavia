@@ -138,6 +138,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       children: [
         _statusHeader(order),
         const SizedBox(height: 16),
+        if (order.scheduledFor != null) ...[
+          _scheduledBanner(order.scheduledFor!),
+          const SizedBox(height: 16),
+        ],
         _statusTracker(order),
         const SizedBox(height: 16),
         if (order.items.isNotEmpty) ...[
@@ -498,6 +502,42 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           ),
           Text(Formatters.money(item.lineTotal),
               style: const TextStyle(fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+
+  Widget _scheduledBanner(DateTime dt) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    final txt =
+        '${two(dt.hour)}:${two(dt.minute)} ngày ${two(dt.day)}/${two(dt.month)}';
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.coffee.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.coffee.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.access_time_rounded, color: AppColors.coffee, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Đơn hẹn giờ',
+                    style: TextStyle(
+                        fontSize: 12, color: AppColors.textMuted)),
+                const SizedBox(height: 2),
+                Text('Nhận lúc $txt',
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textDark)),
+              ],
+            ),
+          ),
         ],
       ),
     );

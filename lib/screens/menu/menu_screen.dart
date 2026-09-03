@@ -9,6 +9,9 @@
 // Menu: thanh lọc category + lưới sản phẩm. Lấy data từ menu_provider.
 
 import 'package:flutter/material.dart';
+import '../../providers/group_order_provider.dart';
+import '../group/group_room_screen.dart';
+import '../group/group_start_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -36,6 +39,14 @@ class MenuScreen extends ConsumerWidget {
         title: const Text('Menu',
             style: TextStyle(fontWeight: FontWeight.w800)),
         actions: [
+          if (ref.watch(activeGroupProvider) == null)
+            IconButton(
+              tooltip: 'Đặt chung',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const GroupStartScreen()),
+              ),
+              icon: Icon(Icons.groups_rounded, color: AppColors.coffee),
+            ),
           IconButton(
             tooltip: 'Món yêu thích',
             onPressed: () => ref
@@ -55,6 +66,8 @@ class MenuScreen extends ConsumerWidget {
       body: GlassBackground(
         child: Column(
           children: [
+          if (ref.watch(activeGroupProvider) != null)
+            _GroupBanner(groupId: ref.watch(activeGroupProvider)!),
           const _MenuSearchField(),
           _categoryBar(ref, selected, categories),
           Expanded(
@@ -262,6 +275,58 @@ class _MenuSearchFieldState extends ConsumerState<_MenuSearchField> {
           ),
         ),
         onEditingComplete: () => setState(() {}),
+      ),
+    );
+  }
+}
+
+class _GroupBanner extends ConsumerWidget {
+  final String groupId;
+  const _GroupBanner({required this.groupId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.coffee,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.groups_rounded, color: Colors.white, size: 20),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text('Đang thêm món cho phòng đặt chung',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13)),
+          ),
+          GestureDetector(
+            onTap: () {
+              ref.read(activeGroupProvider.notifier).state = null;
+              // Về màn phòng (nếu đang chồng lên) hoặc mở lại phòng.
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                    builder: (_) => GroupRoomScreen(groupId: groupId)),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text('Về phòng',
+                  style: TextStyle(
+                      color: AppColors.coffee,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12)),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -64,6 +64,13 @@ final hotProductsProvider = Provider<AsyncValue<List<Product>>>((ref) {
       );
 });
 
+/// Trái cây theo mùa cho Trang chủ.
+final seasonalProductsProvider = Provider<AsyncValue<List<Product>>>((ref) {
+  return ref.watch(productsProvider).whenData(
+        (list) => list.where((p) => p.isSeasonal).toList(),
+      );
+});
+
 /// Các danh mục thực sự có sản phẩm (dựng tab động, theo thứ tự display_order).
 final availableCategoriesProvider = Provider<List<String>>((ref) {
   final async = ref.watch(productsProvider);

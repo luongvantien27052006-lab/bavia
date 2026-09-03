@@ -58,6 +58,9 @@ class Product {
   final String? imageUrl;
   final int displayOrder;
   final List<ProductOption> options;
+  final int? calories; // kcal (null = chưa nhập)
+  final List<String> healthTags; // nhãn sức khỏe: Detox, Ít đường...
+  final bool isSeasonal; // trái cây theo mùa
 
   const Product({
     required this.id,
@@ -68,6 +71,9 @@ class Product {
     required this.imageUrl,
     required this.displayOrder,
     this.options = const [],
+    this.calories,
+    this.healthTags = const [],
+    this.isSeasonal = false,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -83,6 +89,13 @@ class Product {
           .whereType<Map>()
           .map((e) => ProductOption.fromJson(Map<String, dynamic>.from(e)))
           .toList(),
+      calories: JsonX.pick(json, ['calories']) is num
+          ? JsonX.intVal(json, ['calories'])
+          : null,
+      healthTags: JsonX.list(json, ['health_tags', 'healthTags'])
+          .whereType<String>()
+          .toList(),
+      isSeasonal: JsonX.boolVal(json, ['is_seasonal', 'isSeasonal']),
     );
   }
 
@@ -92,4 +105,6 @@ class Product {
   bool get hasImage => imageUrl != null && imageUrl!.isNotEmpty;
 
   bool get hasOptions => options.isNotEmpty;
+
+  bool get hasNutrition => calories != null || healthTags.isNotEmpty;
 }

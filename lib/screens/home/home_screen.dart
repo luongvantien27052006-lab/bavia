@@ -30,6 +30,7 @@ import '../../providers/store_provider.dart';
 import '../../providers/loyalty_provider.dart';
 import '../../models/membership_rank.dart';
 import '../membership/membership_rank_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../widgets/news_image.dart';
 import '../news/news_list_screen.dart';
 import '../news/news_detail_screen.dart';
@@ -43,6 +44,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
     final hot = ref.watch(hotProductsProvider);
+    final seasonal = ref.watch(seasonalProductsProvider);
 
     // Đơn đang xử lý (mới nhất) -> hiện timeline giao hàng ở đầu Home.
     OrderModel? activeOrder;
@@ -114,6 +116,25 @@ class HomeScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               _hotList(context, hot),
+              // Trái cây theo mùa — chỉ hiện khi có món được đánh dấu theo mùa.
+              ...seasonal.maybeWhen(
+                data: (list) => list.isEmpty
+                    ? const <Widget>[]
+                    : [
+                        const SizedBox(height: 28),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text('🍑 Trái cây theo mùa',
+                              style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textDark)),
+                        ),
+                        const SizedBox(height: 12),
+                        _hotList(context, seasonal),
+                      ],
+                orElse: () => const <Widget>[],
+              ),
               const SizedBox(height: 28),
               _newsSection(context, ref),
               const SizedBox(height: 24),
@@ -253,53 +274,65 @@ class HomeScreen extends ConsumerWidget {
       );
     }
 
+    final imageUrl = latest?.imageUrl;
+    final hasImage = imageUrl != null && imageUrl.isNotEmpty;
+
     return GestureDetector(
       onTap: loggedIn ? openNews : null,
-      child: Container(
-        height: 178,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.coffeeDark, AppColors.coffee],
-          ),
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
-        ),
-        clipBehavior: Clip.antiAlias,
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
         child: Stack(
-          fit: StackFit.expand,
           children: [
-            // Ảnh banner = tin mới nhất (nối tới Tin tức). Không có tin -> giữ nền cam.
-            if (latest != null) NewsImage(imageUrl: latest.imageUrl),
-            if (latest != null)
-              DecoratedBox(
-                decoration: BoxDecoration(
+            // Nền cam (hiện khi chưa có ảnh hoặc trong lúc ảnh đang tải).
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withOpacity(0.15),
-                      Colors.black.withOpacity(0.5),
-                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.coffeeDark, AppColors.coffee],
                   ),
                 ),
               ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (loggedIn)
-                    // Dải tin mới nhất dạng kính mờ (nối tới Tin tức).
-                    ClipRRect(
+            ),
+            // Ảnh tin tức: hiện ĐỦ ảnh (rộng hết khổ, cao theo tỉ lệ gốc, KHÔNG cắt).
+            if (hasImage)
+              CachedNetworkImage(
+                imageUrl: imageUrl,
+                width: double.infinity,
+                fit: BoxFit.fitWidth,
+                placeholder: (_, __) => const SizedBox(height: 168),
+                errorWidget: (_, __, ___) => const SizedBox(height: 168),
+              )
+            else
+              const SizedBox(height: 150),
+            // Lớp tối nhẹ ở đáy + dải "Ưu đãi" / nút đăng nhập.
+            if (loggedIn)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.45),
+                      ],
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 28, 20, 16),
+                    child: ClipRRect(
                       borderRadius: BorderRadius.circular(16),
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.18),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                              color: Colors.white.withOpacity(0.3)),
+                          border:
+                              Border.all(color: Colors.white.withOpacity(0.3)),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
@@ -325,12 +358,16 @@ class HomeScreen extends ConsumerWidget {
                           ),
                         ),
                       ),
-                    )
-                  else
-                    _loginPill(context),
-                ],
+                    ),
+                  ),
+                ),
+              )
+            else
+              Positioned(
+                left: 20,
+                bottom: 16,
+                child: _loginPill(context),
               ),
-            ),
           ],
         ),
       ),

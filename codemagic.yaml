@@ -1,0 +1,72 @@
+# ============================================================
+#  Codemagic CI/CD — Mọng Fruits
+#  iOS: ký tự động qua App Store Connect API key (không cần Mac/Xcode).
+#  Đã bật Associated Domains (Universal Links) qua entitlements.
+# ============================================================
+
+workflows:
+  # ---------- iOS: build + ký + đẩy TestFlight ----------
+  ios-appstore:
+    name: iOS — App Store / TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      # ⚙️ Tên integration App Store Connect đã tạo trong Codemagic UI.
+      app_store_connect: Mọng Fruits
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.mongfruits.app
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Flutter pub get
+        script: flutter pub get
+      - name: Cài CocoaPods
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+      - name: Lấy signing files + gán vào project
+        script: |
+          # Codemagic tự tải/tạo profile (đã gồm Associated Domains
+          # NẾU App ID đã bật capability này ở developer.apple.com).
+          xcode-project use-profiles
+      - name: Build IPA
+        script: |
+          # $BUILD_NUMBER là số build tự tăng của Codemagic (đảm bảo duy nhất).
+          flutter build ipa --release \
+            --build-number=$BUILD_NUMBER \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        # submit_to_app_store: false   # bật khi muốn nộp thẳng review
+
+  # ---------- Android: build AAB (ký release) ----------
+  android-playstore:
+    name: Android — Play Store (AAB)
+    instance_type: linux_x2
+    max_build_duration: 60
+    environment:
+      android_signing:
+        # ⚙️ Tên keystore đã upload trong Codemagic UI (Code signing identities).
+        - mongfruits_keystore
+      flutter: stable
+      vars:
+        PACKAGE_NAME: com.mongfruits.app
+    scripts:
+      - name: Flutter pub get
+        script: flutter pub get
+      - name: Build AAB
+        script: |
+          flutter build appbundle --release
+    artifacts:
+      - build/**/outputs/**/*.aab
+    # publishing: # (tuỳ chọn) tự đẩy lên Play Console qua service account
+    #   google_play:
+    #     credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+    #     track: internal

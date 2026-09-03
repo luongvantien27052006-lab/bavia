@@ -168,6 +168,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             _addressSection(checkout.deliveryAddress),
             const SizedBox(height: 20),
           ],
+          _sectionTitle('Giờ nhận'),
+          const SizedBox(height: 10),
+          _scheduleSection(checkout),
+          const SizedBox(height: 20),
           _sectionTitle('Phương thức thanh toán'),
           const SizedBox(height: 10),
           _paymentOption(
@@ -224,6 +228,118 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ),
       ),
     ));
+  }
+
+  String _fmtSchedule(DateTime dt) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(dt.hour)}:${two(dt.minute)} ${two(dt.day)}/${two(dt.month)}';
+  }
+
+  Future<DateTime?> _pickDateTime(DateTime? initial) async {
+    final now = DateTime.now();
+    final base = initial ?? now.add(const Duration(minutes: 30));
+    final date = await showDatePicker(
+      context: context,
+      initialDate: base.isAfter(now) ? base : now,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 7)),
+    );
+    if (date == null) return null;
+    if (!mounted) return null;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(base),
+    );
+    if (time == null) return null;
+    final picked =
+        DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    if (picked.isBefore(now)) {
+      return now.add(const Duration(minutes: 15));
+    }
+    return picked;
+  }
+
+  Widget _scheduleOption(String label, bool selected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.coffee.withOpacity(0.12) : AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+              color: selected ? AppColors.coffee : AppColors.border,
+              width: selected ? 1.5 : 1),
+        ),
+        child: Center(
+          child: Text(label,
+              style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: selected ? AppColors.coffee : AppColors.textDark)),
+        ),
+      ),
+    );
+  }
+
+  Widget _scheduleSection(CheckoutState checkout) {
+    final scheduled = checkout.scheduledFor;
+    Future<void> pick() async {
+      final picked = await _pickDateTime(scheduled);
+      if (picked != null) {
+        ref.read(checkoutProvider.notifier).setScheduledFor(picked);
+      }
+    }
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _scheduleOption('Giao ngay', scheduled == null, () {
+                ref.read(checkoutProvider.notifier).setScheduledFor(null);
+              }),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _scheduleOption('Hẹn giờ', scheduled != null, pick),
+            ),
+          ],
+        ),
+        if (scheduled != null) ...[
+          const SizedBox(height: 10),
+          InkWell(
+            onTap: pick,
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.coffee.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.coffee.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.access_time_rounded,
+                      color: AppColors.coffee, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text('Nhận lúc ${_fmtSchedule(scheduled)}',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textDark)),
+                  ),
+                  Text('Đổi',
+                      style: TextStyle(
+                          color: AppColors.coffee,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
   }
 
   Widget _sectionTitle(String text) => Text(text,

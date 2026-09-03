@@ -33,6 +33,7 @@ class OrderRepository {
     String? shippingValidationToken,
     int? pointsToRedeem,
     Map<String, dynamic>? deliveryAddress,
+    DateTime? scheduledFor,
     String? idempotencyKey,
   }) async {
     final data = await _api.post(
@@ -60,6 +61,8 @@ class OrderRepository {
         if (pointsToRedeem != null && pointsToRedeem > 0)
           'pointsToRedeem': pointsToRedeem,
         if (deliveryAddress != null) 'deliveryAddress': deliveryAddress,
+        if (scheduledFor != null)
+          'scheduledFor': scheduledFor.toUtc().toIso8601String(),
       },
     );
     return PlaceOrderResult.fromJson(Map<String, dynamic>.from(data as Map));

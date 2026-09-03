@@ -47,6 +47,11 @@ class ApiConfig {
   /// Namespace Socket.IO ở backend.
   static const String socketNamespace = '/realtime';
 
+  /// Domain nơi HOST trang join.html (để tạo link mời đặt chung).
+  /// ⚙️ Đổi thành domain thật của bạn nơi đã upload join.html.
+  static const String inviteBaseUrl =
+      'https://luongvantien27052006-lab.github.io';
+
   // ─── Timeouts ──────────────────────────────────────────────────────
 
   static const Duration connectTimeout = Duration(seconds: 20);

@@ -54,6 +54,7 @@ class PlaceOrderController
                 checkout.hasShippingVoucher ? checkout.shippingCode : null,
             shippingValidationToken:
                 checkout.shippingVoucher?.validationToken,
+            scheduledFor: checkout.scheduledFor,
             pointsToRedeem:
                 checkout.pointsToRedeem > 0 ? checkout.pointsToRedeem : null,
             deliveryAddress:
