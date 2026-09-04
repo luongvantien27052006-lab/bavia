@@ -187,7 +187,7 @@ class _VoucherWalletScreenState extends ConsumerState<VoucherWalletScreen> {
   }
 
   Widget _card(VoucherWallet v) {
-    final isShip = v.appliesToShipping;
+    final isShip = v.type == 'SHIPPING';
     final accent = isShip ? AppColors.success : AppColors.coffee;
     return Opacity(
       opacity: v.isUsable ? 1 : 0.6,

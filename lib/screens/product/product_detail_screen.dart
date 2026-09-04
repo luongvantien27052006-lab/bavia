@@ -35,7 +35,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   String? _selectedSizeId; // size dang chon (chi danh muc trai cay)
 
   // Món có cơ chế size (nhận theo nhóm 'Kích cỡ', không theo tên category).
-  bool get _isFruit => hasSizePricing(widget.product);
+  bool get _isFruit => hasSizeOptions(widget.product);
   List<ProductOption> get _sizeOpts => sizeOptionsOf(widget.product);
   List<ProductOption> get _nonSizeOpts => nonSizeOptionsOf(widget.product);
 

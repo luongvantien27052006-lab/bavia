@@ -22,7 +22,7 @@ bool isFruitCategory(String category) => category.trim() == kFruitCategory;
 /// Món dùng cơ chế "size thay giá" = CÓ nhóm option 'Kích cỡ'.
 /// Nhận diện theo SỰ CÓ MẶT của nhóm size, KHÔNG phụ thuộc tên category
 /// (tránh lỗi khi category đặt khác chuẩn nhưng vẫn có set size).
-bool hasSizePricing(Product p) =>
+bool hasSizeOptions(Product p) =>
     p.options.any((o) => o.groupName == kSizeGroupName);
 
 /// Các option size (nhóm "Kích cỡ") của món; rỗng nếu món không có size.
@@ -31,7 +31,7 @@ List<ProductOption> sizeOptionsOf(Product p) =>
 
 /// Các option KHÔNG phải size (topping thường).
 /// Món không có nhóm size → trả về toàn bộ options như cũ.
-List<ProductOption> nonSizeOptionsOf(Product p) => hasSizePricing(p)
+List<ProductOption> nonSizeOptionsOf(Product p) => hasSizeOptions(p)
     ? p.options.where((o) => o.groupName != kSizeGroupName).toList()
     : p.options;
 
