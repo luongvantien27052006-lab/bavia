@@ -26,6 +26,7 @@ class LoginState {
   final String? error;
   final String phone; // E.164 đã chuẩn hoá
   final bool otpSent;
+  final String? autoFilledCode; // mã Android tự đọc -> điền sẵn (không tự đăng nhập)
 
   const LoginState({
     this.step = LoginStep.enterPhone,
@@ -33,10 +34,12 @@ class LoginState {
     this.error,
     this.phone = '',
     this.otpSent = false,
+    this.autoFilledCode,
     this.referralCode = '',
   });
 
   LoginState copyWith({
+    String? autoFilledCode,
     LoginStep? step,
     bool? loading,
     Object? error = _sentinel,
@@ -51,6 +54,7 @@ class LoginState {
       phone: phone ?? this.phone,
       otpSent: otpSent ?? this.otpSent,
       referralCode: referralCode ?? this.referralCode,
+      autoFilledCode: autoFilledCode ?? this.autoFilledCode,
     );
   }
 
@@ -79,9 +83,15 @@ class LoginController extends AutoDisposeNotifier<LoginState> {
           otpSent: true,
         );
       },
-      onAutoVerified: (idToken) async {
-        // Android tự đọc OTP → đăng nhập luôn.
-        await _exchangeAndLogin(idToken);
+      onAutoCodeFilled: (code) {
+        // Android tự đọc được OTP → ĐIỀN sẵn vào ô, KHÔNG tự đăng nhập.
+        // Khách xem lại (kịp nhập mã giới thiệu) rồi TỰ bấm "Đăng nhập".
+        state = state.copyWith(
+          loading: false,
+          step: LoginStep.enterOtp,
+          otpSent: true,
+          autoFilledCode: code,
+        );
       },
       onError: (msg) {
         state = state.copyWith(loading: false, error: msg);

@@ -19,7 +19,7 @@ class FirebaseAuthService {
   Future<void> sendOtp({
     required String phone,
     required void Function(String verificationId) onCodeSent,
-    required void Function(String idToken) onAutoVerified,
+    required void Function(String smsCode) onAutoCodeFilled,
     required void Function(String message) onError,
     int? resendToken,
   }) async {
@@ -31,12 +31,11 @@ class FirebaseAuthService {
       forceResendingToken: resendToken,
       timeout: const Duration(seconds: 60),
       verificationCompleted: (PhoneAuthCredential credential) async {
-        try {
-          final cred = await _auth.signInWithCredential(credential);
-          final idToken = await cred.user?.getIdToken();
-          if (idToken != null) onAutoVerified(idToken);
-        } catch (e) {
-          onError(_diag(e));
+        // KHÔNG tự đăng nhập nữa. Chỉ tự ĐIỀN mã (nếu Android đọc được)
+        // để khách xem lại + kịp nhập mã giới thiệu, rồi TỰ bấm nút đăng nhập.
+        final code = credential.smsCode;
+        if (code != null && code.trim().isNotEmpty) {
+          onAutoCodeFilled(code.trim());
         }
       },
       verificationFailed: (FirebaseAuthException e) {

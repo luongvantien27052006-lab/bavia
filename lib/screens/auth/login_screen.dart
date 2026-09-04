@@ -90,6 +90,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     });
 
+    // Android tự đọc được OTP → ĐIỀN sẵn vào 6 ô (KHÔNG tự đăng nhập).
+    // Khách xem lại, kịp nhập mã giới thiệu, rồi TỰ bấm "Đăng nhập".
+    ref.listen<String?>(
+      loginControllerProvider.select((s) => s.autoFilledCode),
+      (prev, next) {
+        if (next != null && next.length == _otpLength) {
+          for (int i = 0; i < _otpLength; i++) {
+            _otpControllers[i].text = next[i];
+          }
+          FocusScope.of(context).unfocus();
+        }
+      },
+    );
+
     // Hiện lỗi qua SnackBar khi error đổi.
     ref.listen(loginControllerProvider, (prev, next) {
       if (next.error != null && next.error != prev?.error) {
@@ -303,11 +317,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       if (v.isEmpty && i > 0) {
                         _otpFocus[i - 1].requestFocus();
                       }
-                      if (i == _otpLength - 1 && v.isNotEmpty) {
-                        final code =
-                            _otpControllers.map((c) => c.text).join();
-                        if (code.length == _otpLength) _submitOtp();
-                      }
+                      // KHÔNG tự submit khi đủ 6 số — khách tự bấm "Đăng nhập".
                     },
                   ),
                 ),
