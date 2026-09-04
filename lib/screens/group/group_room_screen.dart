@@ -136,6 +136,7 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
             children: [
               _codeCard(room),
               const SizedBox(height: 12),
+              _guidanceBanner(room),
               if (room.isHost) _settingsCard(room),
               const SizedBox(height: 4),
               if (room.participants.isEmpty)
@@ -148,6 +149,53 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
         ),
         _bottomBar(room),
       ],
+    );
+  }
+
+  Widget _guidanceBanner(GroupOrder room) {
+    String msg;
+    IconData icon;
+    Color color;
+    if (room.isOpen) {
+      icon = Icons.add_shopping_cart_rounded;
+      color = AppColors.coffee;
+      msg = room.isHost
+          ? 'Đang gom món — thêm món, rồi bấm "Khoá phòng" khi mọi người xong.'
+          : 'Thêm món của bạn vào phòng. Chủ phòng sẽ chốt đơn giúp cả nhóm.';
+    } else {
+      icon = Icons.lock_rounded;
+      color = AppColors.hot;
+      if (room.isHost) {
+        msg = room.isSplit
+            ? 'Đã khoá — bấm "Thu tiền từng người" để tạo QR cho mọi người trả.'
+            : 'Đã khoá — bấm "Chốt & thanh toán" để đặt đơn cho cả nhóm.';
+      } else {
+        msg = room.isSplit
+            ? 'Đã khoá — chờ chủ phòng bật thu tiền, bạn sẽ nhận QR phần của mình.'
+            : 'Đã khoá — chờ chủ phòng thanh toán & đặt đơn.';
+      }
+    }
+    return Container(
+      padding: const EdgeInsets.all(13),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(msg,
+                style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.35,
+                    color: AppColors.textDark)),
+          ),
+        ],
+      ),
     );
   }
 

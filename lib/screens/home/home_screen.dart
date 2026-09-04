@@ -8,6 +8,9 @@
 
 import 'package:flutter/material.dart';
 import '../../providers/order_provider.dart';
+import '../../providers/group_order_provider.dart';
+import '../group/group_room_screen.dart';
+import '../group/group_start_screen.dart';
 import '../../models/order_model.dart';
 import '../orders/order_detail_screen.dart';
 import '../../widgets/delivery_timeline_card.dart';
@@ -70,6 +73,7 @@ class HomeScreen extends ConsumerWidget {
             ref.invalidate(productsProvider);
             ref.invalidate(ordersProvider);
             ref.invalidate(membershipRankProvider);
+            ref.invalidate(activeGroupRoomProvider);
           },
           child: ListView(
             padding: EdgeInsets.zero,
@@ -116,6 +120,8 @@ class HomeScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               _hotList(context, hot),
+              const SizedBox(height: 24),
+              _groupOrderCard(context, ref),
               // Trái cây theo mùa — chỉ hiện khi có món được đánh dấu theo mùa.
               ...seasonal.maybeWhen(
                 data: (list) => list.isEmpty
@@ -510,6 +516,148 @@ class HomeScreen extends ConsumerWidget {
                           fontWeight: FontWeight.w800)),
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _groupOrderCard(BuildContext context, WidgetRef ref) {
+    final active = ref.watch(activeGroupRoomProvider);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: active.maybeWhen(
+        data: (room) => room != null
+            ? _groupResumeCard(context, ref, room)
+            : _groupStartCard(context),
+        orElse: () => _groupStartCard(context),
+      ),
+    );
+  }
+
+  Widget _groupStartCard(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const GroupStartScreen()),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.coffee, AppColors.coffeeDark],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+                color: AppColors.coffee.withOpacity(0.28),
+                blurRadius: 16,
+                offset: const Offset(0, 8)),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(14)),
+              child: const Icon(Icons.groups_rounded,
+                  color: Colors.white, size: 28),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Đặt nước cùng bạn bè',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800)),
+                  SizedBox(height: 3),
+                  Text('Gộp 1 đơn · 1 lần giao · chia phí ship',
+                      style: TextStyle(color: Colors.white70, fontSize: 12.5)),
+                ],
+              ),
+            ),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(999)),
+              child: Text('Tạo phòng',
+                  style: TextStyle(
+                      color: AppColors.coffee,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _groupResumeCard(
+      BuildContext context, WidgetRef ref, dynamic room) {
+    return GestureDetector(
+      onTap: () async {
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+              builder: (_) => GroupRoomScreen(groupId: room.id)),
+        );
+        ref.invalidate(activeGroupRoomProvider);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.success.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.success.withOpacity(0.4)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(14)),
+              child: Icon(Icons.groups_rounded,
+                  color: AppColors.success, size: 26),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Phòng đặt chung đang mở',
+                      style: TextStyle(
+                          color: AppColors.textDark,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 3),
+                  Text('Mã ${room.code} · ${room.totalItems} món',
+                      style: TextStyle(
+                          color: AppColors.textMuted, fontSize: 12.5)),
+                ],
+              ),
+            ),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              decoration: BoxDecoration(
+                  color: AppColors.success,
+                  borderRadius: BorderRadius.circular(999)),
+              child: const Text('Vào lại',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13)),
             ),
           ],
         ),

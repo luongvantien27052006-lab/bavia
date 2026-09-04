@@ -17,3 +17,9 @@ final groupRoomProvider =
     FutureProvider.family<GroupOrder, String>((ref, id) async {
   return ref.watch(groupOrderRepositoryProvider).get(id);
 });
+
+/// Phòng đặt chung ĐANG MỞ mà mình đang tham gia (để "vào lại"). Null nếu không.
+final activeGroupRoomProvider =
+    FutureProvider.autoDispose<GroupOrder?>((ref) async {
+  return ref.watch(groupOrderRepositoryProvider).getActiveRoom();
+});

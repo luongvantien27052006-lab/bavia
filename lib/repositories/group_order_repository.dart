@@ -58,6 +58,18 @@ class GroupOrderRepository {
     return _parse(data);
   }
 
+  /// Phòng đang mở mà mình đang tham gia (null nếu không có).
+  Future<GroupOrder?> getActiveRoom() async {
+    try {
+      final data = await _api.get('/group-orders/active');
+      if (data == null) return null;
+      if (data is Map && data.isEmpty) return null;
+      return _parse(data);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<GroupOrder> addItem(
     String id, {
     required String productId,

@@ -93,6 +93,58 @@ class _GroupStartScreenState extends ConsumerState<GroupStartScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          Consumer(builder: (context, ref, _) {
+            final active = ref.watch(activeGroupRoomProvider);
+            return active.maybeWhen(
+              data: (room) => room == null
+                  ? const SizedBox.shrink()
+                  : Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                              builder: (_) =>
+                                  GroupRoomScreen(groupId: room.id)),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.success.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                                color: AppColors.success.withOpacity(0.4)),
+                          ),
+                          child: Row(children: [
+                            Icon(Icons.meeting_room_rounded,
+                                color: AppColors.success),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Text('Bạn đang có phòng đang mở',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.textDark)),
+                                  Text('Mã ${room.code} · ${room.totalItems} món',
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.textMuted)),
+                                ],
+                              ),
+                            ),
+                            Text('Vào lại',
+                                style: TextStyle(
+                                    color: AppColors.success,
+                                    fontWeight: FontWeight.w800)),
+                          ]),
+                        ),
+                      ),
+                    ),
+              orElse: () => const SizedBox.shrink(),
+            );
+          }),
           const SizedBox(height: 8),
           Icon(Icons.groups_rounded, size: 64, color: AppColors.coffee),
           const SizedBox(height: 12),
