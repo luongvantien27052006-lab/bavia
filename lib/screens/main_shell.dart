@@ -10,6 +10,7 @@
 // hiển thị trên tab Menu. Giữ trạng thái từng tab bằng IndexedStack.
 
 import 'package:flutter/material.dart';
+import '../services/version_check.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme/app_theme.dart';
@@ -42,6 +43,8 @@ class _MainShellState extends ConsumerState<MainShell> {
     // (Quyền thông báo đã được PushService xin sẵn.)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       LocationService.instance.requestPermissionIfNeeded();
+      // Kiểm tra phiên bản mới -> gợi ý / bắt buộc cập nhật.
+      if (mounted) checkForUpdate(context);
     });
   }
 
