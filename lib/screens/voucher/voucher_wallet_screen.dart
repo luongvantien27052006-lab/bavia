@@ -187,6 +187,8 @@ class _VoucherWalletScreenState extends ConsumerState<VoucherWalletScreen> {
   }
 
   Widget _card(VoucherWallet v) {
+    final isShip = v.appliesToShipping;
+    final accent = isShip ? AppColors.success : AppColors.coffee;
     return Opacity(
       opacity: v.isUsable ? 1 : 0.6,
       child: Container(
@@ -206,18 +208,41 @@ class _VoucherWalletScreenState extends ConsumerState<VoucherWalletScreen> {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                  color: AppColors.coffee.withOpacity(0.12),
+                  color: accent.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(12)),
-              child: const Icon(Icons.confirmation_number_rounded,
-                  color: AppColors.coffee),
+              child: Icon(
+                  isShip
+                      ? Icons.local_shipping_rounded
+                      : Icons.confirmation_number_rounded,
+                  color: accent),
             ),
             const SizedBox(width: 12),
             Expanded(
-                child: Text(v.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w800, fontSize: 16))),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                        color: accent.withOpacity(0.14),
+                        borderRadius: BorderRadius.circular(6)),
+                    child: Text(isShip ? 'FREESHIP' : 'GIẢM GIÁ',
+                        style: TextStyle(
+                            color: accent,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5)),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(v.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w800, fontSize: 16)),
+                ],
+              ),
+            ),
           ]),
           const SizedBox(height: 12),
           _row(Icons.local_offer_outlined, v.discountLabel),
@@ -236,8 +261,7 @@ class _VoucherWalletScreenState extends ConsumerState<VoucherWalletScreen> {
             decoration: BoxDecoration(
                 color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
                 borderRadius: BorderRadius.circular(8),
-                border:
-                    Border.all(color: AppColors.coffee.withOpacity(0.25))),
+                border: Border.all(color: accent.withOpacity(0.3))),
             child: Text('Mã: ${v.code}',
                 style: const TextStyle(
                     fontWeight: FontWeight.w700,

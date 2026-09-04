@@ -45,10 +45,19 @@ class NewsDetailScreen extends StatelessWidget {
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                         height: 1.3)),
-                const SizedBox(height: 8),
-                Text(Formatters.date(news.publishedAt),
-                    style: TextStyle(
-                        color: AppColors.textMuted, fontSize: 12)),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Icon(Icons.calendar_today_rounded,
+                        size: 13, color: AppColors.textMuted),
+                    const SizedBox(width: 6),
+                    Text(Formatters.date(news.publishedAt),
+                        style: TextStyle(
+                            color: AppColors.textMuted, fontSize: 12.5)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Divider(color: AppColors.border, height: 1),
                 const SizedBox(height: 16),
                 if (news.content.isNotEmpty)
                   Text(news.content,

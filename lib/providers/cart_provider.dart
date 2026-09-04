@@ -29,7 +29,7 @@ class CartItem {
   /// - Danh mục "Trái cây chấm muối": = giá size đã chọn (THAY) + topping ngoài size.
   /// - Danh mục khác: = giá món + tổng giá topping (cộng dồn như cũ).
   int get unitPrice {
-    if (isFruitCategory(product.category)) {
+    if (hasSizeOptions(product)) {
       return fruitUnitPrice(product, options);
     }
     return product.price + options.fold(0, (s, o) => s + o.price);

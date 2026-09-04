@@ -3,6 +3,7 @@
 // Lịch sử đơn hàng của khách. Lấy từ ordersProvider (GET /orders).
 
 import 'package:flutter/material.dart';
+import 'order_status_style.dart';
 import '../../widgets/anim.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/glass_card.dart';
@@ -111,21 +112,23 @@ class OrderHistoryScreen extends ConsumerWidget {
   }
 
   Widget _statusChip(OrderStatus status) {
-    final color = switch (status) {
-      OrderStatus.delivered => AppColors.success,
-      OrderStatus.cancelled || OrderStatus.refunded => AppColors.delivery,
-      OrderStatus.pending => AppColors.hot,
-      _ => AppColors.coffee,
-    };
+    final color = status.color;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(status.label,
-          style: TextStyle(
-              color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(status.icon, color: color, size: 13),
+          const SizedBox(width: 4),
+          Text(status.label,
+              style: TextStyle(
+                  color: color, fontSize: 12, fontWeight: FontWeight.w700)),
+        ],
+      ),
     );
   }
 

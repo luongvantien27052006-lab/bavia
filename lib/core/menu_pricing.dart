@@ -19,14 +19,19 @@ const kSizeGroupName = 'Kích cỡ';
 
 bool isFruitCategory(String category) => category.trim() == kFruitCategory;
 
-/// Các option size (nhóm "Kích cỡ") của một món trái cây; rỗng nếu không phải.
-List<ProductOption> sizeOptionsOf(Product p) => isFruitCategory(p.category)
-    ? p.options.where((o) => o.groupName == kSizeGroupName).toList()
-    : const [];
+/// Món dùng cơ chế "size thay giá" = CÓ nhóm option 'Kích cỡ'.
+/// Nhận diện theo SỰ CÓ MẶT của nhóm size, KHÔNG phụ thuộc tên category
+/// (tránh lỗi khi category đặt khác chuẩn nhưng vẫn có set size).
+bool hasSizePricing(Product p) =>
+    p.options.any((o) => o.groupName == kSizeGroupName);
+
+/// Các option size (nhóm "Kích cỡ") của món; rỗng nếu món không có size.
+List<ProductOption> sizeOptionsOf(Product p) =>
+    p.options.where((o) => o.groupName == kSizeGroupName).toList();
 
 /// Các option KHÔNG phải size (topping thường).
-/// Với danh mục khác → trả về toàn bộ options như cũ.
-List<ProductOption> nonSizeOptionsOf(Product p) => isFruitCategory(p.category)
+/// Món không có nhóm size → trả về toàn bộ options như cũ.
+List<ProductOption> nonSizeOptionsOf(Product p) => hasSizePricing(p)
     ? p.options.where((o) => o.groupName != kSizeGroupName).toList()
     : p.options;
 

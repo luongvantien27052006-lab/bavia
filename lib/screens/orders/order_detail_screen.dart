@@ -3,6 +3,7 @@
 // Chi tiết đơn + huỷ đơn (chỉ khi đang PENDING). Huỷ gọi POST /orders/:id/cancel.
 
 import 'package:flutter/material.dart';
+import 'order_status_style.dart';
 import 'package:flutter/services.dart';
 import '../../widgets/star_rating.dart';
 import '../../widgets/product_review_tile.dart';
@@ -138,10 +139,6 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       children: [
         _statusHeader(order),
         const SizedBox(height: 16),
-        if (order.scheduledFor != null) ...[
-          _scheduledBanner(order.scheduledFor!),
-          const SizedBox(height: 16),
-        ],
         _statusTracker(order),
         const SizedBox(height: 16),
         if (order.items.isNotEmpty) ...[
@@ -260,28 +257,45 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   }
 
   Widget _statusHeader(OrderModel order) {
+    final c = order.status.color;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-            colors: [AppColors.coffeeDark, AppColors.coffee]),
+        gradient: LinearGradient(
+          colors: [c, Color.lerp(c, Colors.black, 0.24)!],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+              color: c.withOpacity(0.3),
+              blurRadius: 16,
+              offset: const Offset(0, 8)),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('#${order.id.substring(0, 8).toUpperCase()}',
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800)),
-          const SizedBox(height: 4),
-          Text(order.status.label,
-              style: TextStyle(color: Colors.white.withOpacity(0.9))),
-          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(order.status.icon, color: Colors.white, size: 24),
+              const SizedBox(width: 8),
+              Text(order.status.label,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text('Mã đơn #${order.id.substring(0, 8).toUpperCase()}',
+              style: TextStyle(
+                  color: Colors.white.withOpacity(0.9), fontSize: 13)),
+          const SizedBox(height: 2),
           Text(Formatters.dateTime(order.createdAt),
               style: TextStyle(
-                  color: Colors.white.withOpacity(0.7), fontSize: 12)),
+                  color: Colors.white.withOpacity(0.75), fontSize: 12)),
         ],
       ),
     );
@@ -502,42 +516,6 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           ),
           Text(Formatters.money(item.lineTotal),
               style: const TextStyle(fontWeight: FontWeight.w700)),
-        ],
-      ),
-    );
-  }
-
-  Widget _scheduledBanner(DateTime dt) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    final txt =
-        '${two(dt.hour)}:${two(dt.minute)} ngày ${two(dt.day)}/${two(dt.month)}';
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.coffee.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.coffee.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.access_time_rounded, color: AppColors.coffee, size: 22),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Đơn hẹn giờ',
-                    style: TextStyle(
-                        fontSize: 12, color: AppColors.textMuted)),
-                const SizedBox(height: 2),
-                Text('Nhận lúc $txt',
-                    style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textDark)),
-              ],
-            ),
-          ),
         ],
       ),
     );

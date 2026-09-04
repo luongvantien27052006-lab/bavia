@@ -126,10 +126,17 @@ class NewsListScreen extends ConsumerWidget {
                             fontSize: 13,
                             height: 1.35)),
                   ],
-                  const SizedBox(height: 8),
-                  Text(Formatters.date(n.publishedAt),
-                      style: TextStyle(
-                          color: AppColors.textMuted, fontSize: 11)),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_today_rounded,
+                          size: 11, color: AppColors.textMuted),
+                      const SizedBox(width: 5),
+                      Text(Formatters.date(n.publishedAt),
+                          style: TextStyle(
+                              color: AppColors.textMuted, fontSize: 11)),
+                    ],
+                  ),
                 ],
               ),
             ),

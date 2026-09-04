@@ -32,6 +32,9 @@ import '../orders/order_history_screen.dart';
 import '../profile/profile_screen.dart';
 import '../legal/legal_screen.dart';
 import '../referral/referral_screen.dart';
+import '../membership/membership_rank_screen.dart';
+import '../../providers/loyalty_provider.dart';
+import '../../models/membership_rank.dart';
 
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key});
@@ -39,6 +42,7 @@ class AccountScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
+    final rankAsync = ref.watch(membershipRankProvider);
 
     return GlassBackground(
       child: Scaffold(
@@ -91,6 +95,30 @@ class AccountScreen extends ConsumerWidget {
                         style: TextStyle(
                             color: Colors.white.withOpacity(0.85)),
                       ),
+                      rankAsync.maybeWhen(
+                        data: (r) => Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.22),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(r.tier.icon, color: Colors.white, size: 14),
+                              const SizedBox(width: 5),
+                              Text('Hạng ${r.tier.label}',
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w800)),
+                            ],
+                          ),
+                        ),
+                        orElse: () => const SizedBox.shrink(),
+                      ),
                     ],
                   ),
                 ),
@@ -99,17 +127,22 @@ class AccountScreen extends ConsumerWidget {
             ),
           ),
           ),
-          const SizedBox(height: 16),
-          _tile(context, Icons.receipt_long_rounded, 'Lịch sử đơn hàng',
-              'Xem các đơn đã đặt', const OrderHistoryScreen()),
-          _tile(context, Icons.location_on_rounded, 'Sổ địa chỉ',
-              'Quản lý địa chỉ giao hàng', const AddressListScreen()),
+          const SizedBox(height: 20),
+          _sectionHeader('Ưu đãi & Tích luỹ'),
+          _tile(context, Icons.workspace_premium_rounded, 'Hạng thành viên',
+              'Xem hạng & quyền lợi', const MembershipRankScreen()),
           _tile(context, Icons.card_giftcard_rounded, 'Điểm thưởng',
               'Số dư & lịch sử điểm', const LoyaltyScreen()),
           _tile(context, Icons.event_available_rounded, 'Điểm danh nhận quà',
               'Chuỗi ngày & phần thưởng mỗi ngày', const CheckinScreen()),
           _tile(context, Icons.groups_rounded, 'Giới thiệu bạn bè',
               'Nhận voucher & điểm khi mời bạn', const ReferralScreen()),
+          const SizedBox(height: 18),
+          _sectionHeader('Đơn hàng & Tài khoản'),
+          _tile(context, Icons.receipt_long_rounded, 'Lịch sử đơn hàng',
+              'Xem các đơn đã đặt', const OrderHistoryScreen()),
+          _tile(context, Icons.location_on_rounded, 'Sổ địa chỉ',
+              'Quản lý địa chỉ giao hàng', const AddressListScreen()),
           _tile(context, Icons.privacy_tip_rounded, 'Chính sách & Điều khoản',
               'Điều khoản sử dụng và quyền riêng tư', const LegalScreen()),
           const SizedBox(height: 6),
@@ -212,6 +245,16 @@ class AccountScreen extends ConsumerWidget {
       ),
     );
   }
+
+  Widget _sectionHeader(String title) => Padding(
+        padding: const EdgeInsets.only(left: 4, bottom: 8),
+        child: Text(title,
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textMuted,
+                letterSpacing: 0.3)),
+      );
 
   Widget _tile(BuildContext context, IconData icon, String title,
       String subtitle, Widget destination) {
