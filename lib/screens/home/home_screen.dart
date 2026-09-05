@@ -73,7 +73,7 @@ class HomeScreen extends ConsumerWidget {
             padding: EdgeInsets.zero,
             children: [
               _topBar(context, ref, user),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               _header(context, ref, user),
               const SizedBox(height: 16),
               if (activeOrder != null) ...[
@@ -183,7 +183,7 @@ class HomeScreen extends ConsumerWidget {
     final topPad = MediaQuery.of(context).padding.top;
     final loggedIn = user != null;
     return Padding(
-      padding: EdgeInsets.fromLTRB(18, topPad + 14, 18, 8),
+      padding: EdgeInsets.fromLTRB(18, topPad + 14, 18, 12),
       child: Row(
         children: [
           Expanded(
@@ -258,13 +258,21 @@ class HomeScreen extends ConsumerWidget {
       onTap: loggedIn ? openNews : null,
       child: Container(
         height: 178,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [AppColors.coffeeDark, AppColors.coffee],
           ),
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.coffee.withOpacity(0.22),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(

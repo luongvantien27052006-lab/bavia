@@ -6,8 +6,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:qr_flutter/qr_flutter.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../core/config/api_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -286,11 +284,13 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
 
   void _shareInvite(GroupOrder room) {
     final link = _inviteLink(room);
-    Share.share(
-      'Cùng đặt nước ở Mọng Fruits nhé! 🍓\n'
-      'Vào phòng đặt chung (mã ${room.code}):\n$link',
-      subject: 'Mời đặt chung — Mọng Fruits',
-    );
+    final msg = 'Cùng đặt nước ở Mọng Fruits nhé! 🍓\n'
+        'Vào phòng đặt chung (mã ${room.code}):\n$link';
+    Clipboard.setData(ClipboardData(text: msg));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Đã sao chép lời mời — dán vào Zalo/Messenger để gửi bạn bè'),
+      behavior: SnackBarBehavior.floating,
+    ));
   }
 
   void _showQr(GroupOrder room) {
@@ -314,11 +314,24 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
               Text('Mã phòng: ${room.code}',
                   style: TextStyle(color: AppColors.textMuted)),
               const SizedBox(height: 16),
-              QrImageView(
-                data: _inviteLink(room),
-                version: QrVersions.auto,
-                size: 220,
-                gapless: false,
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  'https://api.qrserver.com/v1/create-qr-code/?size=440x440&data=${Uri.encodeComponent(_inviteLink(room))}',
+                  width: 220,
+                  height: 220,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => SizedBox(
+                    width: 220,
+                    height: 220,
+                    child: Center(
+                      child: Text('Mã phòng: ${room.code}',
+                          style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textDark)),
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
               SizedBox(
