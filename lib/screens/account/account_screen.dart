@@ -31,6 +31,7 @@ import 'checkin_screen.dart';
 import '../orders/order_history_screen.dart';
 import '../profile/profile_screen.dart';
 import '../legal/legal_screen.dart';
+import '../support/contact_screen.dart';
 import '../referral/referral_screen.dart';
 import '../membership/membership_rank_screen.dart';
 import '../../providers/loyalty_provider.dart';
@@ -143,6 +144,8 @@ class AccountScreen extends ConsumerWidget {
               'Xem các đơn đã đặt', const OrderHistoryScreen()),
           _tile(context, Icons.location_on_rounded, 'Sổ địa chỉ',
               'Quản lý địa chỉ giao hàng', const AddressListScreen()),
+          _tile(context, Icons.support_agent_rounded, 'Liên hệ hỗ trợ',
+              'Hotline, Zalo, email, địa chỉ quán', const ContactScreen()),
           _tile(context, Icons.privacy_tip_rounded, 'Chính sách & Điều khoản',
               'Điều khoản sử dụng và quyền riêng tư', const LegalScreen()),
           const SizedBox(height: 6),

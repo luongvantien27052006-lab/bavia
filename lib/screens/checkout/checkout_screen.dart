@@ -1053,12 +1053,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   fontWeight: FontWeight.w700, fontSize: 13)),
           const SizedBox(height: 4),
           const Text(
-            'Số 207, đường Thủy Nguyên, Ecopark, thị trấn Văn Giang, '
-            'tỉnh Hưng Yên',
+            'Số 098, đường Thủy Nguyên, khu đô thị Ecopark, '
+            'Xuân Quan, Phụng Công, Hưng Yên',
             style: TextStyle(fontSize: 13, height: 1.45),
           ),
           const SizedBox(height: 6),
-          Text('Hỗ trợ: 0338316893',
+          Text('Hỗ trợ: mongfruits089@gmail.com',
               style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
         ],
       ),
