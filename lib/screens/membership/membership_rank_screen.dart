@@ -16,9 +16,9 @@ class MembershipRankScreen extends ConsumerWidget {
   // Ngưỡng để hiển thị bảng (khớp backend).
   static const _tiers = [
     (MemberTier.bronze, 0, 0),
-    (MemberTier.silver, 5, 200000),
-    (MemberTier.gold, 10, 700000),
-    (MemberTier.diamond, 20, 1000000),
+    (MemberTier.silver, 12, 600000),
+    (MemberTier.gold, 30, 1800000),
+    (MemberTier.diamond, 60, 4000000),
   ];
 
   @override
@@ -139,7 +139,7 @@ class MembershipRankScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.border),
       ),
@@ -251,21 +251,21 @@ class MembershipRankScreen extends ConsumerWidget {
         ];
       case MemberTier.silver:
         return const [
-          (Icons.confirmation_number_rounded, 'Giảm 10% tối đa 15k mỗi tháng'),
-          (Icons.local_shipping_rounded, 'Freeship 15k mỗi tháng'),
-          (Icons.card_giftcard_rounded, 'Thưởng 20k khi lên hạng'),
-        ];
-      case MemberTier.gold:
-        return const [
-          (Icons.confirmation_number_rounded, 'Giảm 15% tối đa 25k mỗi tháng'),
+          (Icons.confirmation_number_rounded, 'Giảm 10% tối đa 20k mỗi tháng'),
           (Icons.local_shipping_rounded, 'Freeship 18k mỗi tháng'),
           (Icons.card_giftcard_rounded, 'Thưởng 30k khi lên hạng'),
         ];
+      case MemberTier.gold:
+        return const [
+          (Icons.confirmation_number_rounded, 'Giảm 15% tối đa 40k mỗi tháng'),
+          (Icons.local_shipping_rounded, 'Freeship 25k mỗi tháng'),
+          (Icons.card_giftcard_rounded, 'Thưởng 70k khi lên hạng'),
+        ];
       case MemberTier.diamond:
         return const [
-          (Icons.confirmation_number_rounded, 'Giảm 20% tối đa 30k mỗi tháng'),
-          (Icons.local_shipping_rounded, 'Freeship 25k mỗi tháng'),
-          (Icons.card_giftcard_rounded, 'Thưởng 50k khi lên hạng'),
+          (Icons.confirmation_number_rounded, 'Giảm 25% tối đa 70k mỗi tháng'),
+          (Icons.local_shipping_rounded, 'Freeship 35k mỗi tháng'),
+          (Icons.card_giftcard_rounded, 'Thưởng 150k khi lên hạng'),
         ];
     }
   }
@@ -277,7 +277,7 @@ class MembershipRankScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
             color: isCurrent ? tier.color : AppColors.border,
