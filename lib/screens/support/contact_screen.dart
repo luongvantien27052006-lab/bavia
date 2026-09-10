@@ -14,7 +14,7 @@ class ContactScreen extends StatelessWidget {
   // ⚙️ THÔNG TIN LIÊN HỆ — điền vào đây (để trống dòng nào thì dòng đó tự ẩn).
   static const String hotline = ''; // VD: '0338316893'
   static const String zaloUrl = ''; // VD: 'https://zalo.me/0338316893'
-  static const String facebookUrl = ''; // VD: 'https://facebook.com/mongfruits'
+  static const String facebookUrl = 'https://www.facebook.com/profile.php?id=100089184953568';
   static const String email = 'mongfruits089@gmail.com';
   static const String address =
       'Số 098, đường Thủy Nguyên, khu đô thị Ecopark, '
