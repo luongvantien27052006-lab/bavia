@@ -13,6 +13,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/menu_pricing.dart';
 import '../../models/product.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/group_order_provider.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/product_image.dart';
 import '../../widgets/glass_card.dart';
@@ -72,7 +73,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     });
   }
 
-  void _addToCart() {
+  Future<void> _addToCart() async {
     final selected = <ProductOption>[];
     // Trai cay: kem size da chon vao gio (de tinh gia + validate backend).
     if (_isFruit && _selectedSizeId != null) {
@@ -80,6 +81,38 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       if (size.isNotEmpty) selected.add(size.first);
     }
     selected.addAll(_nonSizeOpts.where((o) => _selectedIds.contains(o.id)));
+
+    // ─── Chế độ ĐẶT CHUNG: thêm vào PHÒNG, KHÔNG vào giỏ thường ───
+    final groupId = ref.read(activeGroupProvider);
+    if (groupId != null) {
+      try {
+        await ref.read(groupOrderRepositoryProvider).addItem(
+              groupId,
+              productId: widget.product.id,
+              quantity: _qty,
+              options: selected,
+              unitPrice: _unitPrice,
+              productName: widget.product.name,
+            );
+        ref.invalidate(groupRoomProvider(groupId));
+        ref.invalidate(activeGroupRoomProvider);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Đã thêm $_qty ${widget.product.name} vào phòng'),
+          backgroundColor: AppColors.success,
+          duration: const Duration(seconds: 2),
+        ));
+        Navigator.of(context).pop();
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Không thêm được món vào phòng'),
+          backgroundColor: AppColors.delivery,
+        ));
+      }
+      return;
+    }
+
 
     ref.read(cartProvider.notifier).add(
           widget.product,

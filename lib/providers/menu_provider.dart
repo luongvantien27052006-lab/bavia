@@ -83,7 +83,12 @@ final availableCategoriesProvider = Provider<List<String>>((ref) {
           result.add(p.category);
         }
       }
-      return result;
+      // Đồ UỐNG (trà, nước, matcha, cafe...) lên trên; ĐỒ ĂN (bánh ăn kèm,
+      // trái cây chấm muối) xuống cuối.
+      const foodCats = ['Bánh ăn kèm', 'Trái cây chấm muối'];
+      final drinks = result.where((c) => !foodCats.contains(c)).toList();
+      final foods = result.where((c) => foodCats.contains(c)).toList();
+      return [...drinks, ...foods];
     },
     orElse: () => const [],
   );

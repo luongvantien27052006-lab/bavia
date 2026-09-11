@@ -9,11 +9,13 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme/app_theme.dart';
+import '../providers/display_settings_provider.dart';
 import 'anim.dart';
 
-class GlassCard extends StatelessWidget {
+class GlassCard extends ConsumerWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final double radius;
@@ -34,12 +36,15 @@ class GlassCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final dark = AppColors.dark;
+    final glassOn = ref.watch(displaySettingsProvider.select((x) => x.glass));
+    final effBlur = glassOn ? blur : 0.0;
+    // Tắt kính -> thẻ đặc hơn cho dễ đọc (không còn mờ nền).
     final fill = tint ??
         (dark
-            ? Colors.white.withOpacity(0.07)
-            : Colors.white.withOpacity(0.55));
+            ? Colors.white.withOpacity(glassOn ? 0.07 : 0.10)
+            : Colors.white.withOpacity(glassOn ? 0.55 : 0.92));
     final border = borderColor ??
         (dark
             ? Colors.white.withOpacity(0.14)
@@ -58,9 +63,9 @@ class GlassCard extends StatelessWidget {
     // Lớp kính (mờ nền nếu blur>0)
     Widget glass = ClipRRect(
       borderRadius: br,
-      child: blur > 0
+      child: effBlur > 0
           ? BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+              filter: ImageFilter.blur(sigmaX: effBlur, sigmaY: effBlur),
               child: inner,
             )
           : inner,
@@ -90,13 +95,19 @@ class GlassCard extends StatelessWidget {
 
 /// Nền gradient "kính mờ" cho cả màn (đặt sau nội dung).
 /// Màu tự đổi theo Sáng/Tối.
-class GlassBackground extends StatelessWidget {
+class GlassBackground extends ConsumerWidget {
   final Widget child;
   const GlassBackground({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final dark = AppColors.dark;
+    final colorBg =
+        ref.watch(displaySettingsProvider.select((x) => x.colorBg));
+    // Chế độ SÁNG + tắt màu nền -> nền phẳng nhạt; còn lại giữ gradient.
+    if (!dark && !colorBg) {
+      return ColoredBox(color: const Color(0xFFFDF6EF), child: child);
+    }
     final colors = dark
         ? const [Color(0xFF1E1510), Color(0xFF241A1E), Color(0xFF14201D)]
         : const [Color(0xFFFFEEDD), Color(0xFFFFE1E9), Color(0xFFDFF3EE)];

@@ -14,6 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/app_theme.dart';
 import '../models/product.dart';
 import '../providers/cart_provider.dart';
+import '../providers/group_order_provider.dart';
 import '../utils/formatters.dart';
 import 'product_image.dart';
 import 'favorite_button.dart';
@@ -29,13 +30,20 @@ class ProductCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final qty = ref.watch(
-      cartProvider.select(
-        (items) => items
-            .where((i) => i.product.id == product.id)
-            .fold(0, (s, i) => s + i.quantity),
-      ),
-    );
+    final groupId = ref.watch(activeGroupProvider);
+    final int qty = groupId != null
+        ? ref.watch(groupRoomProvider(groupId)).maybeWhen(
+            data: (room) => room.participants
+                .expand((pp) => pp.items)
+                .where((it) => it.productId == product.id)
+                .fold<int>(0, (a, it) => a + it.quantity),
+            orElse: () => 0,
+          )
+        : ref.watch(cartProvider.select(
+            (items) => items
+                .where((i) => i.product.id == product.id)
+                .fold<int>(0, (a, i) => a + i.quantity),
+          ));
 
     final dark = AppColors.dark;
     return GestureDetector(
@@ -125,9 +133,29 @@ class ProductCard extends ConsumerWidget {
 
   Widget _addButton(WidgetRef ref, int qty) {
     return InkWell(
-      onTap: () => product.hasOptions
-          ? onTap()
-          : ref.read(cartProvider.notifier).add(product),
+      onTap: () async {
+        if (product.hasOptions) {
+          onTap();
+          return;
+        }
+        final groupId = ref.read(activeGroupProvider);
+        if (groupId != null) {
+          try {
+            await ref.read(groupOrderRepositoryProvider).addItem(
+                  groupId,
+                  productId: product.id,
+                  quantity: 1,
+                  options: const [],
+                  unitPrice: product.price,
+                  productName: product.name,
+                );
+            ref.invalidate(groupRoomProvider(groupId));
+            ref.invalidate(activeGroupRoomProvider);
+          } catch (_) {}
+        } else {
+          ref.read(cartProvider.notifier).add(product);
+        }
+      },
       borderRadius: BorderRadius.circular(10),
       child: Container(
         padding: const EdgeInsets.all(6),

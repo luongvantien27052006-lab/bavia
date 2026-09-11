@@ -11,11 +11,13 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme/app_theme.dart';
 import '../models/product.dart';
+import '../providers/display_settings_provider.dart';
 
-class ProductImage extends StatelessWidget {
+class ProductImage extends ConsumerWidget {
   final Product product;
   final double? width;
   final double? height;
@@ -32,7 +34,9 @@ class ProductImage extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final fade =
+        ref.watch(displaySettingsProvider.select((x) => x.imageFade));
     Widget img;
     if (product.hasImage) {
       img = CachedNetworkImage(
@@ -40,6 +44,10 @@ class ProductImage extends StatelessWidget {
         width: width,
         height: height,
         fit: fit,
+        fadeInDuration:
+            fade ? const Duration(milliseconds: 350) : Duration.zero,
+        fadeOutDuration:
+            fade ? const Duration(milliseconds: 150) : Duration.zero,
         placeholder: (_, __) => _placeholder(),
         errorWidget: (_, __, ___) => _placeholder(),
       );
