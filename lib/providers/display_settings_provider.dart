@@ -19,10 +19,11 @@ class DisplaySettings {
   final bool imageFade; // ảnh món hiện dần
   final bool colorBg; // màu nền gradient ở chế độ SÁNG
 
+  // Mặc định TẮT hết hiệu ứng (kính, ảnh hiện dần, màu nền) cho nhẹ máy.
   const DisplaySettings({
-    this.glass = true,
-    this.imageFade = false,  // mặc định: ảnh hiện NGAY (không nổi dần)
-    this.colorBg = true,
+    this.glass = false,
+    this.imageFade = false,
+    this.colorBg = false,
   });
 
   DisplaySettings copyWith({bool? glass, bool? imageFade, bool? colorBg}) =>
@@ -46,9 +47,9 @@ class DisplaySettingsNotifier extends Notifier<DisplaySettings> {
       final f = await _storage.read(key: _kImgFade);
       final c = await _storage.read(key: _kColorBg);
       state = DisplaySettings(
-        glass: g != 'off',
-        imageFade: f != 'off',
-        colorBg: c != 'off',
+        glass: g == 'on',
+        imageFade: f == 'on',
+        colorBg: c == 'on',
       );
     } catch (_) {}
   }
