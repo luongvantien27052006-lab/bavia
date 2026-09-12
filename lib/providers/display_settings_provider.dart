@@ -21,7 +21,7 @@ class DisplaySettings {
 
   const DisplaySettings({
     this.glass = true,
-    this.imageFade = true,
+    this.imageFade = false,  // mặc định: ảnh hiện NGAY (không nổi dần)
     this.colorBg = true,
   });
 

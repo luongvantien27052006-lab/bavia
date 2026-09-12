@@ -15,6 +15,41 @@ import '../models/product.dart';
 import 'repository_providers.dart';
 import 'favorites_provider.dart';
 
+
+/// Bỏ dấu tiếng Việt + thường hoá (khớp category dù lưu NFC hay NFD).
+String vnNorm(String s) {
+  var r = s.toLowerCase().trim();
+  // Bỏ dấu tổ hợp (NFD): loại code point 0x300-0x36F.
+  final buf = StringBuffer();
+  for (final rune in r.runes) {
+    if (rune >= 0x300 && rune <= 0x36f) continue;
+    buf.writeCharCode(rune);
+  }
+  r = buf.toString();
+  const m = {
+    'à': 'a', 'á': 'a', 'ả': 'a', 'ã': 'a', 'ạ': 'a', 'ă': 'a', 'ằ': 'a',
+    'ắ': 'a', 'ẳ': 'a', 'ẵ': 'a', 'ặ': 'a', 'â': 'a', 'ầ': 'a', 'ấ': 'a',
+    'ẩ': 'a', 'ẫ': 'a', 'ậ': 'a', 'è': 'e', 'é': 'e', 'ẻ': 'e', 'ẽ': 'e',
+    'ẹ': 'e', 'ê': 'e', 'ề': 'e', 'ế': 'e', 'ể': 'e', 'ễ': 'e', 'ệ': 'e',
+    'ì': 'i', 'í': 'i', 'ỉ': 'i', 'ĩ': 'i', 'ị': 'i', 'ò': 'o', 'ó': 'o',
+    'ỏ': 'o', 'õ': 'o', 'ọ': 'o', 'ô': 'o', 'ồ': 'o', 'ố': 'o', 'ổ': 'o',
+    'ỗ': 'o', 'ộ': 'o', 'ơ': 'o', 'ờ': 'o', 'ớ': 'o', 'ở': 'o', 'ỡ': 'o',
+    'ợ': 'o', 'ù': 'u', 'ú': 'u', 'ủ': 'u', 'ũ': 'u', 'ụ': 'u', 'ư': 'u',
+    'ừ': 'u', 'ứ': 'u', 'ử': 'u', 'ữ': 'u', 'ự': 'u', 'ỳ': 'y', 'ý': 'y',
+    'ỷ': 'y', 'ỹ': 'y', 'ỵ': 'y', 'đ': 'd',
+  };
+  m.forEach((k, v) => r = r.replaceAll(k, v));
+  return r;
+}
+
+/// Danh mục ĐỒ ĂN (bánh ăn kèm, trái cây chấm muối) -> xếp CUỐI menu.
+bool isFoodCategory(String cat) {
+  final n = vnNorm(cat);
+  return n.contains('banh') ||
+      n.contains('trai cay') ||
+      n.contains('cham muoi');
+}
+
 /// Tải toàn bộ sản phẩm (1 lần, cache qua FutureProvider).
 final productsProvider = FutureProvider<List<Product>>((ref) async {
   final repo = ref.watch(productRepositoryProvider);
@@ -83,11 +118,9 @@ final availableCategoriesProvider = Provider<List<String>>((ref) {
           result.add(p.category);
         }
       }
-      // Đồ UỐNG (trà, nước, matcha, cafe...) lên trên; ĐỒ ĂN (bánh ăn kèm,
-      // trái cây chấm muối) xuống cuối.
-      const foodCats = ['Bánh ăn kèm', 'Trái cây chấm muối'];
-      final drinks = result.where((c) => !foodCats.contains(c)).toList();
-      final foods = result.where((c) => foodCats.contains(c)).toList();
+      // Đồ UỐNG lên trên; ĐỒ ĂN (bánh, trái cây chấm muối) xuống CUỐI.
+      final drinks = result.where((c) => !isFoodCategory(c)).toList();
+      final foods = result.where((c) => isFoodCategory(c)).toList();
       return [...drinks, ...foods];
     },
     orElse: () => const [],

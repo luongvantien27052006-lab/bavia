@@ -666,7 +666,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Widget _voucherSection(CheckoutState checkout) {
-    final bothApplied = checkout.hasVoucher && checkout.hasShippingVoucher;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -688,142 +687,49 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ref.read(checkoutProvider.notifier).removeShippingVoucher();
             },
           ),
-        if (!bothApplied)
-          Row(
-            children: [
-        Expanded(
-          child: TextField(
-            controller: _voucherController,
-            textCapitalization: TextCapitalization.characters,
-            decoration: const InputDecoration(
-              hintText: 'Nhập mã giảm giá / freeship',
-              prefixIcon: Icon(Icons.local_offer_outlined),
+        // Nút "Thêm voucher" -> mở danh sách voucher trong ví.
+        InkWell(
+          onTap: _showVoucherSheet,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: BoxDecoration(
+              color: AppColors.dark
+                  ? Colors.white.withOpacity(0.05)
+                  : Colors.white.withOpacity(0.7),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.coffee.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.local_offer_rounded,
+                    color: AppColors.coffee, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text('Thêm voucher',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                          fontSize: 14.5)),
+                ),
+                Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+              ],
             ),
           ),
         ),
-        const SizedBox(width: 10),
-        SizedBox(
-          width: 104,
-          height: 54,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                minimumSize: const Size(104, 54),
-                padding: const EdgeInsets.symmetric(horizontal: 8)),
-            onPressed: checkout.validatingVoucher
-                ? null
-                : () => ref
-                    .read(checkoutProvider.notifier)
-                    .applyVoucher(_voucherController.text),
-            child: checkout.validatingVoucher
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white))
-                : const Text('Áp dụng'),
-          ),
-        ),
-      ],
-          ),
-        _walletPicker(checkout),
       ],
     );
   }
 
-  // Gợi ý voucher trong ví — bấm 1 chạm để áp.
-  Widget _walletPicker(CheckoutState checkout) {
-    final async = ref.watch(availableVouchersProvider);
-    return async.maybeWhen(
-      data: (list) {
-        final usable = list
-            .where((v) =>
-                v.remainingForMe > 0 &&
-                v.code != checkout.appliedCode &&
-                v.code != checkout.shippingCode)
-            .toList();
-        if (usable.isEmpty) return const SizedBox.shrink();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 14),
-            Text('Voucher của bạn',
-                style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textDark)),
-            const SizedBox(height: 8),
-            ...usable.map((v) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: InkWell(
-                    onTap: checkout.validatingVoucher
-                        ? null
-                        : () => ref
-                            .read(checkoutProvider.notifier)
-                            .applyVoucher(v.code),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.dark
-                            ? Colors.white.withOpacity(0.05)
-                            : Colors.white.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                            color: AppColors.coffee.withOpacity(0.25)),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                              v.type == 'SHIPPING'
-                                  ? Icons.local_shipping_rounded
-                                  : Icons.confirmation_number_rounded,
-                              color: AppColors.coffee,
-                              size: 22),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(v.name,
-                                    style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.textDark)),
-                                const SizedBox(height: 2),
-                                Text(_walletVoucherDesc(v),
-                                    style: TextStyle(
-                                        fontSize: 11,
-                                        color: AppColors.textMuted)),
-                              ],
-                            ),
-                          ),
-                          Text('Dùng',
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.coffee)),
-                        ],
-                      ),
-                    ),
-                  ),
-                )),
-          ],
-        );
-      },
-      orElse: () => const SizedBox.shrink(),
+  // Bảng chọn voucher: hiện TẤT CẢ voucher trong ví. Đủ điều kiện -> sáng +
+  // tích được; không đủ -> tối + khoá. Vẫn có ô nhập mã thủ công.
+  void _showVoucherSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _VoucherSheet(),
     );
-  }
-
-  String _walletVoucherDesc(VoucherWallet v) {
-    final d = v.type == 'PERCENTAGE'
-        ? 'Giảm ${v.discountValue}%'
-        : v.type == 'SHIPPING'
-            ? 'Giảm ship ${Formatters.money(v.discountValue)}'
-            : 'Giảm ${Formatters.money(v.discountValue)}';
-    if (v.minOrderValue > 0) {
-      return '$d · Đơn từ ${Formatters.money(v.minOrderValue)}';
-    }
-    return d;
   }
 
   // ─── Dùng điểm ───────────────────────────────────────────────────────
@@ -1053,12 +959,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   fontWeight: FontWeight.w700, fontSize: 13)),
           const SizedBox(height: 4),
           const Text(
-            'Số 098, đường Thủy Nguyên, khu đô thị Ecopark, '
-            'Xuân Quan, Phụng Công, Hưng Yên',
+            'Số 207, đường Thủy Nguyên, Ecopark, thị trấn Văn Giang, '
+            'tỉnh Hưng Yên',
             style: TextStyle(fontSize: 13, height: 1.45),
           ),
           const SizedBox(height: 6),
-          Text('Hỗ trợ: mongfruits089@gmail.com',
+          Text('Hỗ trợ: 0338316893',
               style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
         ],
       ),
@@ -1080,6 +986,367 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           Text('${amount < 0 ? '−' : ''}${Formatters.money(amount.abs())}',
               style: style),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Bảng chọn voucher (tách 2 loại, tự tích voucher tốt nhất mỗi loại).
+String walletVoucherDesc(VoucherWallet v) {
+  final d = v.type == 'PERCENTAGE'
+      ? 'Giảm ${v.discountValue}%'
+      : v.type == 'SHIPPING'
+          ? 'Giảm ship ${Formatters.money(v.discountValue)}'
+          : 'Giảm ${Formatters.money(v.discountValue)}';
+  if (v.minOrderValue > 0) {
+    return '$d · Đơn từ ${Formatters.money(v.minOrderValue)}';
+  }
+  return d;
+}
+
+class _VoucherSheet extends ConsumerStatefulWidget {
+  const _VoucherSheet();
+  @override
+  ConsumerState<_VoucherSheet> createState() => _VoucherSheetState();
+}
+
+class _VoucherSheetState extends ConsumerState<_VoucherSheet> {
+  final _codeCtrl = TextEditingController();
+  String? _selDiscount; // code voucher giảm giá đang tích
+  String? _selShipping; // code voucher freeship đang tích
+  bool _init = false;
+
+  @override
+  void dispose() {
+    _codeCtrl.dispose();
+    super.dispose();
+  }
+
+  // Số tiền giảm thực tế (để xếp voucher giảm nhiều hơn lên trước).
+  int _eff(VoucherWallet v, int subtotal) => v.isPercent
+      ? (subtotal * v.discountValue / 100).round()
+      : v.discountValue;
+
+  bool _eligible(VoucherWallet v, int subtotal) =>
+      v.isUsable && subtotal >= v.minOrderValue;
+
+  Future<void> _applyAndClose(CheckoutState checkout) async {
+    final n = ref.read(checkoutProvider.notifier);
+    if (_selDiscount != checkout.appliedCode) {
+      if (_selDiscount != null) {
+        await n.applyVoucher(_selDiscount!);
+      } else {
+        n.removeVoucher();
+      }
+    }
+    if (_selShipping != checkout.shippingCode) {
+      if (_selShipping != null) {
+        await n.applyVoucher(_selShipping!);
+      } else {
+        n.removeShippingVoucher();
+      }
+    }
+    if (mounted) Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final checkout = ref.watch(checkoutProvider);
+    final subtotal = ref.watch(cartSubtotalProvider);
+    final async = ref.watch(availableVouchersProvider);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        constraints:
+            BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+        decoration: BoxDecoration(
+          color: AppColors.cream,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                  color: AppColors.textMuted.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2)),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 2, 8, 6),
+              child: Row(
+                children: [
+                  Icon(Icons.local_offer_rounded,
+                      color: AppColors.coffee, size: 22),
+                  const SizedBox(width: 8),
+                  Text('Voucher của bạn',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 17,
+                          color: AppColors.textDark)),
+                  const Spacer(),
+                  IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close_rounded)),
+                ],
+              ),
+            ),
+            // Ô nhập mã thủ công (áp xong đóng luôn).
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _codeCtrl,
+                      textCapitalization: TextCapitalization.characters,
+                      decoration: const InputDecoration(
+                        hintText: 'Nhập mã voucher',
+                        prefixIcon: Icon(Icons.confirmation_number_outlined),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    height: 54,
+                    child: ElevatedButton(
+                      onPressed: checkout.validatingVoucher
+                          ? null
+                          : () async {
+                              final code = _codeCtrl.text.trim();
+                              if (code.isEmpty) return;
+                              await ref
+                                  .read(checkoutProvider.notifier)
+                                  .applyVoucher(code);
+                              if (mounted) Navigator.pop(context);
+                            },
+                      child: checkout.validatingVoucher
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : const Text('Áp dụng'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Flexible(
+              child: async.when(
+                loading: () => const Padding(
+                    padding: EdgeInsets.all(28),
+                    child: Center(child: CircularProgressIndicator())),
+                error: (e, _) => Padding(
+                    padding: const EdgeInsets.all(28),
+                    child: Text('Không tải được voucher',
+                        style: TextStyle(color: AppColors.textMuted))),
+                data: (list) {
+                  if (list.isEmpty) {
+                    return Padding(
+                        padding: const EdgeInsets.all(28),
+                        child: Text('Bạn chưa có voucher nào',
+                            style: TextStyle(color: AppColors.textMuted)));
+                  }
+                  final shipping =
+                      list.where((v) => v.type == 'SHIPPING').toList();
+                  final discount =
+                      list.where((v) => v.type != 'SHIPPING').toList();
+                  // Giảm NHIỀU hơn lên trước.
+                  shipping.sort(
+                      (a, b) => _eff(b, subtotal).compareTo(_eff(a, subtotal)));
+                  discount.sort(
+                      (a, b) => _eff(b, subtotal).compareTo(_eff(a, subtotal)));
+                  // Lần đầu mở: tự tích voucher đủ ĐK giảm nhiều nhất mỗi loại.
+                  if (!_init) {
+                    _init = true;
+                    VoucherWallet? bestD;
+                    for (final v in discount) {
+                      if (_eligible(v, subtotal)) {
+                        bestD = v;
+                        break;
+                      }
+                    }
+                    VoucherWallet? bestS;
+                    for (final v in shipping) {
+                      if (_eligible(v, subtotal)) {
+                        bestS = v;
+                        break;
+                      }
+                    }
+                    _selDiscount = checkout.appliedCode ?? bestD?.code;
+                    _selShipping = checkout.shippingCode ?? bestS?.code;
+                  }
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    children: [
+                      // Voucher giảm SHIP ở TRÊN.
+                      if (shipping.isNotEmpty) ...[
+                        _sectionLabel('Giảm phí ship'),
+                        ...shipping
+                            .map((v) => _card(v, subtotal, isShipping: true)),
+                        const SizedBox(height: 6),
+                      ],
+                      if (discount.isNotEmpty) ...[
+                        _sectionLabel('Giảm giá món'),
+                        ...discount
+                            .map((v) => _card(v, subtotal, isShipping: false)),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ),
+            // Nút Áp dụng: áp voucher đã tích + ĐÓNG bảng.
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: checkout.validatingVoucher
+                        ? null
+                        : () => _applyAndClose(checkout),
+                    child: const Text('Áp dụng',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w800, fontSize: 15.5)),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionLabel(String t) => Padding(
+        padding: const EdgeInsets.only(bottom: 8, top: 2),
+        child: Text(t,
+            style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textMuted,
+                letterSpacing: 0.3)),
+      );
+
+  Widget _card(VoucherWallet v, int subtotal, {required bool isShipping}) {
+    final meetsMin = subtotal >= v.minOrderValue;
+    final eligible = v.isUsable && meetsMin;
+    final selected =
+        isShipping ? _selShipping == v.code : _selDiscount == v.code;
+
+    String? reason;
+    if (v.isExpired) {
+      reason = 'Đã hết hạn';
+    } else if (v.remainingForMe <= 0) {
+      reason = 'Đã hết lượt dùng';
+    } else if (!meetsMin) {
+      reason = 'Cần đơn tối thiểu ${Formatters.money(v.minOrderValue)}';
+    }
+
+    final accent = isShipping ? AppColors.success : AppColors.hot;
+
+    return Opacity(
+      opacity: eligible ? 1.0 : 0.45, // không đủ ĐK -> tối
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: InkWell(
+          onTap: eligible
+              ? () => setState(() {
+                    if (isShipping) {
+                      _selShipping = selected ? null : v.code;
+                    } else {
+                      _selDiscount = selected ? null : v.code;
+                    }
+                  })
+              : null,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: selected
+                  ? accent.withOpacity(0.10)
+                  : (AppColors.dark
+                      ? Colors.white.withOpacity(0.05)
+                      : Colors.white.withOpacity(0.85)),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: selected
+                    ? accent
+                    : (eligible
+                        ? accent.withOpacity(0.35)
+                        : AppColors.textMuted.withOpacity(0.25)),
+                width: selected ? 1.8 : 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                      color: accent.withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(12)),
+                  child: Icon(
+                      isShipping
+                          ? Icons.local_shipping_rounded
+                          : Icons.confirmation_number_rounded,
+                      color: accent,
+                      size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(v.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              color: AppColors.textDark)),
+                      const SizedBox(height: 3),
+                      Text(walletVoucherDesc(v),
+                          style: TextStyle(
+                              fontSize: 11.5, color: AppColors.textMuted)),
+                      if (reason != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 3),
+                          child: Text(reason,
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.delivery)),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                    selected
+                        ? Icons.check_circle_rounded
+                        : eligible
+                            ? Icons.radio_button_unchecked_rounded
+                            : Icons.lock_rounded,
+                    color: selected
+                        ? accent
+                        : eligible
+                            ? AppColors.coffee
+                            : AppColors.textMuted,
+                    size: (selected || eligible) ? 26 : 22),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

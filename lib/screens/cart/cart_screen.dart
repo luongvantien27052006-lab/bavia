@@ -111,13 +111,12 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     final async = ref.watch(productsProvider);
     return async.maybeWhen(
       data: (all) {
-        // Ưu tiên gợi ý BÁNH ăn kèm + TRÁI CÂY chấm muối (hợp với đồ uống).
-        const foodCats = ['Bánh ăn kèm', 'Trái cây chấm muối'];
+        // Ưu tiên gợi ý BÁNH + TRÁI CÂY chấm muối (hợp với đồ uống).
         final avail = all.where((p) => !inCart.contains(p.id)).toList();
         final foods =
-            avail.where((p) => foodCats.contains(p.category)).toList();
+            avail.where((p) => isFoodCategory(p.category)).toList();
         final others =
-            avail.where((p) => !foodCats.contains(p.category)).toList();
+            avail.where((p) => !isFoodCategory(p.category)).toList();
         final sugg = [...foods, ...others].take(8).toList();
         if (sugg.isEmpty) return const SizedBox.shrink();
         return Column(
