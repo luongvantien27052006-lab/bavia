@@ -88,7 +88,10 @@ final filteredProductsProvider = Provider<AsyncValue<List<Product>>>((ref) {
     if (favOnly) {
       out = out.where((p) => favs.contains(p.id)).toList();
     }
-    return out;
+    // Đồ UỐNG lên trên, ĐỒ ĂN (bánh, trái cây chấm muối) xuống CUỐI danh sách.
+    final drinks = out.where((p) => !isFoodCategory(p.category)).toList();
+    final foods = out.where((p) => isFoodCategory(p.category)).toList();
+    return [...drinks, ...foods];
   });
 });
 

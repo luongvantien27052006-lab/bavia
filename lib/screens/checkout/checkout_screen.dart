@@ -1104,9 +1104,36 @@ class _VoucherSheetState extends ConsumerState<_VoucherSheet> {
                     child: TextField(
                       controller: _codeCtrl,
                       textCapitalization: TextCapitalization.characters,
-                      decoration: const InputDecoration(
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textDark),
+                      decoration: InputDecoration(
                         hintText: 'Nhập mã voucher',
-                        prefixIcon: Icon(Icons.confirmation_number_outlined),
+                        hintStyle: TextStyle(color: AppColors.textMuted),
+                        prefixIcon: Icon(Icons.confirmation_number_outlined,
+                            color: AppColors.coffee),
+                        filled: true,
+                        fillColor: AppColors.dark
+                            ? Colors.white.withOpacity(0.06)
+                            : Colors.white,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 15),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                              color: AppColors.coffee.withOpacity(0.35)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                              color: AppColors.coffee.withOpacity(0.35)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              BorderSide(color: AppColors.coffee, width: 1.5),
+                        ),
                       ),
                     ),
                   ),
