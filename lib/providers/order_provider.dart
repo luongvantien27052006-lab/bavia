@@ -18,6 +18,21 @@ import 'cart_provider.dart';
 import 'checkout_provider.dart';
 import 'repository_providers.dart';
 
+// Key chống trùng đơn — lưu ở provider KHÔNG auto-dispose để SỐNG SÓT khi
+// khách rời màn checkout giữa lúc gửi (tránh tạo đơn TRÙNG khi quay lại đặt).
+// Cùng nội dung giỏ + tuỳ chọn -> cùng key -> backend nhận diện & không tạo lại.
+final _orderIdemProvider =
+    StateProvider<({String key, String sig})?>((ref) => null);
+
+String _orderSig(List<CartItem> cart, CheckoutState c) {
+  final items = cart
+      .map((i) =>
+          '${i.product.id}:${i.quantity}:${i.options.map((o) => o.id).join(",")}')
+      .join('|');
+  return '$items#${c.paymentMethod}#${c.appliedCode ?? ""}'
+      '#${c.shippingCode ?? ""}#${c.pointsToRedeem}';
+}
+
 class PlaceOrderController
     extends AutoDisposeNotifier<AsyncValue<PlaceOrderResult?>> {
   @override
@@ -36,8 +51,17 @@ class PlaceOrderController
     final checkout = ref.read(checkoutProvider);
 
     state = const AsyncLoading();
-    _idempotencyKey ??=
-        'ord-${DateTime.now().microsecondsSinceEpoch}-${Random().nextInt(0x7fffffff)}';
+    // Sinh/tái dùng key theo nội dung giỏ (cùng giỏ -> cùng key -> chống trùng).
+    final sig = _orderSig(cart, checkout);
+    final stored = ref.read(_orderIdemProvider);
+    if (stored != null && stored.sig == sig) {
+      _idempotencyKey = stored.key;
+    } else {
+      _idempotencyKey =
+          'ord-${DateTime.now().microsecondsSinceEpoch}-${Random().nextInt(0x7fffffff)}';
+      ref.read(_orderIdemProvider.notifier).state =
+          (key: _idempotencyKey!, sig: sig);
+    }
     try {
       final result = await ref.read(orderRepositoryProvider).placeOrder(
             items: cart
@@ -65,6 +89,7 @@ class PlaceOrderController
           );
       // Đặt thành công → đổi key (đơn sau dùng key mới) + dọn giỏ + reset voucher.
       _idempotencyKey = null;
+      ref.read(_orderIdemProvider.notifier).state = null;
       ref.read(cartProvider.notifier).clear();
       ref.read(checkoutProvider.notifier).reset();
       state = AsyncData(result);
