@@ -1095,70 +1095,87 @@ class _VoucherSheetState extends ConsumerState<_VoucherSheet> {
                 ],
               ),
             ),
-            // Ô nhập mã thủ công (áp xong đóng luôn).
+            // ─── Nhập mã voucher thủ công — LUÔN hiện (kể cả ví trống) ───
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-              child: Row(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _codeCtrl,
-                      textCapitalization: TextCapitalization.characters,
+                  Text('Nhập mã voucher',
                       style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textDark),
-                      decoration: InputDecoration(
-                        hintText: 'Nhập mã voucher',
-                        hintStyle: TextStyle(color: AppColors.textMuted),
-                        prefixIcon: Icon(Icons.confirmation_number_outlined,
-                            color: AppColors.coffee),
-                        filled: true,
-                        fillColor: AppColors.dark
-                            ? Colors.white.withOpacity(0.06)
-                            : Colors.white,
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 15),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                              color: AppColors.coffee.withOpacity(0.35)),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                              color: AppColors.coffee.withOpacity(0.35)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide:
-                              BorderSide(color: AppColors.coffee, width: 1.5),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textMuted)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _codeCtrl,
+                          textCapitalization: TextCapitalization.characters,
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textDark),
+                          decoration: InputDecoration(
+                            hintText: 'VD: FREESHIP',
+                            hintStyle: TextStyle(color: AppColors.textMuted),
+                            prefixIcon: Icon(
+                                Icons.confirmation_number_outlined,
+                                color: AppColors.coffee),
+                            filled: true,
+                            fillColor: AppColors.dark
+                                ? Colors.white.withOpacity(0.06)
+                                : Colors.white,
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 16),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                  color: AppColors.coffee.withOpacity(0.4)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                  color: AppColors.coffee.withOpacity(0.4)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                  color: AppColors.coffee, width: 1.6),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  SizedBox(
-                    height: 54,
-                    child: ElevatedButton(
-                      onPressed: checkout.validatingVoucher
-                          ? null
-                          : () async {
-                              final code = _codeCtrl.text.trim();
-                              if (code.isEmpty) return;
-                              await ref
-                                  .read(checkoutProvider.notifier)
-                                  .applyVoucher(code);
-                              if (mounted) Navigator.pop(context);
-                            },
-                      child: checkout.validatingVoucher
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white))
-                          : const Text('Áp dụng'),
-                    ),
+                      const SizedBox(width: 10),
+                      SizedBox(
+                        height: 54,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 18)),
+                          onPressed: checkout.validatingVoucher
+                              ? null
+                              : () async {
+                                  final code = _codeCtrl.text.trim();
+                                  if (code.isEmpty) return;
+                                  await ref
+                                      .read(checkoutProvider.notifier)
+                                      .applyVoucher(code);
+                                  if (mounted) Navigator.pop(context);
+                                },
+                          child: checkout.validatingVoucher
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white))
+                              : const Text('Xác nhận',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w700)),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
