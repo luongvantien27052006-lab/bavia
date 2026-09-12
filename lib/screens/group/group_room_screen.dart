@@ -737,6 +737,9 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
     );
     if (ok == true) {
       await _repo.cancel(room.id);
+      // Thoát chế độ phòng -> thêm món sau đó vào GIỎ THƯỜNG (không vào phòng).
+      ref.read(activeGroupProvider.notifier).state = null;
+      ref.invalidate(activeGroupRoomProvider);
       if (mounted) Navigator.of(context).pop();
     }
   }
@@ -864,6 +867,9 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
         voucherCode: _voucherCode,
       );
       if (mounted) {
+        // Đặt đơn xong -> thoát chế độ phòng.
+        ref.read(activeGroupProvider.notifier).state = null;
+        ref.invalidate(activeGroupRoomProvider);
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => OrderDetailScreen(orderId: result.order.id),
