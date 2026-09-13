@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'json_x.dart';
 
 enum MemberTier {
-  bronze('BRONZE', 'Đồng'),
+  bronze('BRONZE', 'Chưa xếp hạng'),
   silver('SILVER', 'Bạc'),
   gold('GOLD', 'Vàng'),
   diamond('DIAMOND', 'Kim cương');

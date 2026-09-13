@@ -16,7 +16,6 @@
 // Điểm thưởng, và Đăng xuất.
 
 import 'package:flutter/material.dart';
-import '../settings/display_settings_screen.dart';
 import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -110,7 +109,9 @@ class AccountScreen extends ConsumerWidget {
                             children: [
                               Icon(r.tier.icon, color: Colors.white, size: 14),
                               const SizedBox(width: 5),
-                              Text('Hạng ${r.tier.label}',
+                              Text(r.tier.api == 'BRONZE'
+                                      ? 'Chưa xếp hạng'
+                                      : 'Hạng ${r.tier.label}',
                                   style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 11.5,
@@ -146,8 +147,8 @@ class AccountScreen extends ConsumerWidget {
               'Quản lý địa chỉ giao hàng', const AddressListScreen()),
           _tile(context, Icons.privacy_tip_rounded, 'Chính sách & Điều khoản',
               'Điều khoản sử dụng và quyền riêng tư', const LegalScreen()),
-          _tile(context, Icons.palette_rounded, 'Giao diện',
-              'Chế độ tối, hiệu ứng kính, màu nền', const DisplaySettingsScreen()),
+          const SizedBox(height: 6),
+          _themeTile(context, ref),
           const SizedBox(height: 16),
           OutlinedButton.icon(
             onPressed: () => ref.read(authProvider.notifier).logout(),
@@ -207,8 +208,7 @@ class AccountScreen extends ConsumerWidget {
                   style: TextStyle(color: AppColors.textMuted)),
             ),
             const SizedBox(height: 8),
-            _tile(context, Icons.palette_rounded, 'Giao diện',
-              'Chế độ tối, hiệu ứng kính, màu nền', const DisplaySettingsScreen()),
+            _themeTile(context, ref),
           ],
         ),
       ),
