@@ -4,7 +4,9 @@
 // ============================================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/app_theme.dart';
+import '../providers/display_settings_provider.dart';
 
 /// #4 Nhấn co nhẹ — bọc bất kỳ widget bấm được.
 class PressEffect extends StatefulWidget {
@@ -47,7 +49,7 @@ class _PressEffectState extends State<PressEffect> {
 }
 
 /// #3 Hiện dần + trượt lên, trễ theo [index] (staggered) khi list xuất hiện.
-class FadeSlideIn extends StatefulWidget {
+class FadeSlideIn extends ConsumerStatefulWidget {
   final Widget child;
   final int index;
   final double offsetY;
@@ -59,10 +61,10 @@ class FadeSlideIn extends StatefulWidget {
   });
 
   @override
-  State<FadeSlideIn> createState() => _FadeSlideInState();
+  ConsumerState<FadeSlideIn> createState() => _FadeSlideInState();
 }
 
-class _FadeSlideInState extends State<FadeSlideIn>
+class _FadeSlideInState extends ConsumerState<FadeSlideIn>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c = AnimationController(
     vsync: this,
@@ -72,10 +74,14 @@ class _FadeSlideInState extends State<FadeSlideIn>
   @override
   void initState() {
     super.initState();
-    Future.delayed(
-        Duration(milliseconds: 45 * widget.index.clamp(0, 12)), () {
-      if (mounted) _c.forward();
-    });
+    if (ref.read(displaySettingsProvider).itemAnim) {
+      Future.delayed(
+          Duration(milliseconds: 45 * widget.index.clamp(0, 12)), () {
+        if (mounted) _c.forward();
+      });
+    } else {
+      _c.value = 1; // tắt hiệu ứng -> hiện sẵn ngay
+    }
   }
 
   @override
@@ -86,6 +92,8 @@ class _FadeSlideInState extends State<FadeSlideIn>
 
   @override
   Widget build(BuildContext context) {
+    final on = ref.watch(displaySettingsProvider.select((x) => x.itemAnim));
+    if (!on) return widget.child; // tắt hiệu ứng -> món hiện NGAY khi lướt
     return AnimatedBuilder(
       animation: _c,
       builder: (context, child) {

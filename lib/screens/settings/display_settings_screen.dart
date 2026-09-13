@@ -52,6 +52,15 @@ class DisplaySettingsScreen extends ConsumerWidget {
                 ref.read(displaySettingsProvider.notifier).setGlass(v),
           ),
           _switchTile(
+            icon: Icons.animation_rounded,
+            color: AppColors.coffee,
+            title: 'Món hiện dần khi lướt',
+            subtitle: 'Thẻ món trượt hiện khi cuộn (tắt để hiện ngay)',
+            value: s.itemAnim,
+            onChanged: (v) =>
+                ref.read(displaySettingsProvider.notifier).setItemAnim(v),
+          ),
+          _switchTile(
             icon: Icons.image_rounded,
             color: AppColors.success,
             title: 'Ảnh hiện dần',
