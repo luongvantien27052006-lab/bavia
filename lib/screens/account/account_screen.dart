@@ -1,15 +1,3 @@
-// ============================================================
-//  FLUTTER
-//  lib/screens/account/account_screen.dart
-//  >> CHEP DE (them muc Gioi thieu ban be)
-// ============================================================
-
-// ============================================================
-//  FLUTTER
-//  lib/screens/account/account_screen.dart
-//  >> CHEP DE (trang thai khach + nut Dang nhap)
-// ============================================================
-
 // lib/screens/account/account_screen.dart
 //
 // Tab Tài khoản: thẻ user (bấm mở Hồ sơ), Lịch sử đơn, Sổ địa chỉ,

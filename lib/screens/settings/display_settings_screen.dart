@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/display_settings_provider.dart';
+import '../../widgets/theme_switcher.dart';
 
 class DisplaySettingsScreen extends ConsumerWidget {
   const DisplaySettingsScreen({super.key});
@@ -36,9 +37,12 @@ class DisplaySettingsScreen extends ConsumerWidget {
             title: 'Chế độ tối',
             subtitle: 'Nền tối, dịu mắt khi dùng ban đêm',
             value: isDark,
-            onChanged: (v) => ref
-                .read(themeModeProvider.notifier)
-                .setMode(v ? ThemeMode.dark : ThemeMode.light),
+            onChanged: (v) => ThemeSwitcher.run(
+              context,
+              () => ref
+                  .read(themeModeProvider.notifier)
+                  .setMode(v ? ThemeMode.dark : ThemeMode.light),
+            ),
           ),
           const SizedBox(height: 18),
           _sectionHeader('Hiệu ứng'),

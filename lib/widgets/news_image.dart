@@ -10,21 +10,29 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme/app_theme.dart';
+import '../providers/display_settings_provider.dart';
 
-class NewsImage extends StatelessWidget {
+class NewsImage extends ConsumerWidget {
   final String? imageUrl;
   final BoxFit fit;
   const NewsImage({super.key, required this.imageUrl, this.fit = BoxFit.cover});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final fade =
+        ref.watch(displaySettingsProvider.select((x) => x.imageFade));
     final url = imageUrl;
     if (url != null && url.isNotEmpty) {
       return CachedNetworkImage(
         imageUrl: url,
         fit: fit,
+        fadeInDuration:
+            fade ? const Duration(milliseconds: 350) : Duration.zero,
+        fadeOutDuration:
+            fade ? const Duration(milliseconds: 150) : Duration.zero,
         placeholder: (_, __) => _placeholder(),
         errorWidget: (_, __, ___) => _placeholder(),
       );
