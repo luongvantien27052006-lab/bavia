@@ -6,19 +6,19 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/config/store_info.dart';
 import '../../core/theme/app_theme.dart';
 
 class ContactScreen extends StatelessWidget {
   const ContactScreen({super.key});
 
-  // ⚙️ THÔNG TIN LIÊN HỆ — điền vào đây (để trống dòng nào thì dòng đó tự ẩn).
-  static const String hotline = ''; // VD: '0338316893'
-  static const String zaloUrl = ''; // VD: 'https://zalo.me/0338316893'
-  static const String facebookUrl = ''; // VD: 'https://facebook.com/mongfruits'
-  static const String email = 'mongfruits089@gmail.com';
-  static const String address =
-      'Số 098, đường Thủy Nguyên, khu đô thị Ecopark, '
-      'Xuân Quan, Phụng Công, Hưng Yên';
+  // Thông tin quán lấy từ NGUỒN DUY NHẤT: lib/core/config/store_info.dart
+  // (sửa ở đó -> cả màn này lẫn màn Thanh toán cùng đổi theo).
+  static const String hotline = StoreInfo.hotline;
+  static const String zaloUrl = StoreInfo.zaloUrl;
+  static const String facebookUrl = StoreInfo.facebookUrl;
+  static const String email = StoreInfo.email;
+  static const String address = StoreInfo.address;
 
   Future<void> _open(String url) async {
     if (url.isEmpty) return;

@@ -21,6 +21,7 @@ import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/config/loyalty_config.dart';
+import '../../core/config/store_info.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/address_model.dart';
@@ -956,14 +957,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               style: TextStyle(
                   fontWeight: FontWeight.w700, fontSize: 13)),
           const SizedBox(height: 4),
-          const Text(
-            'Số 207, đường Thủy Nguyên, Ecopark, thị trấn Văn Giang, '
-            'tỉnh Hưng Yên',
-            style: TextStyle(fontSize: 13, height: 1.45),
+          Text(
+            StoreInfo.address,
+            style: const TextStyle(fontSize: 13, height: 1.45),
           ),
-          const SizedBox(height: 6),
-          Text('Hỗ trợ: 0338316893',
-              style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
+          if (StoreInfo.hotline.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text('Hỗ trợ: ${StoreInfo.hotline}',
+                style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
+          ],
         ],
       ),
     );
