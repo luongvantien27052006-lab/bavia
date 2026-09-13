@@ -31,6 +31,8 @@ import 'checkin_screen.dart';
 import '../orders/order_history_screen.dart';
 import '../profile/profile_screen.dart';
 import '../legal/legal_screen.dart';
+import '../support/contact_screen.dart';
+import '../settings/display_settings_screen.dart';
 import '../referral/referral_screen.dart';
 import '../membership/membership_rank_screen.dart';
 import '../../providers/loyalty_provider.dart';
@@ -109,9 +111,7 @@ class AccountScreen extends ConsumerWidget {
                             children: [
                               Icon(r.tier.icon, color: Colors.white, size: 14),
                               const SizedBox(width: 5),
-                              Text(r.tier.api == 'BRONZE'
-                                      ? 'Chưa xếp hạng'
-                                      : 'Hạng ${r.tier.label}',
+                              Text('Hạng ${r.tier.label}',
                                   style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 11.5,
@@ -145,10 +145,12 @@ class AccountScreen extends ConsumerWidget {
               'Xem các đơn đã đặt', const OrderHistoryScreen()),
           _tile(context, Icons.location_on_rounded, 'Sổ địa chỉ',
               'Quản lý địa chỉ giao hàng', const AddressListScreen()),
+          _tile(context, Icons.support_agent_rounded, 'Liên hệ hỗ trợ',
+              'Hotline, Zalo, email, địa chỉ quán', const ContactScreen()),
           _tile(context, Icons.privacy_tip_rounded, 'Chính sách & Điều khoản',
               'Điều khoản sử dụng và quyền riêng tư', const LegalScreen()),
-          const SizedBox(height: 6),
-          _themeTile(context, ref),
+          _tile(context, Icons.palette_rounded, 'Giao diện',
+              'Chế độ tối, hiệu ứng, màu nền', const DisplaySettingsScreen()),
           const SizedBox(height: 16),
           OutlinedButton.icon(
             onPressed: () => ref.read(authProvider.notifier).logout(),
