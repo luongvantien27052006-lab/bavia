@@ -30,6 +30,14 @@ class _VoucherSelectScreenState extends ConsumerState<VoucherSelectScreen> {
   bool _init = false;
 
   @override
+  void initState() {
+    super.initState();
+    _codeCtrl.addListener(() {
+      if (mounted) setState(() {}); // đổi màu nút Áp dụng theo có mã hay chưa
+    });
+  }
+
+  @override
   void dispose() {
     _codeCtrl.dispose();
     super.dispose();
@@ -78,73 +86,82 @@ class _VoucherSelectScreenState extends ConsumerState<VoucherSelectScreen> {
       ),
       body: Column(
         children: [
-          // ─── Ô nhập mã + nút Áp dụng (kiểu Shopee) ───
+          // ─── Ô nhập mã + nút Áp dụng (1 KHUNG liền, kiểu Shopee) ───
           Container(
             color: AppColors.surface,
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _codeCtrl,
-                    textCapitalization: TextCapitalization.characters,
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600, color: AppColors.textDark),
-                    decoration: InputDecoration(
-                      hintText: 'Nhập mã voucher',
-                      hintStyle: TextStyle(color: AppColors.textMuted),
-                      filled: true,
-                      fillColor: AppColors.dark
-                          ? Colors.white.withOpacity(0.06)
-                          : const Color(0xFFF5F5F5),
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 15),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(color: AppColors.border),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(color: AppColors.border),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide:
-                            BorderSide(color: AppColors.coffee, width: 1.5),
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.dark
+                    ? Colors.white.withOpacity(0.06)
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(9),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                children: [
+                  // Ô nhập (không viền trong, dùng viền của khung ngoài).
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      child: TextField(
+                        controller: _codeCtrl,
+                        textCapitalization: TextCapitalization.characters,
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14.5,
+                            color: AppColors.textDark),
+                        decoration: InputDecoration(
+                          isCollapsed: true,
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          hintText: 'Nhập mã voucher',
+                          hintStyle: TextStyle(
+                              color: AppColors.textMuted, fontSize: 14.5),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                SizedBox(
-                  height: 50,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10))),
-                    onPressed: checkout.validatingVoucher
+                  // Nút Áp dụng (khối bên phải, xám khi chưa nhập).
+                  GestureDetector(
+                    onTap: (checkout.validatingVoucher ||
+                            _codeCtrl.text.trim().isEmpty)
                         ? null
                         : () async {
                             final code = _codeCtrl.text.trim();
-                            if (code.isEmpty) return;
                             await ref
                                 .read(checkoutProvider.notifier)
                                 .applyVoucher(code);
                             if (mounted) Navigator.pop(context);
                           },
-                    child: checkout.validatingVoucher
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white))
-                        : const Text('Áp dụng',
-                            style: TextStyle(fontWeight: FontWeight.w700)),
+                    child: Container(
+                      height: 48,
+                      padding: const EdgeInsets.symmetric(horizontal: 22),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: _codeCtrl.text.trim().isEmpty
+                            ? const Color(0xFFCFCFCF)
+                            : AppColors.coffee,
+                        borderRadius: const BorderRadius.horizontal(
+                            right: Radius.circular(8)),
+                      ),
+                      child: checkout.validatingVoucher
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : const Text('Áp dụng',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14.5)),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 8),
