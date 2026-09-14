@@ -30,7 +30,8 @@ String _orderSig(List<CartItem> cart, CheckoutState c) {
           '${i.product.id}:${i.quantity}:${i.options.map((o) => o.id).join(",")}')
       .join('|');
   return '$items#${c.paymentMethod}#${c.appliedCode ?? ""}'
-      '#${c.shippingCode ?? ""}#${c.pointsToRedeem}';
+      '#${c.shippingCode ?? ""}#${c.pointsToRedeem}'
+      '#${c.scheduledFor?.toUtc().toIso8601String() ?? ""}';
 }
 
 class PlaceOrderController
