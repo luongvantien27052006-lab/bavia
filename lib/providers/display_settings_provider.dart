@@ -1,15 +1,14 @@
 // ============================================================
-//  FLUTTER — lib/providers/display_settings_provider.dart (MỚI)
-//  Cài đặt giao diện: hiệu ứng kính, ảnh hiện dần, màu nền (chế độ sáng).
-//  Lưu lựa chọn vào thiết bị (như theme).
+//  FLUTTER — lib/providers/display_settings_provider.dart
+//  Cài đặt giao diện: hiệu ứng kính, ảnh hiện dần, màu nền, hiện dần khi lướt.
+//  Lưu bằng SharedPreferences (bền qua kill app), đọc ĐỒNG BỘ trong build()
+//  nhờ prefs được nạp sẵn ở main().
 // ============================================================
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-const _storage = FlutterSecureStorage(
-  iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-);
+import 'prefs_provider.dart';
+
 const _kGlass = 'ui_glass_effect';
 const _kImgFade = 'ui_image_fade';
 const _kColorBg = 'ui_color_bg_light';
@@ -42,28 +41,18 @@ class DisplaySettings {
 class DisplaySettingsNotifier extends Notifier<DisplaySettings> {
   @override
   DisplaySettings build() {
-    _load();
-    return const DisplaySettings();
-  }
-
-  Future<void> _load() async {
-    try {
-      final g = await _storage.read(key: _kGlass);
-      final f = await _storage.read(key: _kImgFade);
-      final c = await _storage.read(key: _kColorBg);
-      final a = await _storage.read(key: _kItemAnim);
-      state = DisplaySettings(
-        glass: g == 'on',
-        imageFade: f == 'on',
-        colorBg: c == 'on',
-        itemAnim: a == 'on',
-      );
-    } catch (_) {}
+    final p = ref.read(sharedPrefsProvider);
+    return DisplaySettings(
+      glass: p.getBool(_kGlass) ?? false,
+      imageFade: p.getBool(_kImgFade) ?? false,
+      colorBg: p.getBool(_kColorBg) ?? false,
+      itemAnim: p.getBool(_kItemAnim) ?? false,
+    );
   }
 
   Future<void> _save(String key, bool v) async {
     try {
-      await _storage.write(key: key, value: v ? 'on' : 'off');
+      await ref.read(sharedPrefsProvider).setBool(key, v);
     } catch (_) {}
   }
 

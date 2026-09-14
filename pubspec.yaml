@@ -21,6 +21,7 @@ dependencies:
 
   # Storage
   flutter_secure_storage: ^9.0.0
+  shared_preferences: ^2.2.2   # Cài đặt giao diện (theme, hiệu ứng) — bền qua kill app
 
   # Firebase (Phone Auth)
   firebase_core: ^2.27.0

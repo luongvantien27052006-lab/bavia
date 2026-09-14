@@ -110,15 +110,22 @@ class GroupOrderRepository {
     await _api.post('/group-orders/$id/cancel');
   }
 
+  Future<void> leaveRoom(String id) async {
+    await _api.post('/group-orders/$id/leave');
+  }
+
   Future<GroupOrder> startCollection(
     String id, {
     Map<String, dynamic>? deliveryAddress,
     String? voucherCode,
+    String? shippingVoucherCode,
   }) async {
     final data = await _api.post('/group-orders/$id/collect', data: {
       if (deliveryAddress != null) 'deliveryAddress': deliveryAddress,
       if (voucherCode != null && voucherCode.isNotEmpty)
         'voucherCode': voucherCode,
+      if (shippingVoucherCode != null && shippingVoucherCode.isNotEmpty)
+        'shippingVoucherCode': shippingVoucherCode,
     });
     return _parse(data);
   }

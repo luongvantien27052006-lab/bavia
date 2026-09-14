@@ -1,44 +1,32 @@
 // ============================================================
 //  FLUTTER — lib/providers/theme_provider.dart
-//  Quan ly che do Sang/Toi bang Riverpod, luu lua chon vao thiet bi.
-//  Chi 2 che do: ThemeMode.light / ThemeMode.dark.
+//  Chế độ Sáng/Tối. Lưu bằng SharedPreferences (bền qua kill app),
+//  đọc ĐỒNG BỘ ngay trong build() nhờ prefs được nạp sẵn ở main().
 // ============================================================
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+import 'prefs_provider.dart';
 
 const _kThemeKey = 'app_theme_mode';
-
-const _storage = FlutterSecureStorage(
-  iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-);
 
 class ThemeModeNotifier extends Notifier<ThemeMode> {
   @override
   ThemeMode build() {
-    _load(); // doc lua chon da luu (bat dong bo), mac dinh SANG
-    return ThemeMode.light;
-  }
-
-  Future<void> _load() async {
-    try {
-      final v = await _storage.read(key: _kThemeKey);
-      if (v == 'dark') state = ThemeMode.dark;
-      if (v == 'light') state = ThemeMode.light;
-    } catch (_) {
-      // bo qua loi doc -> giu mac dinh
-    }
+    // Đọc đồng bộ giá trị đã lưu -> áp đúng chế độ ngay từ frame đầu.
+    final v = ref.read(sharedPrefsProvider).getString(_kThemeKey);
+    return v == 'dark' ? ThemeMode.dark : ThemeMode.light;
   }
 
   Future<void> setMode(ThemeMode mode) async {
     state = mode;
     try {
-      await _storage.write(key: _kThemeKey, value: mode.name);
+      await ref.read(sharedPrefsProvider).setString(_kThemeKey, mode.name);
     } catch (_) {}
   }
 
-  /// Bat/tat nhanh: dang toi -> sang, dang sang -> toi.
+  /// Bật/tắt nhanh: đang tối -> sáng, đang sáng -> tối.
   Future<void> toggle() => setMode(
         state == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark,
       );

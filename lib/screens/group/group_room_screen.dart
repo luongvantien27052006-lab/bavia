@@ -20,6 +20,7 @@ import '../../utils/formatters.dart';
 import '../menu/menu_screen.dart';
 import '../orders/order_detail_screen.dart';
 import 'group_bill_screen.dart';
+import 'group_voucher_select_screen.dart';
 
 class GroupRoomScreen extends ConsumerStatefulWidget {
   final String groupId;
@@ -33,6 +34,7 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
   Timer? _poll;
   bool _busy = false;
   String? _voucherCode;
+  String? _shipVoucherCode;
   VoidCallback? _unsub;
 
   @override
@@ -714,6 +716,14 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
                   style: TextStyle(color: AppColors.delivery, fontSize: 13)),
             ),
           ],
+          if (!room.isHost && room.isOpen) ...[
+            const SizedBox(height: 6),
+            TextButton(
+              onPressed: _busy ? null : () => _confirmLeave(room),
+              child: Text('Rời phòng',
+                  style: TextStyle(color: AppColors.delivery, fontSize: 13)),
+            ),
+          ],
         ],
       ),
     );
@@ -744,9 +754,88 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
     }
   }
 
+  Future<void> _confirmLeave(GroupOrder room) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Rời phòng?'),
+        content: const Text('Món bạn đã thêm sẽ bị xoá khỏi phòng.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Không')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Rời phòng')),
+        ],
+      ),
+    );
+    if (ok == true) {
+      try {
+        await _repo.leaveRoom(room.id);
+      } catch (_) {}
+      ref.read(activeGroupProvider.notifier).state = null;
+      ref.invalidate(activeGroupRoomProvider);
+      if (mounted) Navigator.of(context).pop();
+    }
+  }
+
+  /// Hàng "Chọn voucher" trong bottom-sheet: mở trang chọn voucher nhóm
+  /// (lọc theo tổng tiền phòng), cập nhật mã đã chọn.
+  Widget _voucherRow(int subtotal, StateSetter setSheet) {
+    final has = _voucherCode != null || _shipVoucherCode != null;
+    final labels = <String>[
+      if (_voucherCode != null) _voucherCode!,
+      if (_shipVoucherCode != null) _shipVoucherCode!,
+    ];
+    return InkWell(
+      onTap: () async {
+        final pick = await Navigator.of(context).push<GroupVoucherPick>(
+          MaterialPageRoute(
+            builder: (_) => GroupVoucherSelectScreen(
+              groupSubtotal: subtotal,
+              initialDiscountCode: _voucherCode,
+              initialShippingCode: _shipVoucherCode,
+            ),
+          ),
+        );
+        if (pick != null) {
+          setSheet(() {
+            _voucherCode = pick.discountCode;
+            _shipVoucherCode = pick.shippingCode;
+          });
+        }
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        decoration: BoxDecoration(
+          color: AppColors.cream,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.confirmation_number_rounded,
+                size: 20, color: AppColors.coffee),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                has ? labels.join(' · ') : 'Chọn voucher',
+                style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: has ? AppColors.textDark : AppColors.textMuted),
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _openCheckout(GroupOrder room) async {
     PaymentMethodType method = PaymentMethodType.cod;
-    final voucherCtrl = TextEditingController(text: _voucherCode ?? '');
     final addresses = await ref.read(addressesProvider.future).catchError(
           (_) => <dynamic>[],
         );
@@ -795,22 +884,11 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
                     style: TextStyle(fontSize: 13, color: AppColors.textDark)),
               ],
               const SizedBox(height: 16),
-              Text('Mã giảm giá (tuỳ chọn)',
+              Text('Voucher (tuỳ chọn)',
                   style: TextStyle(
                       fontWeight: FontWeight.w700, color: AppColors.textDark)),
               const SizedBox(height: 6),
-              TextField(
-                controller: voucherCtrl,
-                textCapitalization: TextCapitalization.characters,
-                decoration: InputDecoration(
-                  hintText: 'Nhập mã giảm giá / freeship',
-                  filled: true,
-                  fillColor: AppColors.cream,
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: AppColors.border)),
-                ),
-              ),
+              _voucherRow(room.subtotal, setSheet),
               const SizedBox(height: 16),
               Text('Thanh toán',
                   style: TextStyle(
@@ -837,9 +915,6 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
                 child: ElevatedButton(
                   onPressed: () async {
                     Navigator.pop(ctx);
-                    _voucherCode = voucherCtrl.text.trim().isEmpty
-                        ? null
-                        : voucherCtrl.text.trim().toUpperCase();
                     await _doCheckout(room, method, addr);
                   },
                   style: ElevatedButton.styleFrom(
@@ -865,6 +940,7 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
         deliveryAddress:
             room.isDelivery && addr != null ? addr.toDeliveryJson() : null,
         voucherCode: _voucherCode,
+        shippingVoucherCode: _shipVoucherCode,
       );
       if (mounted) {
         // Đặt đơn xong -> thoát chế độ phòng.
@@ -941,7 +1017,6 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
   }
 
   Future<void> _startCollection(GroupOrder room) async {
-    final voucherCtrl = TextEditingController();
     final addresses = await ref
         .read(addressesProvider.future)
         .catchError((_) => <dynamic>[]);
@@ -964,7 +1039,8 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => Padding(
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => Padding(
         padding: EdgeInsets.fromLTRB(20, 20, 20,
             20 + MediaQuery.of(ctx).viewInsets.bottom + MediaQuery.of(ctx).padding.bottom),
         child: Column(
@@ -986,22 +1062,11 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
                   style: TextStyle(fontSize: 13, color: AppColors.textDark)),
             ],
             const SizedBox(height: 14),
-            Text('Mã giảm giá (tuỳ chọn)',
+            Text('Voucher (tuỳ chọn)',
                 style: TextStyle(
                     fontWeight: FontWeight.w700, color: AppColors.textDark)),
             const SizedBox(height: 6),
-            TextField(
-              controller: voucherCtrl,
-              textCapitalization: TextCapitalization.characters,
-              decoration: InputDecoration(
-                hintText: 'Nhập mã (nếu có)',
-                filled: true,
-                fillColor: AppColors.cream,
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppColors.border)),
-              ),
-            ),
+            _voucherRow(room.subtotal, setSheet),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -1013,9 +1078,8 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
                           deliveryAddress: room.isDelivery && addr != null
                               ? addr.toDeliveryJson()
                               : null,
-                          voucherCode: voucherCtrl.text.trim().isEmpty
-                              ? null
-                              : voucherCtrl.text.trim().toUpperCase())
+                          voucherCode: _voucherCode,
+                          shippingVoucherCode: _shipVoucherCode)
                       .then((_) {}));
                 },
                 style: ElevatedButton.styleFrom(
@@ -1026,6 +1090,7 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

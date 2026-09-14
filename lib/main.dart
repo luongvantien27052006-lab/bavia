@@ -10,10 +10,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
 import 'core/network/api_client.dart';
 import 'firebase_options.dart';
+import 'providers/prefs_provider.dart';
 import 'services/push_service.dart';
 
 void main() {
@@ -53,7 +55,11 @@ void main() {
       debugPrint('Khoi tao Firebase loi: $e\n$st');
     }
 
-    runApp(const ProviderScope(child: BaviaApp()));
+    final prefs = await SharedPreferences.getInstance();
+    runApp(ProviderScope(
+      overrides: [sharedPrefsProvider.overrideWithValue(prefs)],
+      child: const BaviaApp(),
+    ));
 
     unawaited(_initPush());
   }, (error, stack) {
