@@ -20,8 +20,10 @@ import '../providers/theme_provider.dart';
 import '../widgets/anim.dart';
 import '../providers/realtime_order_provider.dart';
 import '../utils/formatters.dart';
+import '../providers/account_status_provider.dart';
 import 'account/account_screen.dart';
 import 'cart/cart_screen.dart';
+import 'support/contact_screen.dart';
 import 'home/home_screen.dart';
 import 'menu/menu_screen.dart';
 import 'voucher/voucher_wallet_screen.dart';
@@ -33,12 +35,14 @@ class MainShell extends ConsumerStatefulWidget {
   ConsumerState<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends ConsumerState<MainShell> {
+class _MainShellState extends ConsumerState<MainShell>
+    with WidgetsBindingObserver {
   int _index = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Mở app lần đầu -> xin quyền vị trí (để tính phí ship chính xác).
     // (Quyền thông báo đã được PushService xin sẵn.)
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -46,6 +50,89 @@ class _MainShellState extends ConsumerState<MainShell> {
       // Kiểm tra phiên bản mới -> gợi ý / bắt buộc cập nhật.
       if (mounted) checkForUpdate(context);
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Mở lại app -> kiểm tra lại trạng thái tài khoản (khoá/nhắc).
+    if (state == AppLifecycleState.resumed) {
+      ref.read(accountStatusProvider.notifier).refresh();
+    }
+  }
+
+  void _showNotice(String msg) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: Icon(Icons.info_outline_rounded, color: AppColors.delivery),
+        title: const Text('Nhắc nhở'),
+        content: Text(msg),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Đã hiểu'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _lockedView(String? reason) {
+    return Scaffold(
+      backgroundColor: AppColors.cream,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.lock_outline_rounded,
+                  size: 72, color: AppColors.delivery),
+              const SizedBox(height: 20),
+              Text('Tài khoản tạm khoá',
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textDark)),
+              const SizedBox(height: 12),
+              Text(
+                reason ??
+                    'Tài khoản của bạn đang tạm khoá đặt đơn. Vui lòng liên hệ '
+                        'bộ phận hỗ trợ để được giải quyết.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 14.5, height: 1.5, color: AppColors.textMuted),
+              ),
+              const SizedBox(height: 28),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ContactScreen()),
+                  ),
+                  icon: const Icon(Icons.support_agent_rounded),
+                  label: const Text('Liên hệ hỗ trợ'),
+                  style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 15)),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () =>
+                    ref.read(accountStatusProvider.notifier).refresh(),
+                child: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _goToMenu() => setState(() => _index = 1);
@@ -85,6 +172,20 @@ class _MainShellState extends ConsumerState<MainShell> {
           ),
         );
     });
+
+    // Trạng thái tài khoản: khoá -> chặn app; có nhắc -> hiện MỘT lần.
+    final acct = ref.watch(accountStatusProvider).valueOrNull;
+    ref.listen(accountStatusProvider, (prev, next) {
+      final s = next.valueOrNull;
+      if (s != null && !s.locked && (s.notice?.isNotEmpty ?? false)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _showNotice(s.notice!);
+        });
+      }
+    });
+    if (acct != null && acct.locked) {
+      return _lockedView(acct.lockReason);
+    }
 
     final tabs = [
       HomeScreen(onBrowseMenu: _goToMenu),
