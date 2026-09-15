@@ -9,10 +9,10 @@ class StoreInfo {
   StoreInfo._();
 
   /// Hotline hỗ trợ. Để '' nếu chưa có.
-  static const String hotline = '0325898467';
+  static const String hotline = '0398853776';
 
   /// Link Zalo. Để '' nếu chưa có.
-  static const String zaloUrl = 'https://zalo.me/0325898467';
+  static const String zaloUrl = 'https://zalo.me/0398853776';
 
   /// Link Facebook fanpage. Để '' nếu chưa có.
   static const String facebookUrl =
