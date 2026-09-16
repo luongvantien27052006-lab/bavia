@@ -88,11 +88,20 @@ class _TermsTab extends StatelessWidget {
           'Thời gian giao hàng là ước tính và có thể thay đổi do thời tiết, giao thông hoặc lượng đơn.',
           'Vui lòng cung cấp địa chỉ và số điện thoại chính xác. Cửa hàng không chịu trách nhiệm với đơn giao sai do thông tin bạn nhập sai.',
         ]),
-        _Section('7. Giới hạn trách nhiệm', [
+        _Section('7. Nhận đơn hàng và chính sách khoá tài khoản', [
+          'Với đơn thanh toán khi nhận hàng (COD), bạn có trách nhiệm nhận đơn đúng hẹn. '
+              'Việc không nhận hoặc từ chối nhận đơn khiến cửa hàng chịu chi phí chuẩn bị và giao hàng.',
+          'Nếu bạn không nhận đơn COD giá trị nhỏ, ứng dụng sẽ nhắc nhở ở lần mở app kế tiếp. '
+              'Nếu tình trạng này tái diễn trong vòng 7 ngày, tài khoản sẽ bị tạm khoá đặt đơn.',
+          'Với đơn COD giá trị lớn (từ 500.000đ) mà bạn không nhận, tài khoản sẽ bị tạm khoá ngay. '
+              'Vui lòng liên hệ bộ phận hỗ trợ (mục Liên hệ trong app) để được xem xét mở khoá.',
+          'Khi tài khoản bị khoá, bạn sẽ không đặt được đơn mới cho tới khi được mở khoá.',
+        ]),
+        _Section('8. Giới hạn trách nhiệm', [
           'Chúng tôi nỗ lực đảm bảo ứng dụng hoạt động ổn định, nhưng không cam kết ứng dụng luôn không bị gián đoạn hoặc lỗi.',
           'Chúng tôi không chịu trách nhiệm cho thiệt hại gián tiếp phát sinh từ việc sử dụng ứng dụng.',
         ]),
-        _Section('8. Thay đổi điều khoản', [
+        _Section('9. Thay đổi điều khoản', [
           'Điều khoản có thể được cập nhật theo thời gian. Việc bạn tiếp tục sử dụng ứng dụng sau khi cập nhật đồng nghĩa với việc chấp nhận nội dung mới.',
         ]),
         _ContactBox(),
