@@ -14,6 +14,7 @@ import '../../core/network/api_exception.dart';
 import '../../core/network/api_client.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/order_model.dart';
+import '../../core/config/vn_banks.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/repository_providers.dart';
 import '../../utils/formatters.dart';
@@ -29,84 +30,119 @@ class OrderDetailScreen extends ConsumerStatefulWidget {
 class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   bool _cancelling = false;
 
-  /// Hỏi thông tin ngân hàng để hoàn tiền (đơn CK đã thanh toán). null = huỷ thao tác.
-  Future<Map<String, dynamic>?> _askRefundBank(OrderModel order) async {
-    final accCtl = TextEditingController();
-    final bankCtl = TextEditingController();
-    final holderCtl = TextEditingController();
+  /// Hỏi TK ngân hàng để hoàn tiền (đơn CK đã trả). null = huỷ thao tác.
+  Future<Map<String, dynamic>?> _askRefundBank(
+    OrderModel order, {
+    String title = 'Huỷ & hoàn tiền',
+    String confirmLabel = 'Huỷ đơn & hoàn tiền',
+    String intro = 'Nhập tài khoản để quán hoàn tiền cho bạn.',
+  }) async {
+    // Prefill từ TK gần nhất khách đã dùng.
+    Map? last;
+    try {
+      final raw = await ApiClient.I.get('/orders/refund-bank');
+      last = (raw is Map && raw['data'] is Map)
+          ? raw['data'] as Map
+          : (raw is Map ? raw : null);
+    } catch (_) {}
+
+    final accCtl =
+        TextEditingController(text: last?['accountNo']?.toString() ?? '');
+    final holderCtl =
+        TextEditingController(text: last?['holder']?.toString() ?? '');
+    String? code = last?['bankCode']?.toString();
+    if (code != null && !VnBanks.list.any((b) => b.code == code)) code = null;
+
+    if (!mounted) {
+      accCtl.dispose();
+      holderCtl.dispose();
+      return null;
+    }
+
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Huỷ & hoàn tiền'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Đơn đã thanh toán ${Formatters.money(order.finalAmount)}. '
-                'Nhập tài khoản để quán hoàn tiền cho bạn.',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: accCtl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Số tài khoản',
-                  border: OutlineInputBorder(),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: Text(title),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${Formatters.money(order.finalAmount)}. $intro',
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 13),
                 ),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: bankCtl,
-                decoration: const InputDecoration(
-                  labelText: 'Ngân hàng (vd Vietcombank)',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: accCtl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Số tài khoản',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: holderCtl,
-                textCapitalization: TextCapitalization.characters,
-                decoration: const InputDecoration(
-                  labelText: 'Tên chủ tài khoản',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: code,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Ngân hàng',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: VnBanks.list
+                      .map((b) => DropdownMenuItem(
+                            value: b.code,
+                            child: Text(b.name,
+                                overflow: TextOverflow.ellipsis),
+                          ))
+                      .toList(),
+                  onChanged: (v) => setLocal(() => code = v),
                 ),
-              ),
-            ],
+                const SizedBox(height: 10),
+                TextField(
+                  controller: holderCtl,
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: const InputDecoration(
+                    labelText: 'Tên chủ tài khoản',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Đóng'),
+            ),
+            TextButton(
+              onPressed: () {
+                final acc = accCtl.text.trim();
+                final holder = holderCtl.text.trim();
+                if (acc.isEmpty || code == null || holder.isEmpty) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(
+                        content: Text('Vui lòng nhập đủ thông tin')),
+                  );
+                  return;
+                }
+                final bank = VnBanks.list.firstWhere((b) => b.code == code);
+                Navigator.pop(ctx, {
+                  'accountNo': acc,
+                  'bankName': bank.name,
+                  'bankCode': bank.code,
+                  'holder': holder,
+                });
+              },
+              child: Text(confirmLabel,
+                  style: const TextStyle(color: AppColors.delivery)),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Đóng'),
-          ),
-          TextButton(
-            onPressed: () {
-              final acc = accCtl.text.trim();
-              final bank = bankCtl.text.trim();
-              final holder = holderCtl.text.trim();
-              if (acc.isEmpty || bank.isEmpty || holder.isEmpty) {
-                ScaffoldMessenger.of(ctx).showSnackBar(
-                  const SnackBar(content: Text('Vui lòng nhập đủ thông tin')),
-                );
-                return;
-              }
-              Navigator.pop(ctx, {
-                'accountNo': acc,
-                'bankName': bank,
-                'holder': holder,
-              });
-            },
-            child: const Text('Huỷ đơn & hoàn tiền',
-                style: TextStyle(color: AppColors.delivery)),
-          ),
-        ],
       ),
     );
     accCtl.dispose();
-    bankCtl.dispose();
     holderCtl.dispose();
     return result;
   }
@@ -309,11 +345,140 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     );
   }
 
-  /// Ghi chú hoàn tiền cho đơn CK đã trả bị huỷ (đang chờ quán chuyển lại).
+  /// Khách xác nhận yêu cầu hoàn tiền (đơn do POS huỷ).
+  Future<void> _confirmRefundRequest(OrderModel order) async {
+    setState(() => _cancelling = true);
+    try {
+      final raw = await ApiClient.I.post('/orders/refunds/${order.id}/confirm');
+      final m = (raw is Map && raw['data'] is Map)
+          ? raw['data'] as Map
+          : (raw is Map ? raw : const {});
+      if (m['needBank'] == true) {
+        if (!mounted) return;
+        final bank = await _askRefundBank(
+          order,
+          title: 'Tài khoản nhận hoàn tiền',
+          confirmLabel: 'Xác nhận',
+          intro: 'Nhập tài khoản để nhận hoàn tiền.',
+        );
+        if (bank == null) {
+          if (mounted) setState(() => _cancelling = false);
+          return;
+        }
+        await ApiClient.I.patch('/orders/refunds/${order.id}', data: bank);
+      }
+      ref.invalidate(orderDetailProvider(order.id));
+      ref.invalidate(ordersProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content:
+                Text('Đã xác nhận. Quán sẽ hoàn tiền về tài khoản của bạn.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(e.message), backgroundColor: AppColors.delivery),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _cancelling = false);
+    }
+  }
+
+  /// Ghi chú hoàn tiền: đang xử lý / bị từ chối (kèm lý do).
   Widget _refundNote(OrderModel order) {
-    final isPaidQr = order.paymentMethod == PaymentMethodType.bankQr &&
-        order.paymentStatus == PaymentStatus.confirmed;
-    if (order.status == OrderStatus.cancelled && isPaidQr) {
+    final st = order.refundStatus; // PENDING | COMPLETED | REJECTED | null
+    if (st == null) return const SizedBox.shrink();
+
+    if (st == 'REJECTED') {
+      return Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.delivery.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.delivery.withOpacity(0.35)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.cancel_rounded, color: AppColors.delivery),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Yêu cầu hoàn tiền bị từ chối',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.delivery)),
+                    const SizedBox(height: 4),
+                    Text(order.refundNote ?? 'Vui lòng liên hệ hỗ trợ.',
+                        style: TextStyle(
+                            fontSize: 13,
+                            height: 1.4,
+                            color: AppColors.textDark)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (st == 'AWAITING_CONFIRM') {
+      return Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.coffee.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.coffee.withOpacity(0.35)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded,
+                      color: AppColors.coffee),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Đơn đã huỷ. Xác nhận để nhận hoàn '
+                      '${Formatters.money(order.finalAmount)}.',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.coffee),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _cancelling
+                      ? null
+                      : () => _confirmRefundRequest(order),
+                  child: const Text('Xác nhận yêu cầu hoàn tiền'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (st == 'PENDING') {
       return Padding(
         padding: const EdgeInsets.only(top: 12),
         child: Container(
@@ -340,6 +505,8 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         ),
       );
     }
+
+    // COMPLETED -> status đơn đã là REFUNDED, header đã hiện "Đã hoàn tiền".
     return const SizedBox.shrink();
   }
 

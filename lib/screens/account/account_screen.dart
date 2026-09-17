@@ -23,7 +23,9 @@ import '../support/contact_screen.dart';
 import '../settings/display_settings_screen.dart';
 import '../referral/referral_screen.dart';
 import '../membership/membership_rank_screen.dart';
+import '../notifications/notifications_screen.dart';
 import '../../providers/loyalty_provider.dart';
+import '../../providers/feed_provider.dart';
 import '../../models/membership_rank.dart';
 
 class AccountScreen extends ConsumerWidget {
@@ -41,6 +43,15 @@ class AccountScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Tài khoản',
             style: TextStyle(fontWeight: FontWeight.w800)),
+        actions: [
+          if (user != null)
+            _NotifBell(
+              count: ref.watch(unreadCountProvider).maybeWhen(
+                    data: (c) => c,
+                    orElse: () => 0,
+                  ),
+            ),
+        ],
       ),
       body: user == null
           ? _guestView(context, ref)
@@ -131,6 +142,8 @@ class AccountScreen extends ConsumerWidget {
           _sectionHeader('Đơn hàng & Tài khoản'),
           _tile(context, Icons.receipt_long_rounded, 'Lịch sử đơn hàng',
               'Xem các đơn đã đặt', const OrderHistoryScreen()),
+          _tile(context, Icons.notifications_rounded, 'Thông báo',
+              'Tin tức, hoàn tiền, nhắc điểm danh', const NotificationsScreen()),
           _tile(context, Icons.location_on_rounded, 'Sổ địa chỉ',
               'Quản lý địa chỉ giao hàng', const AddressListScreen()),
           _tile(context, Icons.support_agent_rounded, 'Liên hệ hỗ trợ',
@@ -269,6 +282,46 @@ class AccountScreen extends ConsumerWidget {
           MaterialPageRoute(builder: (_) => destination),
         ),
       ),
+    );
+  }
+}
+
+class _NotifBell extends StatelessWidget {
+  final int count;
+  const _NotifBell({required this.count});
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.notifications_rounded),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+          ),
+        ),
+        if (count > 0)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: BoxDecoration(
+                color: AppColors.delivery,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              constraints: const BoxConstraints(minWidth: 16),
+              child: Text(
+                count > 99 ? '99+' : '$count',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

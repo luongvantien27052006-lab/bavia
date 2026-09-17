@@ -144,6 +144,7 @@ class OrderModel {
   final List<OrderItem> items;
   final DateTime? createdAt;
   final DateTime? scheduledFor; // giờ hẹn nhận (null = giao ngay)
+  final Map<String, dynamic>? refund; // { status, amount, note } — hoàn tiền
 
   const OrderModel({
     required this.id,
@@ -157,7 +158,11 @@ class OrderModel {
     this.items = const [],
     this.createdAt,
     this.scheduledFor,
+    this.refund,
   });
+
+  String? get refundStatus => refund?['status']?.toString();
+  String? get refundNote => refund?['note']?.toString();
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
     final pm = JsonX.strOrNull(json, ['payment_method', 'paymentMethod']);
@@ -184,6 +189,7 @@ class OrderModel {
           .toList(),
       createdAt: JsonX.dateTime(json, ['created_at', 'createdAt']),
       scheduledFor: JsonX.dateTime(json, ['scheduled_for', 'scheduledFor']),
+      refund: JsonX.map(json, ['refund']),
     );
   }
 }
