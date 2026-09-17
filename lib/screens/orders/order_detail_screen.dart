@@ -29,37 +29,132 @@ class OrderDetailScreen extends ConsumerStatefulWidget {
 class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   bool _cancelling = false;
 
-  Future<void> _confirmCancel(OrderModel order) async {
-    final ok = await showDialog<bool>(
+  /// Hỏi thông tin ngân hàng để hoàn tiền (đơn CK đã thanh toán). null = huỷ thao tác.
+  Future<Map<String, dynamic>?> _askRefundBank(OrderModel order) async {
+    final accCtl = TextEditingController();
+    final bankCtl = TextEditingController();
+    final holderCtl = TextEditingController();
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Huỷ đơn hàng?'),
-        content: const Text(
-            'Đơn sẽ bị huỷ và hoàn lại voucher/điểm (nếu có). Bạn chắc chắn?'),
+        title: const Text('Huỷ & hoàn tiền'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Đơn đã thanh toán ${Formatters.money(order.finalAmount)}. '
+                'Nhập tài khoản để quán hoàn tiền cho bạn.',
+                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: accCtl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Số tài khoản',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: bankCtl,
+                decoration: const InputDecoration(
+                  labelText: 'Ngân hàng (vd Vietcombank)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: holderCtl,
+                textCapitalization: TextCapitalization.characters,
+                decoration: const InputDecoration(
+                  labelText: 'Tên chủ tài khoản',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Không')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Đóng'),
+          ),
           TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Huỷ đơn',
+            onPressed: () {
+              final acc = accCtl.text.trim();
+              final bank = bankCtl.text.trim();
+              final holder = holderCtl.text.trim();
+              if (acc.isEmpty || bank.isEmpty || holder.isEmpty) {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  const SnackBar(content: Text('Vui lòng nhập đủ thông tin')),
+                );
+                return;
+              }
+              Navigator.pop(ctx, {
+                'accountNo': acc,
+                'bankName': bank,
+                'holder': holder,
+              });
+            },
+            child: const Text('Huỷ đơn & hoàn tiền',
                 style: TextStyle(color: AppColors.delivery)),
           ),
         ],
       ),
     );
-    if (ok != true) return;
+    accCtl.dispose();
+    bankCtl.dispose();
+    holderCtl.dispose();
+    return result;
+  }
+
+  Future<void> _confirmCancel(OrderModel order) async {
+    final isPaidQr = order.paymentMethod == PaymentMethodType.bankQr &&
+        order.paymentStatus == PaymentStatus.confirmed;
+
+    Object? body;
+    if (isPaidQr) {
+      final bank = await _askRefundBank(order);
+      if (bank == null) return;
+      body = bank;
+    } else {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Huỷ đơn hàng?'),
+          content: const Text(
+              'Đơn sẽ bị huỷ và hoàn lại voucher/điểm (nếu có). Bạn chắc chắn?'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Không')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Huỷ đơn',
+                  style: TextStyle(color: AppColors.delivery)),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
 
     setState(() => _cancelling = true);
     try {
-      await ref.read(orderRepositoryProvider).cancelOrder(order.id);
+      await ApiClient.I.post('/orders/${order.id}/cancel', data: body);
       ref.invalidate(orderDetailProvider(order.id));
       ref.invalidate(ordersProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Đã huỷ đơn'),
-              backgroundColor: AppColors.success),
+          SnackBar(
+            content: Text(isPaidQr
+                ? 'Đã huỷ đơn. Quán sẽ hoàn tiền về tài khoản của bạn trong thời gian sớm nhất.'
+                : 'Đã huỷ đơn'),
+            backgroundColor: AppColors.success,
+          ),
         );
       }
     } on ApiException catch (e) {
@@ -168,6 +263,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             ],
           ),
         ),
+        _refundNote(order),
         const SizedBox(height: 20),
         _ratingSection(order),
         if (order.status == OrderStatus.delivering) ...[
@@ -211,6 +307,40 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           ),
       ],
     );
+  }
+
+  /// Ghi chú hoàn tiền cho đơn CK đã trả bị huỷ (đang chờ quán chuyển lại).
+  Widget _refundNote(OrderModel order) {
+    final isPaidQr = order.paymentMethod == PaymentMethodType.bankQr &&
+        order.paymentStatus == PaymentStatus.confirmed;
+    if (order.status == OrderStatus.cancelled && isPaidQr) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.coffee.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.coffee.withOpacity(0.35)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.autorenew_rounded, color: AppColors.coffee),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Đang xử lý hoàn tiền ${Formatters.money(order.finalAmount)} '
+                  'về tài khoản của bạn.',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700, color: AppColors.coffee),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 
   /// #3 Đánh giá món — chỉ hiện khi đơn ĐÃ GIAO.
