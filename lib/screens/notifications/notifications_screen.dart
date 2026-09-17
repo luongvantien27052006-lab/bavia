@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../providers/feed_provider.dart';
+import '../orders/order_detail_screen.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -29,6 +30,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         return (icon: Icons.check_circle_rounded, color: AppColors.success);
       case 'REFUND_REJECTED':
         return (icon: Icons.cancel_rounded, color: AppColors.delivery);
+      case 'REFUND_CONFIRM':
+        return (
+          icon: Icons.pending_actions_rounded,
+          color: AppColors.delivery
+        );
       case 'NEWS':
         return (icon: Icons.campaign_rounded, color: AppColors.coffee);
       case 'CHECKIN':
@@ -93,7 +99,17 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               itemBuilder: (_, i) {
                 final n = items[i];
                 final s = _style(n.type);
-                return Container(
+                final orderId = n.data?['orderId']?.toString();
+                return GestureDetector(
+                  onTap: orderId == null || orderId.isEmpty
+                      ? null
+                      : () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  OrderDetailScreen(orderId: orderId),
+                            ),
+                          ),
+                  child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -173,6 +189,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         ),
                       ),
                     ],
+                  ),
                   ),
                 );
               },
