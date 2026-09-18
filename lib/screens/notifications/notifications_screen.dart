@@ -62,10 +62,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     return Scaffold(
       backgroundColor: AppColors.cream,
       appBar: AppBar(
-        title: const Text('Thông báo'),
-        backgroundColor: Colors.white,
-        foregroundColor: AppColors.textDark,
-        elevation: 0,
+        title: const Text('Thông báo',
+            style: TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: RefreshIndicator(
         onRefresh: () => ref.read(feedProvider.notifier).refresh(),
@@ -112,7 +110,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.dark
+                        ? Colors.white.withOpacity(0.06)
+                        : Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     border: n.unread
                         ? Border.all(color: s.color.withOpacity(0.4))
