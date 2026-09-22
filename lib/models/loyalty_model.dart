@@ -11,8 +11,13 @@ import 'json_x.dart';
 class LoyaltyBalance {
   final int balance; // số điểm hiện có
   final int? lifetimeEarned; // tổng điểm từng tích (nếu backend trả)
+  final DateTime? expireAt; // hạn dùng điểm (nếu còn điểm)
 
-  const LoyaltyBalance({required this.balance, this.lifetimeEarned});
+  const LoyaltyBalance({
+    required this.balance,
+    this.lifetimeEarned,
+    this.expireAt,
+  });
 
   factory LoyaltyBalance.fromJson(Map<String, dynamic> json) {
     return LoyaltyBalance(
@@ -21,6 +26,7 @@ class LoyaltyBalance {
               is num
           ? JsonX.intVal(json, ['lifetime_earned', 'lifetimeEarned'])
           : null,
+      expireAt: JsonX.dateTime(json, ['points_expire_at', 'pointsExpireAt']),
     );
   }
 }
@@ -30,6 +36,7 @@ enum PointTxnType {
   redeem('REDEEM', 'Dùng điểm', false),
   refundEarn('REFUND_EARN', 'Hoàn điểm tích', false),
   refundRedeem('REFUND_REDEEM', 'Hoàn điểm dùng', true),
+  expire('EXPIRE', 'Điểm hết hạn', false),
   unknown('UNKNOWN', 'Khác', true);
 
   final String apiValue;

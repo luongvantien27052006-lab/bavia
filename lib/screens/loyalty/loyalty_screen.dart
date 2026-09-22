@@ -79,24 +79,52 @@ class LoyaltyScreen extends ConsumerWidget {
             ),
             error: (e, _) => const Text('Không tải được điểm',
                 style: TextStyle(color: Colors.white)),
-            data: (b) => Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
+            data: (b) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CountUpText(b.balance,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 40,
-                        fontWeight: FontWeight.w800)),
-                const SizedBox(width: 6),
-                const Text('điểm',
-                    style: TextStyle(color: Colors.white70, fontSize: 16)),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    CountUpText(b.balance,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 40,
+                            fontWeight: FontWeight.w800)),
+                    const SizedBox(width: 6),
+                    const Text('điểm',
+                        style: TextStyle(color: Colors.white70, fontSize: 16)),
+                  ],
+                ),
+                if (b.balance > 0 && b.expireAt != null) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.schedule_rounded,
+                          color: Colors.white70, size: 15),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          'Hết hạn ${_fmtDate(b.expireAt!)} nếu không dùng',
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 12.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _fmtDate(DateTime d) {
+    final l = d.toLocal();
+    String two(int n) => n.toString().padLeft(2, '0');
+    return 'ngày ${two(l.day)}/${two(l.month)}/${l.year}';
   }
 
   Widget _historyList(AsyncValue<List<LoyaltyTransaction>> history) {
