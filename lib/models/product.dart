@@ -61,6 +61,7 @@ class Product {
   final int? calories; // kcal (null = chưa nhập)
   final List<String> healthTags; // nhãn sức khỏe: Detox, Ít đường...
   final bool isSeasonal; // trái cây theo mùa
+  final DateTime? createdAt; // để nhận biết "món mới"
 
   const Product({
     required this.id,
@@ -74,6 +75,7 @@ class Product {
     this.calories,
     this.healthTags = const [],
     this.isSeasonal = false,
+    this.createdAt,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -96,11 +98,19 @@ class Product {
           .whereType<String>()
           .toList(),
       isSeasonal: JsonX.boolVal(json, ['is_seasonal', 'isSeasonal']),
+      createdAt: JsonX.dateTime(json, ['created_at', 'createdAt']),
     );
   }
 
   /// Tạm coi các món display_order nhỏ là "hot" cho mục "Món hot hôm nay".
   bool get isHot => displayOrder > 0 && displayOrder <= 5;
+
+  /// Món mới: tạo trong 7 ngày gần đây.
+  bool get isNew {
+    final c = createdAt;
+    if (c == null) return false;
+    return DateTime.now().difference(c).inDays < 7;
+  }
 
   bool get hasImage => imageUrl != null && imageUrl!.isNotEmpty;
 

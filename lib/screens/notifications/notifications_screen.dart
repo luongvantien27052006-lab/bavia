@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../providers/feed_provider.dart';
+import '../../providers/menu_provider.dart';
 import '../orders/order_detail_screen.dart';
+import '../product/product_detail_screen.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -39,6 +41,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         return (icon: Icons.campaign_rounded, color: AppColors.coffee);
       case 'CHECKIN':
         return (icon: Icons.event_available_rounded, color: AppColors.coffee);
+      case 'POINTS':
+        return (icon: Icons.stars_rounded, color: AppColors.delivery);
+      case 'NEW_PRODUCT':
+        return (icon: Icons.fiber_new_rounded, color: AppColors.delivery);
       case 'ORDER':
         return (icon: Icons.receipt_long_rounded, color: AppColors.coffee);
       default:
@@ -54,6 +60,26 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     if (diff.inDays < 7) return '${diff.inDays} ngày trước';
     String two(int n) => n.toString().padLeft(2, '0');
     return '${two(d.day)}/${two(d.month)}/${d.year} ${two(d.hour)}:${two(d.minute)}';
+  }
+
+  void _handleTap(String? orderId, String? productId) {
+    if (orderId != null && orderId.isNotEmpty) {
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => OrderDetailScreen(orderId: orderId),
+      ));
+      return;
+    }
+    if (productId != null && productId.isNotEmpty) {
+      final all = ref.read(productsProvider).valueOrNull;
+      for (final x in (all ?? const [])) {
+        if (x.id == productId) {
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => ProductDetailScreen(product: x),
+          ));
+          return;
+        }
+      }
+    }
   }
 
   @override
@@ -98,15 +124,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 final n = items[i];
                 final s = _style(n.type);
                 final orderId = n.data?['orderId']?.toString();
+                final productId = n.data?['productId']?.toString();
+                final tappable = (orderId != null && orderId.isNotEmpty) ||
+                    (productId != null && productId.isNotEmpty);
                 return GestureDetector(
-                  onTap: orderId == null || orderId.isEmpty
-                      ? null
-                      : () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  OrderDetailScreen(orderId: orderId),
-                            ),
-                          ),
+                  onTap: tappable ? () => _handleTap(orderId, productId) : null,
                   child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
