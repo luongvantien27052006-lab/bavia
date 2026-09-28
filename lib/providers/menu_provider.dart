@@ -45,9 +45,33 @@ String vnNorm(String s) {
 /// Danh mục ĐỒ ĂN (bánh ăn kèm, trái cây chấm muối) -> xếp CUỐI menu.
 bool isFoodCategory(String cat) {
   final n = vnNorm(cat);
+  final words = n.split(' ');
+  // ĐỒ UỐNG dù tên có chữ "trái cây" (VD: "Trà trái cây", "Nước ép trái cây")
+  // -> KHÔNG tính là đồ ăn, không bị đẩy xuống cuối.
+  final isDrink = words.contains('tra') ||
+      words.contains('nuoc') ||
+      words.contains('sua') ||
+      n.contains('cafe') ||
+      n.contains('ca phe') ||
+      n.contains('matcha') ||
+      n.contains('smoothie') ||
+      n.contains('sinh to') ||
+      n.contains('soda') ||
+      n.contains('juice') ||
+      n.contains('da xay');
+  if (isDrink) return false;
   return n.contains('banh') ||
       n.contains('trai cay') ||
       n.contains('cham muoi');
+}
+
+/// Danh mục ƯU TIÊN -> luôn hiện ĐẦU menu (thêm tên mới vào đây nếu cần).
+const kTopCategories = <String>['Smoothie kem thái'];
+
+bool isTopCategory(String cat) {
+  final n = vnNorm(cat);
+  return kTopCategories.any((t) => vnNorm(t) == n) ||
+      (n.contains('smoothie') && n.contains('kem thai'));
 }
 
 /// Tải toàn bộ sản phẩm (1 lần, cache qua FutureProvider).
@@ -89,9 +113,14 @@ final filteredProductsProvider = Provider<AsyncValue<List<Product>>>((ref) {
       out = out.where((p) => favs.contains(p.id)).toList();
     }
     // Đồ UỐNG lên trên, ĐỒ ĂN (bánh, trái cây chấm muối) xuống CUỐI danh sách.
-    final drinks = out.where((p) => !isFoodCategory(p.category)).toList();
-    final foods = out.where((p) => isFoodCategory(p.category)).toList();
-    return [...drinks, ...foods];
+    final tops = out.where((p) => isTopCategory(p.category)).toList();
+    final drinks = out
+        .where((p) => !isTopCategory(p.category) && !isFoodCategory(p.category))
+        .toList();
+    final foods = out
+        .where((p) => !isTopCategory(p.category) && isFoodCategory(p.category))
+        .toList();
+    return [...tops, ...drinks, ...foods];
   });
 });
 
@@ -122,9 +151,14 @@ final availableCategoriesProvider = Provider<List<String>>((ref) {
         }
       }
       // Đồ UỐNG lên trên; ĐỒ ĂN (bánh, trái cây chấm muối) xuống CUỐI.
-      final drinks = result.where((c) => !isFoodCategory(c)).toList();
-      final foods = result.where((c) => isFoodCategory(c)).toList();
-      return [...drinks, ...foods];
+      final tops = result.where(isTopCategory).toList();
+      final drinks = result
+          .where((c) => !isTopCategory(c) && !isFoodCategory(c))
+          .toList();
+      final foods = result
+          .where((c) => !isTopCategory(c) && isFoodCategory(c))
+          .toList();
+      return [...tops, ...drinks, ...foods];
     },
     orElse: () => const [],
   );
