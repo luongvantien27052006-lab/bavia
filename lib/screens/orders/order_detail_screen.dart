@@ -269,6 +269,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       padding: const EdgeInsets.all(16),
       children: [
         _statusHeader(order),
+        _scheduledNote(order),
         const SizedBox(height: 16),
         _statusTracker(order),
         const SizedBox(height: 16),
@@ -783,7 +784,54 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     );
   }
 
+  /// Thẻ "Đơn hẹn giờ" — cho khách biết quán sẽ làm trước giờ hẹn.
+  Widget _scheduledNote(OrderModel order) {
+    final t = order.scheduledFor;
+    if (t == null || order.status.isTerminal) return const SizedBox.shrink();
+    final local = t.toLocal();
+    String two(int n) => n.toString().padLeft(2, '0');
+    final label =
+        '${two(local.hour)}:${two(local.minute)}, ${two(local.day)}/${two(local.month)}';
+    final notStarted = order.status == OrderStatus.pending ||
+        order.status == OrderStatus.confirmed;
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.coffee.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.coffee.withOpacity(0.35)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.event_rounded, color: AppColors.coffee),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Đơn hẹn nhận lúc $label',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.coffee)),
+                  if (notStarted) ...[
+                    const SizedBox(height: 2),
+                    Text('Quán sẽ bắt đầu chuẩn bị trước giờ hẹn.',
+                        style: TextStyle(
+                            fontSize: 12.5, color: AppColors.textMuted)),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _itemRow(OrderItem item) {
+    final name = item.productName.isEmpty ? 'Món đã ngừng bán' : item.productName;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
@@ -792,6 +840,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 32,
@@ -807,10 +856,32 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-                item.productName.isEmpty ? 'Sản phẩm' : item.productName,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name,
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textDark)),
+                for (final op in item.options)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      '+ ${op.name}'
+                      '${op.price > 0 ? ' (${Formatters.money(op.price)})' : ''}',
+                      style:
+                          TextStyle(fontSize: 12.5, color: AppColors.textMuted),
+                    ),
+                  ),
+                const SizedBox(height: 3),
+                Text(
+                  '${Formatters.money(item.unitPrice)} × ${item.quantity}',
+                  style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                ),
+              ],
+            ),
           ),
+          const SizedBox(width: 8),
           Text(Formatters.money(item.lineTotal),
               style: const TextStyle(fontWeight: FontWeight.w700)),
         ],

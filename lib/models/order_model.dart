@@ -66,12 +66,28 @@ enum PaymentStatus {
 
 // ─── Order item ─────────────────────────────────────────────────────────
 
+/// Topping / size đã chọn của 1 món trong đơn.
+class OrderItemOption {
+  final String name;
+  final int price;
+  final String? groupName;
+  const OrderItemOption({required this.name, required this.price, this.groupName});
+
+  factory OrderItemOption.fromJson(Map<String, dynamic> json) => OrderItemOption(
+        name: JsonX.str(json, ['name']),
+        price: JsonX.intVal(json, ['price']),
+        groupName: JsonX.strOrNull(json, ['groupName', 'group_name']),
+      );
+}
+
 class OrderItem {
   final String productId;
   final String productName;
+  final String? imageUrl;
   final int quantity;
-  final int unitPrice; // giá tại thời điểm đặt
+  final int unitPrice; // giá tại thời điểm đặt (đã gồm topping)
   final int lineTotal; // = unitPrice * quantity (nếu backend trả)
+  final List<OrderItemOption> options;
 
   const OrderItem({
     required this.productId,
@@ -79,6 +95,8 @@ class OrderItem {
     required this.quantity,
     required this.unitPrice,
     required this.lineTotal,
+    this.imageUrl,
+    this.options = const [],
   });
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
@@ -87,10 +105,15 @@ class OrderItem {
     return OrderItem(
       productId: JsonX.str(json, ['product_id', 'productId']),
       productName: JsonX.str(json, ['product_name', 'productName', 'name']),
+      imageUrl: JsonX.strOrNull(json, ['image_url', 'imageUrl']),
       quantity: qty,
       unitPrice: unit,
       lineTotal:
           JsonX.intVal(json, ['line_total', 'lineTotal', 'total'], fallback: unit * qty),
+      options: JsonX.list(json, ['options'])
+          .whereType<Map>()
+          .map((e) => OrderItemOption.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
     );
   }
 }

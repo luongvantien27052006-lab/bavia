@@ -198,10 +198,26 @@ class _QrPaymentScreenState extends ConsumerState<QrPaymentScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 10),
+          Center(
+            child: Text(
+              'Quét bằng app ngân hàng, MoMo hoặc ZaloPay',
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textMuted),
+            ),
+          ),
+          const SizedBox(height: 16),
           _amountCard(),
           const SizedBox(height: 12),
           _infoCard(),
+          const SizedBox(height: 8),
+          Text(
+            'Lưu ý: giữ nguyên nội dung chuyển khoản để đơn được xác nhận tự động.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+          ),
           const SizedBox(height: 24),
           OutlinedButton.icon(
             onPressed: _checking ? null : () => _checkOrderStatus(),

@@ -41,9 +41,12 @@ class OrderSuccessScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                paid
-                    ? 'Cảm ơn bạn! Đơn hàng đang được chuẩn bị.'
-                    : 'Đơn của bạn đã được tiếp nhận.',
+                _scheduledLabel != null
+                    ? 'Cảm ơn bạn! Đơn hẹn nhận lúc $_scheduledLabel.\n'
+                        'Quán sẽ chuẩn bị trước giờ hẹn.'
+                    : paid
+                        ? 'Cảm ơn bạn! Đơn hàng đang được chuẩn bị.'
+                        : 'Đơn của bạn đã được tiếp nhận.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.textMuted),
               ),
@@ -64,6 +67,15 @@ class OrderSuccessScreen extends StatelessWidget {
     ));
   }
 
+  /// "16:00, 02/10" nếu là đơn hẹn giờ, ngược lại null.
+  String? get _scheduledLabel {
+    final t = order.scheduledFor;
+    if (t == null) return null;
+    final l = t.toLocal();
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(l.hour)}:${two(l.minute)}, ${two(l.day)}/${two(l.month)}';
+  }
+
   Widget _detailCard() {
     return Container(
       padding: const EdgeInsets.all(18),
@@ -74,6 +86,10 @@ class OrderSuccessScreen extends StatelessWidget {
       child: Column(
         children: [
           _row('Mã đơn', '#${order.id.substring(0, 8).toUpperCase()}'),
+          if (_scheduledLabel != null) ...[
+            const Divider(height: 18),
+            _row('Giờ hẹn nhận', _scheduledLabel!),
+          ],
           const Divider(height: 18),
           _row('Tổng tiền', Formatters.money(order.finalAmount)),
           if (order.pointsEarned > 0) ...[
