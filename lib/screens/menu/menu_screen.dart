@@ -15,6 +15,7 @@ import '../../providers/group_order_provider.dart';
 import '../../providers/favorites_provider.dart';
 import '../../widgets/glass_card.dart';
 import '../../widgets/anim.dart';
+import '../../widgets/menu_image.dart';
 import '../../utils/formatters.dart';
 import '../group/group_room_screen.dart';
 import '../group/group_start_screen.dart';
@@ -280,11 +281,11 @@ class _CategorySidebar extends StatelessWidget {
                       child: SizedBox(
                         width: 54,
                         height: 54,
-                        child: (img != null && img.isNotEmpty)
-                            ? Image.network(img,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => _fallback())
-                            : _fallback(),
+                        child: MenuImage(
+                          url: img,
+                          size: 54,
+                          fallback: _fallback(),
+                        ),
                       ),
                     ),
                   ),
@@ -338,11 +339,11 @@ class _ProductRow extends StatelessWidget {
               child: SizedBox(
                 width: 84,
                 height: 84,
-                child: p.hasImage
-                    ? Image.network(p.imageUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _imgFallback())
-                    : _imgFallback(),
+                child: MenuImage(
+                  url: p.hasImage ? p.imageUrl : null,
+                  size: 84,
+                  fallback: _imgFallback(),
+                ),
               ),
             ),
             const SizedBox(width: 14),

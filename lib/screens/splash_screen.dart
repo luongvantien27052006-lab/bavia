@@ -39,6 +39,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
+    final logo = w * 0.56; // cạnh khung logo
     // Màu thương hiệu lấy từ logo (đỏ mận + xanh lá).
     const brandRed = Color(0xFF9E2B25);
 
@@ -64,10 +65,34 @@ class _SplashScreenState extends State<SplashScreen>
                   opacity: _fade,
                   child: ScaleTransition(
                     scale: _scale,
-                    child: Image.asset(
-                      'assets/icon/app_icon.png',
-                      width: w * 0.60,
-                      fit: BoxFit.contain,
+                    // File icon có nền trắng vuông bao quanh -> cắt theo khung
+                    // bo góc (phóng ảnh 1.2x để lề trắng nằm ngoài khung).
+                    child: Container(
+                      width: logo,
+                      height: logo,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(logo * 0.22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: brandRed.withOpacity(0.14),
+                            blurRadius: 28,
+                            offset: const Offset(0, 12),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(logo * 0.22),
+                        child: OverflowBox(
+                          maxWidth: logo * 1.2,
+                          maxHeight: logo * 1.2,
+                          child: Image.asset(
+                            'assets/icon/app_icon.png',
+                            width: logo * 1.2,
+                            height: logo * 1.2,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),

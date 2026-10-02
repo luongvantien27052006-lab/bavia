@@ -12,6 +12,7 @@
 import 'package:flutter/material.dart';
 import '../services/version_check.dart';
 import '../widgets/new_product_popup.dart';
+import '../widgets/menu_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme/app_theme.dart';
@@ -50,6 +51,8 @@ class _MainShellState extends ConsumerState<MainShell>
       LocationService.instance.requestPermissionIfNeeded();
       // Kiểm tra phiên bản mới -> gợi ý / bắt buộc cập nhật.
       if (mounted) checkForUpdate(context);
+      // Tải trước ảnh menu (chạy nền) -> vào tab Menu là ảnh hiện ngay.
+      if (mounted) precacheMenuImages(context, ref);
       // Sau đó: có món mới chưa xem -> popup (bỏ qua nếu đang có dialog khác).
       Future.delayed(const Duration(milliseconds: 900), () {
         if (mounted && (ModalRoute.of(context)?.isCurrent ?? true)) {
