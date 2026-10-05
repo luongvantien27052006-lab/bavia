@@ -143,7 +143,7 @@ class AccountScreen extends ConsumerWidget {
           _tile(context, Icons.receipt_long_rounded, 'Lịch sử đơn hàng',
               'Xem các đơn đã đặt', const OrderHistoryScreen()),
           _tile(context, Icons.notifications_rounded, 'Thông báo',
-              'Tin tức, hoàn tiền, nhắc điểm danh', const NotificationsScreen()),
+              'Sự kiện, hoàn tiền, nhắc điểm danh', const NotificationsScreen()),
           _tile(context, Icons.location_on_rounded, 'Sổ địa chỉ',
               'Quản lý địa chỉ giao hàng', const AddressListScreen()),
           _tile(context, Icons.support_agent_rounded, 'Liên hệ hỗ trợ',

@@ -30,7 +30,7 @@ class NewsListScreen extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         
-      appBar: AppBar(title: const Text('Tin tức')),
+      appBar: AppBar(title: const Text('Sự kiện')),
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(newsListProvider),
         child: async.when(
@@ -39,7 +39,7 @@ class NewsListScreen extends ConsumerWidget {
             children: [
               const SizedBox(height: 120),
               Center(
-                child: Text('Không tải được tin: $e',
+                child: Text('Không tải được sự kiện: $e',
                     style: TextStyle(color: AppColors.textMuted)),
               ),
             ],
@@ -57,13 +57,13 @@ class NewsListScreen extends ConsumerWidget {
                         shape: BoxShape.circle,
                         color: AppColors.coffee.withOpacity(0.12),
                       ),
-                      child: Icon(Icons.newspaper_rounded,
+                      child: Icon(Icons.celebration_rounded,
                           size: 44, color: AppColors.coffee),
                     ),
                   ),
                   const SizedBox(height: 16),
                   Center(
-                    child: Text('Chưa có tin nào',
+                    child: Text('Chưa có sự kiện nào',
                         style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,

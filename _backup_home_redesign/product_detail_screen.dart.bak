@@ -6,7 +6,6 @@
 // ================================================================
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../widgets/favorite_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,9 +15,8 @@ import '../../models/product.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/group_order_provider.dart';
 import '../../utils/formatters.dart';
+import '../../widgets/product_image.dart';
 import '../../widgets/glass_card.dart';
-import '../../widgets/drink_tint.dart';
-import '../../widgets/parallax_product_stage.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final Product product;
@@ -144,19 +142,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       body: GlassBackground(
         child: CustomScrollView(
         slivers: [
-          // Đầu trang "ly nổi chiều sâu": nghiêng máy để thấy hiệu ứng 3D.
           SliverAppBar(
-            expandedHeight: 400,
+            expandedHeight: 280,
             pinned: true,
-            stretch: true,
-            backgroundColor: DrinkTint.stageBase(DrinkTint.of(p)),
-            foregroundColor: Colors.white,
-            surfaceTintColor: Colors.transparent,
-            systemOverlayStyle: const SystemUiOverlayStyle(
-              statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.light,
-              statusBarBrightness: Brightness.dark,
-            ),
+            backgroundColor: AppColors.surface,
+            foregroundColor: AppColors.textDark,
             actions: [
               Padding(
                 padding: const EdgeInsets.only(right: 8),
@@ -165,13 +155,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               ),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              collapseMode: CollapseMode.parallax,
-              stretchModes: const [StretchMode.zoomBackground],
-              background: ParallaxProductStage(
-                product: p,
-                heroTag: widget.heroTag ?? 'product-${p.id}',
-                topInset:
-                    MediaQuery.paddingOf(context).top + kToolbarHeight,
+              background: Hero(
+                tag: 'product-${p.id}',
+                child: ProductImage(product: p, fit: BoxFit.cover),
               ),
             ),
           ),

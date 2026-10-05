@@ -1,53 +1,112 @@
 // ============================================================
 //  FLUTTER — lib/screens/home/home_screen.dart
-//  >> CHEP DE — giao diện "kính mờ" (glassmorphism).
-//     GIỮ NGUYÊN toàn bộ chức năng: header banner (tin mới / đăng nhập),
-//     thông báo đóng cửa, 2 lựa chọn Giao/Tự lấy, Món hot, Tin tức,
-//     pull-to-refresh, mọi điều hướng.
+//  >> GIAO DIỆN MỚI "SÂN KHẤU CỰC QUANG":
+//   - Phần đầu (hero) nền cực quang chuyển động, màu ĐỔI THEO món hot đang xem.
+//   - Thẻ kính: điểm + hạng (hoặc mời đăng nhập), 2 ô nhanh (Thực đơn / Đặt chung),
+//     đơn đang xử lý dạng timeline.
+//   - "Món hot hôm nay" = kệ trưng bày xoay 3D (HotCoverflow).
+//   - Phía dưới giữ nguyên: thông báo đóng cửa, Sự kiện.
+//  GIỮ NGUYÊN chức năng cũ: pull-to-refresh, đăng nhập, hạng thành viên,
+//  phòng đặt chung (tạo / vào lại), đơn đang giao, sự kiện, mọi điều hướng.
 // ============================================================
 
+import 'dart:ui' show FontFeature;
+
 import 'package:flutter/material.dart';
-import '../../providers/order_provider.dart';
-import '../../providers/group_order_provider.dart';
-import '../group/group_room_screen.dart';
-import '../group/group_start_screen.dart';
-import '../../models/order_model.dart';
-import '../orders/order_detail_screen.dart';
-import '../../widgets/delivery_timeline_card.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/theme/app_theme.dart';
-import '../../models/product.dart';
-import '../../providers/auth_provider.dart';
-import '../../providers/menu_provider.dart';
-import '../../utils/formatters.dart';
-import '../../widgets/product_image.dart';
-import '../../widgets/glass_card.dart';
-import '../../widgets/anim.dart';
-import '../product/product_detail_screen.dart';
-import '../auth/login_screen.dart';
-import '../../models/user_model.dart';
-import '../../models/news.dart';
-import '../../providers/news_provider.dart';
-import '../../providers/store_provider.dart';
-import '../../providers/loyalty_provider.dart';
 import '../../models/membership_rank.dart';
-import '../membership/membership_rank_screen.dart';
+import '../../models/news.dart';
+import '../../models/order_model.dart';
+import '../../models/product.dart';
+import '../../models/user_model.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/group_order_provider.dart';
+import '../../providers/loyalty_provider.dart';
+import '../../providers/menu_provider.dart';
+import '../../providers/news_provider.dart';
+import '../../providers/order_provider.dart';
+import '../../providers/store_provider.dart';
+import '../../utils/formatters.dart';
+import '../../widgets/anim.dart';
+import '../../widgets/aurora_background.dart';
+import '../../widgets/drink_tint.dart';
+import '../../widgets/glass_card.dart';
+import '../../widgets/hot_coverflow.dart';
 import '../../widgets/news_image.dart';
-import '../news/news_list_screen.dart';
+import '../auth/login_screen.dart';
+import '../group/group_room_screen.dart';
+import '../group/group_start_screen.dart';
+import '../membership/membership_rank_screen.dart';
 import '../news/news_detail_screen.dart';
+import '../news/news_list_screen.dart';
+import '../orders/order_detail_screen.dart';
+import '../product/product_detail_screen.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   /// Cho phép chuyển sang tab Menu từ Trang chủ.
   final VoidCallback onBrowseMenu;
   const HomeScreen({super.key, required this.onBrowseMenu});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  final _scroll = ScrollController();
+  final _heroKey = GlobalKey();
+
+  /// Màu của món hot đang ở giữa kệ -> tô nền cực quang.
+  Color _tint = DrinkTint.fallback;
+
+  /// Đã cuộn qua phần hero (để đổi màu icon thanh trạng thái).
+  bool _pastHero = false;
+
+  /// Hero còn trong màn hình (hết thấy thì dừng chuyển động cho nhẹ máy).
+  bool _heroVisible = true;
+
+  static final _pointsFmt = NumberFormat.decimalPattern('vi_VN');
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scroll
+      ..removeListener(_onScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final heroH = _heroKey.currentContext?.size?.height ?? 900;
+    final topPad = MediaQuery.paddingOf(context).top;
+    final o = _scroll.offset;
+    final past = o > heroH - topPad - 8;
+    final visible = o < heroH;
+    if (past != _pastHero || visible != _heroVisible) {
+      setState(() {
+        _pastHero = past;
+        _heroVisible = visible;
+      });
+    }
+  }
+
+  void _push(Widget page) =>
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
     final hot = ref.watch(hotProductsProvider);
 
-    // Đơn đang xử lý (mới nhất) -> hiện timeline giao hàng ở đầu Home.
+    // Đơn đang xử lý (mới nhất) -> hiện timeline trong phần hero.
     OrderModel? activeOrder;
     final ordersAsync = ref.watch(ordersProvider);
     if (ordersAsync.hasValue) {
@@ -62,88 +121,608 @@ class HomeScreen extends ConsumerWidget {
       }
     }
 
-    return Scaffold(
-      // Nền gradient kính mờ (tự đổi theo Sáng/Tối) đặt sau toàn bộ nội dung.
-      backgroundColor: Colors.transparent,
-      body: GlassBackground(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(productsProvider);
-            ref.invalidate(ordersProvider);
-            ref.invalidate(membershipRankProvider);
-            ref.invalidate(activeGroupRoomProvider);
-          },
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              _topBar(context, ref, user),
-              const SizedBox(height: 16),
-              _header(context, ref, user),
-              const SizedBox(height: 16),
-              if (activeOrder != null) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: DeliveryTimelineCard(
-                    order: activeOrder,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            OrderDetailScreen(orderId: activeOrder!.id),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
+    // Icon thanh trạng thái: sáng khi đang ở trên hero tối; tối khi đã cuộn
+    // xuống phần nền sáng (chỉ ở chế độ Sáng).
+    final lightIcons = !_pastHero || AppColors.dark;
+    final overlay = SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: lightIcons ? Brightness.light : Brightness.dark,
+      statusBarBrightness: lightIcons ? Brightness.dark : Brightness.light,
+    );
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: overlay,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: GlassBackground(
+          child: RefreshIndicator(
+            color: AppColors.coffee,
+            edgeOffset: MediaQuery.paddingOf(context).top,
+            onRefresh: () async {
+              ref.invalidate(productsProvider);
+              ref.invalidate(ordersProvider);
+              ref.invalidate(membershipRankProvider);
+              ref.invalidate(loyaltyBalanceProvider);
+              ref.invalidate(activeGroupRoomProvider);
+              ref.invalidate(latestNewsProvider);
+            },
+            child: ListView(
+              controller: _scroll,
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              children: [
+                _hero(context, user, hot, activeOrder),
+                const SizedBox(height: 20),
+                _closedNotice(),
+                _newsSection(context),
+                const SizedBox(height: 24),
               ],
-              _closedNotice(ref),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('🔥 Món hot hôm nay',
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textDark)),
-                    GestureDetector(
-                      onTap: onBrowseMenu,
-                      child: const Text('Xem thêm',
-                          style: TextStyle(
-                              color: AppColors.coffee,
-                              fontWeight: FontWeight.w600)),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              _hotList(context, hot),
-              const SizedBox(height: 24),
-              _groupOrderCard(context, ref),
-              const SizedBox(height: 28),
-              _newsSection(context, ref),
-              const SizedBox(height: 24),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  // ───────────────────────── HERO ─────────────────────────
+
+  Widget _hero(BuildContext context, UserModel? user,
+      AsyncValue<List<Product>> hot, OrderModel? activeOrder) {
+    final topPad = MediaQuery.paddingOf(context).top;
+    return ClipRRect(
+      key: _heroKey,
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
+      child: AuroraBackground(
+        tint: _tint,
+        animate: _heroVisible,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(16, topPad + 12, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _topBar(user),
+                  const SizedBox(height: 16),
+                  if (user != null) _pointsCard() else _loginCard(),
+                  const SizedBox(height: 12),
+                  _quickTiles(),
+                  if (activeOrder != null) ...[
+                    const SizedBox(height: 12),
+                    _orderCard(activeOrder),
+                  ],
+                  const SizedBox(height: 26),
+                  _heroSectionTitle('Món hot hôm nay', widget.onBrowseMenu),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            _hotStage(hot),
+            const SizedBox(height: 26),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _greeting() {
+    final h = DateTime.now().hour;
+    if (h < 11) return 'Chào buổi sáng';
+    if (h < 14) return 'Chào buổi trưa';
+    if (h < 18) return 'Chào buổi chiều';
+    return 'Chào buổi tối';
+  }
+
+  Widget _topBar(UserModel? user) {
+    final loggedIn = user != null;
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_greeting(),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white.withValues(alpha: 0.75))),
+              const SizedBox(height: 2),
+              Text(
+                user?.displayName ?? 'Mọng Fruits',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 23,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                    color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+        if (loggedIn) _rankChip(),
+      ],
+    );
+  }
+
+  Widget _rankChip() {
+    final r = ref.watch(membershipRankProvider).valueOrNull;
+    if (r == null) return const SizedBox.shrink();
+    return PressEffect(
+      onTap: () => _push(const MembershipRankScreen()),
+      child: _HeroGlass(
+        radius: 999,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(r.tier.icon, color: Colors.white, size: 16),
+            const SizedBox(width: 6),
+            Text('Hạng ${r.rankName}',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12.5)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _pointsCard() {
+    final rank = ref.watch(membershipRankProvider).valueOrNull;
+    final points = ref.watch(loyaltyBalanceProvider).valueOrNull?.balance;
+    final progress = (rank?.progress ?? 0.0).clamp(0.0, 1.0);
+
+    return PressEffect(
+      onTap: () => _push(const MembershipRankScreen()),
+      child: _HeroGlass(
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text('Điểm Mọng',
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600)),
+                const Spacer(),
+                Text('Quyền lợi',
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600)),
+                Icon(Icons.chevron_right_rounded,
+                    size: 18, color: Colors.white.withValues(alpha: 0.75)),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                if (points == null)
+                  const Text('—',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 34,
+                          fontWeight: FontWeight.w800))
+                else
+                  CountUpText(
+                    points,
+                    format: _pointsFmt.format,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 34,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                const SizedBox(width: 6),
+                Text('điểm',
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontSize: 14)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: Container(
+                height: 6,
+                width: double.infinity,
+                color: Colors.white.withValues(alpha: 0.2),
+                alignment: Alignment.centerLeft,
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: progress),
+                  duration: const Duration(milliseconds: 900),
+                  curve: Curves.easeOutCubic,
+                  builder: (_, v, __) => FractionallySizedBox(
+                    widthFactor: v,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _rankHint(rank),
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.85), fontSize: 12.5),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _rankHint(MembershipRank? r) {
+    if (r == null) return 'Tích điểm mỗi đơn để lên hạng & nhận ưu đãi';
+    if (r.isMax) return 'Bạn đang ở hạng cao nhất';
+    final parts = <String>[
+      if (r.ordersToNext > 0) '${r.ordersToNext} đơn',
+      if (r.spentToNext > 0) Formatters.money(r.spentToNext),
+    ];
+    final next = r.nextRankName ?? r.nextTier?.label ?? 'hạng kế tiếp';
+    if (parts.isEmpty) return 'Sắp lên hạng $next';
+    return 'Còn ${parts.join(' · ')} nữa để lên hạng $next';
+  }
+
+  Widget _loginCard() {
+    return _HeroGlass(
+      padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.card_giftcard_rounded, color: Colors.white),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Đăng nhập để tích điểm',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15)),
+                const SizedBox(height: 2),
+                Text('Nhận ưu đãi & theo dõi đơn hàng',
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.78),
+                        fontSize: 12.5)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          _WhitePill(
+            label: 'Đăng nhập',
+            onTap: () => _push(const LoginScreen()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _quickTiles() {
+    final room = ref.watch(activeGroupRoomProvider).valueOrNull;
+    final Widget groupTile = room != null
+        ? _tile(
+            icon: Icons.groups_rounded,
+            title: 'Phòng đặt chung',
+            sub: 'Mã ${room.code} · ${room.totalItems} món',
+            badge: true,
+            onTap: () async {
+              await Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => GroupRoomScreen(groupId: room.id)));
+              ref.invalidate(activeGroupRoomProvider);
+            },
+          )
+        : _tile(
+            icon: Icons.groups_rounded,
+            title: 'Đặt chung',
+            sub: 'Gộp đơn · chia phí ship',
+            onTap: () => _push(const GroupStartScreen()),
+          );
+
+    return Row(
+      children: [
+        Expanded(
+          child: _tile(
+            icon: Icons.local_cafe_rounded,
+            title: 'Thực đơn',
+            sub: 'Xem tất cả món',
+            onTap: widget.onBrowseMenu,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: groupTile),
+      ],
+    );
+  }
+
+  Widget _tile({
+    required IconData icon,
+    required String title,
+    required String sub,
+    required VoidCallback onTap,
+    bool badge = false,
+  }) {
+    return PressEffect(
+      onTap: onTap,
+      child: _HeroGlass(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 20),
+                ),
+                if (badge)
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4ADE80),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14)),
+                  const SizedBox(height: 1),
+                  Text(sub,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.75),
+                          fontSize: 11.5)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _orderCard(OrderModel o) {
+    final stage = switch (o.status) {
+      OrderStatus.confirmed => 0,
+      OrderStatus.inProgress => 1,
+      OrderStatus.ready => 2,
+      OrderStatus.delivering => 3,
+      _ => 0,
+    };
+    final title = switch (o.status) {
+      OrderStatus.confirmed => 'Cửa hàng đã nhận đơn',
+      OrderStatus.inProgress => 'Đang pha chế',
+      OrderStatus.ready => 'Đơn đã sẵn sàng',
+      OrderStatus.delivering => 'Đơn đang giao tới bạn',
+      _ => 'Đơn của bạn',
+    };
+    const labels = ['Nhận đơn', 'Pha chế', 'Sẵn sàng', 'Đang giao'];
+    final shortId =
+        (o.id.length > 8 ? o.id.substring(0, 8) : o.id).toUpperCase();
+
+    Widget dot(int i) {
+      final done = i <= stage;
+      final active = i == stage;
+      return AnimatedContainer(
+        duration: const Duration(milliseconds: 400),
+        width: 12,
+        height: 12,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: done ? Colors.white : Colors.white.withValues(alpha: 0.3),
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.28),
+                      spreadRadius: 4)
+                ]
+              : null,
+        ),
+      );
+    }
+
+    return PressEffect(
+      onTap: () => _push(OrderDetailScreen(orderId: o.id)),
+      child: _HeroGlass(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(title,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14.5)),
+                ),
+                Text('#$shortId',
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600)),
+                Icon(Icons.chevron_right_rounded,
+                    size: 18, color: Colors.white.withValues(alpha: 0.75)),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Row(
+                children: [
+                  for (var i = 0; i < labels.length; i++) ...[
+                    dot(i),
+                    if (i < labels.length - 1)
+                      Expanded(
+                        child: Container(
+                          height: 2,
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          color: i < stage
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.3),
+                        ),
+                      ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                for (var i = 0; i < labels.length; i++)
+                  Expanded(
+                    child: Text(
+                      labels[i],
+                      textAlign: i == 0
+                          ? TextAlign.left
+                          : (i == labels.length - 1
+                              ? TextAlign.right
+                              : TextAlign.center),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight:
+                            i == stage ? FontWeight.w800 : FontWeight.w500,
+                        color: i <= stage
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _heroSectionTitle(String title, VoidCallback onMore) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(title,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.2)),
+        ),
+        GestureDetector(
+          onTap: onMore,
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: [
+                Text('Xem thêm',
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontWeight: FontWeight.w600)),
+                Icon(Icons.chevron_right_rounded,
+                    size: 18, color: Colors.white.withValues(alpha: 0.85)),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _hotStage(AsyncValue<List<Product>> hot) {
+    Widget message(String text) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          child: Text(text,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.8))),
+        );
+
+    return hot.when(
+      loading: () => const SizedBox(
+        height: 300,
+        child: Center(
+          child: SizedBox(
+            width: 26,
+            height: 26,
+            child: CircularProgressIndicator(
+                strokeWidth: 2.4, color: Colors.white70),
+          ),
+        ),
+      ),
+      error: (e, _) => message('Không tải được món. Kéo xuống để thử lại.'),
+      data: (list) {
+        if (list.isEmpty) return message('Chưa có món nổi bật.');
+        return HotCoverflow(
+          products: list.take(8).toList(),
+          onFocus: (p) {
+            final c = DrinkTint.of(p);
+            if (c != _tint) setState(() => _tint = c);
+          },
+          onOpen: (p, tag) =>
+              _push(ProductDetailScreen(product: p, heroTag: tag)),
+        );
+      },
+    );
+  }
+
+  // ───────────────────── PHẦN DƯỚI (giữ nguyên) ─────────────────────
+
   /// Báo quán đang đóng cửa ngay ở Trang chủ, trước khi khách chọn món.
-  Widget _closedNotice(WidgetRef ref) {
+  Widget _closedNotice() {
     return ref.watch(storeStatusProvider).maybeWhen(
           data: (store) {
             if (store.isOpen) return const SizedBox.shrink();
             return Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
               child: GlassCard(
                 radius: 16,
                 blur: 12,
                 padding: const EdgeInsets.all(14),
-                tint: AppColors.delivery.withOpacity(0.12),
-                borderColor: AppColors.delivery.withOpacity(0.4),
+                tint: AppColors.delivery.withValues(alpha: 0.12),
+                borderColor: AppColors.delivery.withValues(alpha: 0.4),
                 child: Row(
                   children: [
                     const Icon(Icons.do_not_disturb_on_rounded,
@@ -177,467 +756,7 @@ class HomeScreen extends ConsumerWidget {
         );
   }
 
-  String _greeting() {
-    final h = DateTime.now().hour;
-    if (h < 11) return 'Chào buổi sáng ☀️';
-    if (h < 14) return 'Chào buổi trưa';
-    if (h < 18) return 'Chào buổi chiều';
-    return 'Chào buổi tối 🌙';
-  }
-
-  Widget _topBar(BuildContext context, WidgetRef ref, UserModel? user) {
-    final topPad = MediaQuery.of(context).padding.top;
-    final loggedIn = user != null;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(18, topPad + 14, 18, 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(_greeting(),
-                    style:
-                        TextStyle(fontSize: 12.5, color: AppColors.textMuted)),
-                const SizedBox(height: 2),
-                Text(loggedIn ? user!.displayName : 'Mọng Fruits',
-                    style: TextStyle(
-                        fontSize: 21,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textDark)),
-              ],
-            ),
-          ),
-          if (loggedIn) _rankBadge(context, ref),
-        ],
-      ),
-    );
-  }
-
-  Widget _rankBadge(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(membershipRankProvider);
-    return async.maybeWhen(
-      data: (r) => GestureDetector(
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const MembershipRankScreen()),
-        ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: r.tier.tint,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: r.tier.color.withOpacity(0.35)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(r.tier.icon, color: r.tier.color, size: 16),
-              const SizedBox(width: 6),
-              Text('Hạng ${r.rankName}',
-                  style: TextStyle(
-                      color: r.tier.color,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12.5)),
-            ],
-          ),
-        ),
-      ),
-      orElse: () => const SizedBox.shrink(),
-    );
-  }
-
-  Widget _header(BuildContext context, WidgetRef ref, UserModel? user) {
-    final loggedIn = user != null;
-    final latest = ref.watch(latestNewsProvider).maybeWhen(
-      data: (l) => l.isNotEmpty ? l.first : null,
-      orElse: () => null,
-    );
-
-    void openNews() {
-      if (latest == null) return;
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const NewsListScreen()),
-      );
-    }
-
-    return GestureDetector(
-      onTap: loggedIn ? openNews : null,
-      child: Container(
-        height: 178,
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.coffeeDark, AppColors.coffee],
-          ),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.coffee.withOpacity(0.22),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Ảnh banner = tin mới nhất (nối tới Tin tức). Không có tin -> giữ nền cam.
-            if (latest != null) NewsImage(imageUrl: latest.imageUrl),
-            if (latest != null)
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withOpacity(0.15),
-                      Colors.black.withOpacity(0.5),
-                    ],
-                  ),
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (loggedIn)
-                    // Dải tin mới nhất dạng kính mờ (nối tới Tin tức).
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.18),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                              color: Colors.white.withOpacity(0.3)),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.campaign_rounded,
-                                  color: Colors.white, size: 18),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  latest?.title ?? 'Tin tức & ưu đãi mới',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700),
-                                ),
-                              ),
-                              const Icon(Icons.chevron_right_rounded,
-                                  color: Colors.white70),
-                            ],
-                          ),
-                        ),
-                      ),
-                    )
-                  else
-                    _loginPill(context),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _loginPill(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.92),
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.person_outline_rounded,
-              color: AppColors.coffee, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text('Đặt món & nhận ưu đãi ngay',
-                style: TextStyle(
-                    color: AppColors.textDark,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13)),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const LoginScreen()),
-            ),
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
-              decoration: BoxDecoration(
-                color: AppColors.coffee,
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: const Text('Đăng nhập',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _hotList(BuildContext context, AsyncValue<List<Product>> hot) {
-    return hot.when(
-      loading: () => SizedBox(
-        height: 224,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: 4,
-          separatorBuilder: (_, __) => const SizedBox(width: 12),
-          itemBuilder: (_, __) => const SizedBox(
-            width: 180,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ShimmerBox(height: 138, width: 180, radius: 18),
-                SizedBox(height: 8),
-                ShimmerBox(height: 14, width: 120),
-                SizedBox(height: 6),
-                ShimmerBox(height: 14, width: 70),
-              ],
-            ),
-          ),
-        ),
-      ),
-      error: (e, _) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Text('Không tải được món: $e',
-            style: TextStyle(color: AppColors.textMuted)),
-      ),
-      data: (list) {
-        if (list.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text('Chưa có món nổi bật.',
-                style: TextStyle(color: AppColors.textMuted)),
-          );
-        }
-        return SizedBox(
-          height: 224,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: list.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (_, i) =>
-                FadeSlideIn(index: i, child: _hotCard(context, list[i])),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _hotCard(BuildContext context, Product p) {
-    // Trong list cuộn dùng blur=0 (nhẹ) — vẫn giữ vẻ kính mờ bằng nền + viền.
-    return SizedBox(
-      width: 180,
-      child: GlassCard(
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(
-              builder: (_) => ProductDetailScreen(product: p)),
-        ),
-        radius: 18,
-        blur: 0,
-        padding: EdgeInsets.zero,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(18)),
-              child: AspectRatio(
-                  aspectRatio: 1.3, child: ProductImage(product: p)),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(p.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          color: AppColors.textDark)),
-                  const SizedBox(height: 4),
-                  Text(Formatters.money(p.price),
-                      style: const TextStyle(
-                          color: AppColors.coffee,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _groupOrderCard(BuildContext context, WidgetRef ref) {
-    final active = ref.watch(activeGroupRoomProvider);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: active.maybeWhen(
-        data: (room) => room != null
-            ? _groupResumeCard(context, ref, room)
-            : _groupStartCard(context),
-        orElse: () => _groupStartCard(context),
-      ),
-    );
-  }
-
-  Widget _groupStartCard(BuildContext context) {
-    return GestureDetector(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const GroupStartScreen()),
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.coffee, AppColors.coffeeDark],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-                color: AppColors.coffee.withOpacity(0.28),
-                blurRadius: 16,
-                offset: const Offset(0, 8)),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(14)),
-              child: const Icon(Icons.groups_rounded,
-                  color: Colors.white, size: 28),
-            ),
-            const SizedBox(width: 14),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Đặt nước cùng bạn bè',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800)),
-                  SizedBox(height: 3),
-                  Text('Gộp 1 đơn · 1 lần giao · chia phí ship',
-                      style: TextStyle(color: Colors.white70, fontSize: 12.5)),
-                ],
-              ),
-            ),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-              decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(999)),
-              child: const Text('Tạo phòng',
-                  style: TextStyle(
-                      color: AppColors.coffee,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 13)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _groupResumeCard(
-      BuildContext context, WidgetRef ref, dynamic room) {
-    return GestureDetector(
-      onTap: () async {
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-              builder: (_) => GroupRoomScreen(groupId: room.id)),
-        );
-        ref.invalidate(activeGroupRoomProvider);
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.success.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.success.withOpacity(0.4)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(14)),
-              child: Icon(Icons.groups_rounded,
-                  color: AppColors.success, size: 26),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Phòng đặt chung đang mở',
-                      style: TextStyle(
-                          color: AppColors.textDark,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 3),
-                  Text('Mã ${room.code} · ${room.totalItems} món',
-                      style: TextStyle(
-                          color: AppColors.textMuted, fontSize: 12.5)),
-                ],
-              ),
-            ),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-              decoration: BoxDecoration(
-                  color: AppColors.success,
-                  borderRadius: BorderRadius.circular(999)),
-              child: const Text('Vào lại',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 13)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _newsSection(BuildContext context, WidgetRef ref) {
+  Widget _newsSection(BuildContext context) {
     final async = ref.watch(latestNewsProvider);
     return async.maybeWhen(
       data: (list) {
@@ -650,16 +769,13 @@ class HomeScreen extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Tin tức',
+                  Text('Sự kiện',
                       style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
                           color: AppColors.textDark)),
                   GestureDetector(
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                          builder: (_) => const NewsListScreen()),
-                    ),
+                    onTap: () => _push(const NewsListScreen()),
                     child: const Text('Xem thêm',
                         style: TextStyle(
                             color: AppColors.coffee,
@@ -677,7 +793,7 @@ class HomeScreen extends ConsumerWidget {
                 itemCount: list.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 12),
                 itemBuilder: (_, i) =>
-                  FadeSlideIn(index: i, child: _newsCard(context, list[i])),
+                    FadeSlideIn(index: i, child: _newsCard(list[i])),
               ),
             ),
           ],
@@ -687,13 +803,11 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _newsCard(BuildContext context, NewsModel n) {
+  Widget _newsCard(NewsModel n) {
     return SizedBox(
       width: 260,
       child: GlassCard(
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => NewsDetailScreen(news: n)),
-        ),
+        onTap: () => _push(NewsDetailScreen(news: n)),
         radius: 18,
         blur: 0,
         padding: EdgeInsets.zero,
@@ -727,6 +841,65 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Thẻ "kính" trên nền cực quang: nền trắng trong + viền sáng + vệt bóng.
+/// KHÔNG dùng BackdropFilter (nền phía sau đã mịn nên không cần làm mờ) -> nhẹ.
+class _HeroGlass extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double radius;
+
+  const _HeroGlass({
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+    this.radius = 22,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.24)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withValues(alpha: 0.20),
+            Colors.white.withValues(alpha: 0.08),
+          ],
+        ),
+      ),
+      child: Padding(padding: padding, child: child),
+    );
+  }
+}
+
+class _WhitePill extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _WhitePill({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Text(label,
+              style: const TextStyle(
+                  color: Color(0xFF1A0F14),
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13)),
         ),
       ),
     );

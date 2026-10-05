@@ -26,7 +26,7 @@ class NewsDetailScreen extends StatelessWidget {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         
-      appBar: AppBar(title: const Text('Tin tức')),
+      appBar: AppBar(title: const Text('Sự kiện')),
       body: ListView(
         padding: EdgeInsets.zero,
         children: [

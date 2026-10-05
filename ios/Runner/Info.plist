@@ -72,6 +72,8 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSMotionUsageDescription</key>
+	<string>Mọng Fruits dùng độ nghiêng của máy để tạo hiệu ứng chiều sâu cho ảnh món.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Ứng dụng dùng vị trí của bạn để tính phí giao hàng theo khoảng cách tới quán.</string>
 	<key>NSLocationAlwaysUsageDescription</key>

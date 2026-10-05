@@ -23,6 +23,16 @@ workflows:
     scripts:
       - name: Flutter pub get
         script: flutter pub get
+      - name: Tạo Live Activity extension (Dynamic Island)
+        script: |
+          # Plugin live_activity_kit tự tạo target widget extension, App Group,
+          # entitlements và NSSupportsLiveActivities — không cần mở Xcode.
+          # Chạy lại mỗi lần build vẫn an toàn.
+          dart run live_activity_kit:setup
+          echo "===== Bundle ID trong project (đăng ký đủ trên developer.apple.com) ====="
+          grep -o 'PRODUCT_BUNDLE_IDENTIFIER = [^;]*' ios/Runner.xcodeproj/project.pbxproj | sort -u
+          echo "===== App Group ====="
+          grep -ho 'group\.[A-Za-z0-9._-]*' ios/Runner/Runner.entitlements | sort -u
       - name: Cài CocoaPods
         script: |
           find . -name "Podfile" -execdir pod install \;

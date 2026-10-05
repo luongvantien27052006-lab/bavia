@@ -10,17 +10,24 @@
 // người dùng bấm vào thông báo.
 
 import 'dart:async';
+import 'dart:ui' show DartPluginRegistrant;
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../core/network/api_client.dart';
+import 'order_live_activity.dart';
 
 /// Handler khi app đang ở nền/đã tắt (bắt buộc là hàm top-level).
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Hệ điều hành tự hiển thị thông báo; không cần làm gì thêm ở đây.
+  // Thông báo thường: hệ điều hành tự hiển thị.
+  // Live Update (Android): server gửi data-only -> tự vẽ lại thông báo ongoing.
+  if (message.data['type'] == 'live_activity') {
+    DartPluginRegistrant.ensureInitialized();
+    await OrderLiveActivity.instance.handleRemote(message.data);
+  }
 }
 
 /// Key điều hướng dùng chung, để mở màn chi tiết đơn từ thông báo
@@ -50,6 +57,13 @@ class PushService {
 
       // Bấm vào thông báo khi app đang chạy nền.
       FirebaseMessaging.onMessageOpenedApp.listen(_handleOpened);
+
+      // App đang mở: Live Update Android (data-only) -> cập nhật ngay.
+      FirebaseMessaging.onMessage.listen((m) {
+        if (m.data['type'] == 'live_activity') {
+          OrderLiveActivity.instance.handleRemote(m.data);
+        }
+      });
 
       // ⚠️ QUAN TRỌNG: trên iOS, getInitialMessage() ĐỢI APNS token.
       // Nếu app chưa có entitlement Push / chưa cấp được APNS token thì
@@ -161,6 +175,8 @@ class PushService {
   Future<void> unregister() async {
     await _refreshSub?.cancel();
     _refreshSub = null;
+    // Tắt timeline đơn (Dynamic Island / Live Update) của tài khoản cũ.
+    await OrderLiveActivity.instance.endAll();
     final token = _token;
     _token = null;
     if (token == null) return;
