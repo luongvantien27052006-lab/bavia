@@ -10,7 +10,7 @@
 // Dùng chung 1 màn, chọn tab: Điều khoản / Chính sách bảo mật.
 
 import 'package:flutter/material.dart';
-import '../../widgets/glass_card.dart';
+import '../../widgets/stage.dart';
 
 import '../../core/theme/app_theme.dart';
 
@@ -18,33 +18,50 @@ class LegalScreen extends StatelessWidget {
   final int initialTab;
   const LegalScreen({super.key, this.initialTab = 0});
 
-  static const String contactPhone = '0338316893';
+  static const String contactPhone = '0398853776';
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
       initialIndex: initialTab,
-      child: GlassBackground(
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          
-        appBar: AppBar(
-          title: const Text('Chính sách & Điều khoản'),
-          bottom: TabBar(
-            labelColor: AppColors.coffee,
-            unselectedLabelColor: AppColors.textMuted,
-            indicatorColor: AppColors.coffee,
-            tabs: [
-              Tab(text: 'Điều khoản'),
-              Tab(text: 'Bảo mật'),
-            ],
-          ),
+      child: StageScaffold(
+        title: 'Chính sách & Điều khoản',
+        tint: const Color(0xFF7457E0),
+        body: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                color: St.fill(0.08),
+                border: Border.all(color: St.line(0.12)),
+              ),
+              child: TabBar(
+                dividerColor: Colors.transparent,
+                indicatorSize: TabBarIndicatorSize.tab,
+                indicator: BoxDecoration(
+                  color: St.solid,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                labelColor: St.onSolid,
+                unselectedLabelColor: St.fg(0.75),
+                labelStyle: const TextStyle(fontWeight: FontWeight.w800),
+                tabs: const [
+                  Tab(text: 'Điều khoản', height: 40),
+                  Tab(text: 'Bảo mật', height: 40),
+                ],
+              ),
+            ),
+            const Expanded(
+              child: TabBarView(
+                children: [_TermsTab(), _PrivacyTab()],
+              ),
+            ),
+          ],
         ),
-        body: const TabBarView(
-          children: [_TermsTab(), _PrivacyTab()],
-        ),
-      )),
+      ),
     );
   }
 }
@@ -219,7 +236,7 @@ class _ContactBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
+        color: AppColors.dark ? St.fill(0.06) : St.fill(0.55),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.coffee.withOpacity(0.2)),
       ),

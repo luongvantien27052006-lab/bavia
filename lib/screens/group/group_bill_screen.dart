@@ -3,6 +3,7 @@
 // Bảng kê chia tiền đơn nhóm: mỗi người trả bao nhiêu (tiền món − giảm + ship).
 
 import 'package:flutter/material.dart';
+import '../../widgets/stage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -29,19 +30,14 @@ class _GroupBillScreenState extends ConsumerState<GroupBillScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.cream,
-      appBar: AppBar(
-        title: const Text('Chia tiền'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: AppColors.textDark,
-      ),
+    return StageScaffold(
+      title: 'Chia tiền',
+      tint: const Color(0xFF34C77B),
       body: FutureBuilder<GroupBill>(
         future: _future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(child: CircularProgressIndicator(strokeWidth: 2.4, color: St.fg(0.7)));
           }
           if (snap.hasError || snap.data == null) {
             return Center(

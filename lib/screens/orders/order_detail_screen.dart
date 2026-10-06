@@ -7,7 +7,9 @@ import 'order_status_style.dart';
 import 'package:flutter/services.dart';
 import '../../widgets/star_rating.dart';
 import '../../widgets/product_review_tile.dart';
-import '../../widgets/glass_card.dart';
+import '../../widgets/drink_tint.dart';
+import '../../widgets/menu_image.dart';
+import '../../widgets/stage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/api_exception.dart';
@@ -241,16 +243,19 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   Widget build(BuildContext context) {
     final detail = ref.watch(orderDetailProvider(widget.orderId));
 
-    return GlassBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        
-      appBar: AppBar(
-        title: const Text('Chi tiết đơn',
-            style: TextStyle(fontWeight: FontWeight.w800)),
-      ),
+    final loaded = detail.valueOrNull;
+    final tint = loaded != null ? loaded.status.color : DrinkTint.fallback;
+
+    return StageScaffold(
+      title: 'Chi tiết đơn',
+      subtitle: loaded != null
+          ? '#${(loaded.id.length > 8 ? loaded.id.substring(0, 8) : loaded.id).toUpperCase()}'
+          : null,
+      tint: tint,
       body: detail.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Center(
+            child: CircularProgressIndicator(
+                strokeWidth: 2.4, color: St.fg(0.7))),
         error: (e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -259,14 +264,21 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                 style: TextStyle(color: AppColors.textMuted)),
           ),
         ),
-        data: (order) => _content(order),
+        data: (order) => RefreshIndicator(
+          color: St.fg(),
+          backgroundColor: St.refreshBg,
+          onRefresh: () async =>
+              ref.invalidate(orderDetailProvider(widget.orderId)),
+          child: _content(order),
+        ),
       ),
-    ));
+    );
   }
 
   Widget _content(OrderModel order) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
       children: [
         _statusHeader(order),
         _scheduledNote(order),
@@ -283,7 +295,8 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
+            color: St.fill(0.07),
+          border: Border.all(color: St.line(0.10)),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -657,7 +670,8 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
+        color: St.fill(0.07),
+          border: Border.all(color: St.line(0.10)),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -836,23 +850,49 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
+        color: St.fill(0.07),
+          border: Border.all(color: St.line(0.10)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 32,
-            height: 32,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppColors.coffee.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text('${item.quantity}',
-                style: const TextStyle(
-                    color: AppColors.coffee, fontWeight: FontWeight.w700)),
+          // Ảnh món + số lượng (huy hiệu góc).
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: MenuImage(
+                  url: item.imageUrl,
+                  size: 52,
+                  fallback: Container(
+                    width: 52,
+                    height: 52,
+                    color: St.fill(0.08),
+                    child: Icon(Icons.local_drink_rounded,
+                        color: St.fg(0.6), size: 22),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: -6,
+                top: -6,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: St.solid,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text('×${item.quantity}',
+                      style: TextStyle(
+                          color: St.onSolid,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800)),
+                ),
+              ),
+            ],
           ),
           const SizedBox(width: 12),
           Expanded(

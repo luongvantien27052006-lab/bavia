@@ -101,25 +101,46 @@ class GlassBackground extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Cả 2 chế độ dùng nền "sân khấu" (tối: mận đậm, sáng: kem hồng).
+    return _StageBackdrop(child: child);
+  }
+}
+
+/// Nền "sân khấu" tĩnh cho các màn phụ: nền + 2 quầng sáng mờ (theo Sáng/Tối).
+/// Vẽ bằng gradient (không blur, không chuyển động) -> rất nhẹ.
+class _StageBackdrop extends StatelessWidget {
+  final Widget child;
+  const _StageBackdrop({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
     final dark = AppColors.dark;
-    final colorBg =
-        ref.watch(displaySettingsProvider.select((x) => x.colorBg));
-    // Chế độ SÁNG + tắt màu nền -> nền phẳng nhạt; còn lại giữ gradient.
-    if (!dark && !colorBg) {
-      return ColoredBox(color: const Color(0xFFFDF6EF), child: child);
-    }
-    final colors = dark
-        ? const [Color(0xFF1E1510), Color(0xFF241A1E), Color(0xFF14201D)]
-        : const [Color(0xFFFFEEDD), Color(0xFFFFE1E9), Color(0xFFDFF3EE)];
     return DecoratedBox(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: colors,
+          color: dark ? const Color(0xFF140B10) : const Color(0xFFFBF4F1)),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: const Alignment(-0.9, -1.0),
+            radius: 1.1,
+            colors: dark
+                ? const [Color(0x55B8325C), Color(0x00B8325C)]
+                : const [Color(0x33F2A1B8), Color(0x00F2A1B8)],
+          ),
+        ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              center: const Alignment(1.0, 0.9),
+              radius: 1.0,
+              colors: dark
+                  ? const [Color(0x33E85D3C), Color(0x00E85D3C)]
+                  : const [Color(0x2EFFC79A), Color(0x00FFC79A)],
+            ),
+          ),
+          child: child,
         ),
       ),
-      child: child,
     );
   }
 }

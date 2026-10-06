@@ -23,6 +23,8 @@ import '../providers/cart_provider.dart';
 import '../services/location_service.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/anim.dart';
+import '../widgets/drink_tint.dart';
+import '../providers/home_tint_provider.dart';
 import '../providers/realtime_order_provider.dart';
 import '../utils/formatters.dart';
 import '../providers/account_status_provider.dart';
@@ -210,6 +212,9 @@ class _MainShellState extends ConsumerState<MainShell>
       return _lockedView(acct.lockReason);
     }
 
+    final onHome = _index == 0;
+    final homeTint = ref.watch(homeTintProvider);
+
     final tabs = [
       HomeScreen(onBrowseMenu: _goToMenu),
       const MenuScreen(),
@@ -218,6 +223,10 @@ class _MainShellState extends ConsumerState<MainShell>
     ];
 
     return Scaffold(
+      // Nội dung chạy xuống DƯỚI thanh điều hướng -> thanh nổi lơ lửng,
+      // kính mờ thấy được nội dung phía sau khi cuộn.
+      extendBody: true,
+      backgroundColor: DrinkTint.stageInk,
       body: IndexedStack(
         key: ValueKey(themeMode),
         index: _index,
@@ -227,55 +236,64 @@ class _MainShellState extends ConsumerState<MainShell>
             TickerMode(enabled: i == _index, child: tabs[i]),
         ],
       ),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (cartCount > 0) _cartBar(context, cartCount, cartSubtotal),
-          _navBar(cartCount),
-        ],
+      // Ở Trang chủ: vùng dưới thanh điều hướng cùng màu nền "sân khấu" tối
+      // (đổi màu cùng nhịp với nền cực quang) -> liền một khối với nội dung.
+      bottomNavigationBar: AnimatedContainer(
+        duration: const Duration(milliseconds: 900),
+        curve: Curves.easeInOut,
+        color: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (cartCount > 0)
+              _cartBar(context, cartCount, cartSubtotal, onHome, homeTint),
+            _navBar(cartCount, onHome, homeTint),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _cartBar(BuildContext context, int count, int subtotal) {
+  Widget _cartBar(BuildContext context, int count, int subtotal, bool onHome,
+      Color homeTint) {
+    // Trang chủ ở chế độ tối: thanh giỏ màu trắng cho nổi; còn lại màu thương hiệu.
+    final whitePill = onHome && AppColors.dark;
+    final bg = whitePill ? Colors.white : AppColors.coffee;
+    final fg = whitePill ? const Color(0xFF1A0F14) : Colors.white;
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
       child: Material(
-      color: AppColors.coffee,
-      borderRadius: BorderRadius.circular(18),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const CartScreen()),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Badge(
-                label: Text('$count'),
-                backgroundColor: AppColors.surface,
-                textColor: AppColors.coffee,
-                child: const Icon(Icons.shopping_cart_rounded,
-                    color: Colors.white),
-              ),
-              const SizedBox(width: 14),
-              Text('Xem giỏ hàng',
-                  style: const TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.w700)),
-              const Spacer(),
-              Text(Formatters.money(subtotal),
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 16)),
-              const SizedBox(width: 6),
-              const Icon(Icons.arrow_forward_ios_rounded,
-                  color: Colors.white, size: 14),
-            ],
+        color: bg,
+        borderRadius: BorderRadius.circular(18),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const CartScreen()),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Badge(
+                  label: Text('$count'),
+                  backgroundColor:
+                      whitePill ? AppColors.delivery : AppColors.surface,
+                  textColor: whitePill ? Colors.white : AppColors.coffee,
+                  child: Icon(Icons.shopping_cart_rounded, color: fg),
+                ),
+                const SizedBox(width: 14),
+                Text('Xem giỏ hàng',
+                    style: TextStyle(color: fg, fontWeight: FontWeight.w700)),
+                const Spacer(),
+                Text(Formatters.money(subtotal),
+                    style: TextStyle(
+                        color: fg, fontWeight: FontWeight.w800, fontSize: 16)),
+                const SizedBox(width: 6),
+                Icon(Icons.arrow_forward_ios_rounded, color: fg, size: 14),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -299,22 +317,28 @@ class _MainShellState extends ConsumerState<MainShell>
     ),
   ];
 
-  /// Thanh điều hướng nổi: bo tròn, nền kính mờ, mục đang chọn có nền gradient.
-  Widget _navBar(int cartCount) {
-    final dark = AppColors.dark;
+  /// Thanh điều hướng nổi (kính). Mục đang chọn là viên thuốc màu đặc + phát sáng.
+  /// - Trang chủ: kính TỐI, mục chọn phát sáng theo màu món đang xem.
+  /// - Tab khác: kính theo chế độ Sáng/Tối, mục chọn màu thương hiệu.
+  Widget _navBar(int cartCount, bool onHome, Color homeTint) {
+    final onDark = AppColors.dark;
+    final accent = onHome ? homeTint : AppColors.coffee;
     final radius = BorderRadius.circular(32);
     return SafeArea(
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
-        child: DecoratedBox(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 400),
           decoration: BoxDecoration(
             borderRadius: radius,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(dark ? 0.35 : 0.10),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
+                color: onHome
+                    ? accent.withValues(alpha: 0.20)
+                    : Colors.black.withValues(alpha: onDark ? 0.35 : 0.10),
+                blurRadius: 28,
+                offset: const Offset(0, 10),
               ),
             ],
           ),
@@ -322,23 +346,24 @@ class _MainShellState extends ConsumerState<MainShell>
             borderRadius: radius,
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 400),
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
                   borderRadius: radius,
-                  color: dark
-                      ? Colors.white.withOpacity(0.08)
-                      : Colors.white.withOpacity(0.80),
+                  color: onDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.white.withValues(alpha: 0.72),
                   border: Border.all(
-                    color: dark
-                        ? Colors.white.withOpacity(0.12)
-                        : Colors.white.withOpacity(0.9),
+                    color: onDark
+                        ? Colors.white.withValues(alpha: 0.13)
+                        : Colors.white.withValues(alpha: 0.9),
                   ),
                 ),
                 child: Row(
                   children: [
                     for (int i = 0; i < _navItems.length; i++)
-                      Expanded(child: _navItem(i, cartCount)),
+                      Expanded(child: _navItem(i, cartCount, onDark, accent)),
                   ],
                 ),
               ),
@@ -349,10 +374,16 @@ class _MainShellState extends ConsumerState<MainShell>
     );
   }
 
-  Widget _navItem(int i, int cartCount) {
+  Widget _navItem(int i, int cartCount, bool onDark, Color accent) {
     final item = _navItems[i];
     final sel = _index == i;
-    final color = sel ? AppColors.coffee : AppColors.textMuted;
+    // Chữ trên viên màu: tự chọn trắng hoặc đậm cho đủ tương phản (vd món xoài vàng).
+    final onAccent = accent.computeLuminance() > 0.45
+        ? const Color(0xFF1A0F14)
+        : Colors.white;
+    final color = sel
+        ? onAccent
+        : (onDark ? Colors.white.withValues(alpha: 0.62) : AppColors.textMuted);
 
     Widget icon = Icon(sel ? item.active : item.icon, size: 24, color: color);
     if (i == 1 && cartCount > 0) {
@@ -373,39 +404,54 @@ class _MainShellState extends ConsumerState<MainShell>
         HapticFeedback.selectionClick();
         setState(() => _index = i);
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(vertical: 9),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(26),
-          gradient: sel
-              ? LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    AppColors.coffee.withOpacity(0.20),
-                    AppColors.coffee.withOpacity(0.07),
-                  ],
-                )
-              : null,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            icon,
-            const SizedBox(height: 3),
-            Text(
-              item.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
-                color: color,
+      child: Semantics(
+        selected: sel,
+        button: true,
+        label: item.label,
+        excludeSemantics: true,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(26),
+            gradient: sel
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color.lerp(accent, Colors.white, 0.10)!,
+                      Color.lerp(accent, Colors.black, 0.22)!,
+                    ],
+                  )
+                : null,
+            boxShadow: sel
+                ? [
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.45),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              icon,
+              const SizedBox(height: 3),
+              Text(
+                item.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: sel ? FontWeight.w800 : FontWeight.w500,
+                  color: color,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

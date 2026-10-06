@@ -6,7 +6,6 @@
 // ================================================================
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../widgets/favorite_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,7 +15,7 @@ import '../../models/product.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/group_order_provider.dart';
 import '../../utils/formatters.dart';
-import '../../widgets/glass_card.dart';
+import '../../widgets/stage.dart';
 import '../../widgets/drink_tint.dart';
 import '../../widgets/parallax_product_stage.dart';
 
@@ -137,29 +136,37 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     final lineTotal = _unitPrice * _qty;
     // Trai cay: gia tren cung doi theo size dang chon; mon khac: giu gia goc.
     final headlinePrice = _isFruit ? _unitPrice : p.price;
+    final tint = DrinkTint.of(p);
+    final base = DrinkTint.stageBase(tint);
+    final inGroup = ref.watch(activeGroupProvider) != null;
 
     return Scaffold(
-      backgroundColor:
-          AppColors.dark ? const Color(0xFF16110E) : const Color(0xFFDFF3EE),
-      body: GlassBackground(
-        child: CustomScrollView(
+      backgroundColor: base,
+      body: CustomScrollView(
         slivers: [
           // Đầu trang "ly nổi chiều sâu": nghiêng máy để thấy hiệu ứng 3D.
           SliverAppBar(
             expandedHeight: 400,
             pinned: true,
             stretch: true,
-            backgroundColor: DrinkTint.stageBase(DrinkTint.of(p)),
-            foregroundColor: Colors.white,
+            backgroundColor: base,
+            foregroundColor: St.fg(),
             surfaceTintColor: Colors.transparent,
-            systemOverlayStyle: const SystemUiOverlayStyle(
-              statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.light,
-              statusBarBrightness: Brightness.dark,
+            systemOverlayStyle: stageOverlay,
+            leading: Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: Center(
+                child: StageIconButton(
+                  icon: Icons.arrow_back_rounded,
+                  tooltip: 'Quay lại',
+                  size: 40,
+                  onTap: () => Navigator.of(context).maybePop(),
+                ),
+              ),
             ),
             actions: [
               Padding(
-                padding: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.only(right: 10),
                 child: Center(
                     child: FavoriteButton(productId: p.id, size: 22)),
               ),
@@ -177,152 +184,184 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
                     children: [
-                      Expanded(
-                        child: Text(p.name,
-                            style: const TextStyle(
-                                fontSize: 22, fontWeight: FontWeight.w800)),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.coffee.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(p.category,
-                            style: const TextStyle(
-                                color: AppColors.coffee,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600)),
-                      ),
+                      StageChip(label: p.category, color: tint),
+                      if (p.isNew)
+                        const StageChip(
+                            label: 'MỚI', color: Color(0xFF4ADE80)),
+                      if (p.isSeasonal)
+                        const StageChip(
+                            label: 'Theo mùa', color: Color(0xFFFFB020)),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(Formatters.money(headlinePrice),
-                      style: const TextStyle(
-                          color: AppColors.coffee,
-                          fontSize: 20,
+                  const SizedBox(height: 10),
+                  Text(p.name,
+                      style:  TextStyle(
+                          color: St.fg(),
+                          fontSize: 26,
+                          height: 1.15,
+                          letterSpacing: -0.3,
                           fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 6),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: Text(
+                      Formatters.money(headlinePrice),
+                      key: ValueKey(headlinePrice),
+                      style: TextStyle(
+                          color: St.tint(tint, 0.45),
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800),
+                    ),
+                  ),
                   if (p.description.isNotEmpty) ...[
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Text(p.description,
                         style: TextStyle(
-                            color: AppColors.textMuted,
+                            color: St.fg(0.72),
                             fontSize: 15,
                             height: 1.5)),
                   ],
+                  if (p.hasNutrition) ...[
+                    const SizedBox(height: 14),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        if (p.calories != null)
+                          StageChip(
+                              label: '${p.calories} kcal',
+                              icon: Icons.local_fire_department_rounded),
+                        for (final t in p.healthTags)
+                          StageChip(label: t, icon: Icons.eco_rounded),
+                      ],
+                    ),
+                  ],
                   // Chon size (chi danh muc trai cay)
-                  if (_isFruit && _sizeOpts.isNotEmpty) ..._sizeSection(),
+                  if (_isFruit && _sizeOpts.isNotEmpty)
+                    ..._sizeSection(tint),
                   // Topping (ngoai size) — cho moi danh muc
-                  if (_nonSizeOpts.isNotEmpty) ..._optionSection(_nonSizeOpts),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      const Text('Số lượng',
-                          style: TextStyle(fontWeight: FontWeight.w700)),
-                      const Spacer(),
-                      _qtyStepper(),
-                    ],
+                  if (_nonSizeOpts.isNotEmpty)
+                    ..._optionSection(_nonSizeOpts, tint),
+                  const SizedBox(height: 22),
+                  StageGlass(
+                    radius: 20,
+                    padding: const EdgeInsets.fromLTRB(16, 10, 10, 10),
+                    child: Row(
+                      children: [
+                         Text('Số lượng',
+                            style: TextStyle(
+                                color: St.fg(),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700)),
+                        const Spacer(),
+                        _qtyStepper(tint),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
           ),
         ],
-        ),
       ),
-      bottomNavigationBar: ColoredBox(
-        color: AppColors.dark
-            ? const Color(0xFF16110E)
-            : const Color(0xFFDFF3EE),
+      // Thanh dưới: nút thêm phát sáng theo màu món.
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: base,
+          border: Border(
+              top: BorderSide(color: St.line(0.08))),
+        ),
         child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: ElevatedButton(
-            onPressed: _addToCart,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.shopping_cart_rounded, size: 20),
-                const SizedBox(width: 8),
-                Text('Thêm vào giỏ • ${Formatters.money(lineTotal)}'),
-              ],
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+            child: StageButton(
+              tint: tint,
+              icon: inGroup
+                  ? Icons.groups_rounded
+                  : Icons.add_shopping_cart_rounded,
+              label:
+                  '${inGroup ? 'Thêm vào phòng' : 'Thêm vào giỏ'} • ${Formatters.money(lineTotal)}',
+              onTap: _addToCart,
             ),
           ),
         ),
-      )),
+      ),
     );
   }
 
+  Widget _sectionTitle(String title, String? hint) => Padding(
+        padding: const EdgeInsets.only(top: 24, bottom: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(title,
+                style:  TextStyle(
+                    color: St.fg(),
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800)),
+            if (hint != null) ...[
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(hint,
+                    style: TextStyle(
+                        color: St.fg(0.55),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ],
+        ),
+      );
+
   // ── Khu CHỌN SIZE (single-select, size thay giá) ──
-  List<Widget> _sizeSection() {
+  List<Widget> _sizeSection(Color tint) {
     return [
-      const SizedBox(height: 24),
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const Text('Kích cỡ',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-          const SizedBox(width: 8),
-          Text('(chọn 1)',
-              style: TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600)),
-        ],
-      ),
-      for (final o in _sizeOpts) _sizeTile(o),
+      _sectionTitle('Kích cỡ', 'chọn 1'),
+      for (final o in _sizeOpts)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: _sizeTile(o, tint),
+        ),
     ];
   }
 
-  Widget _sizeTile(ProductOption o) {
+  Widget _sizeTile(ProductOption o, Color tint) {
     final selected = _selectedSizeId == o.id;
-    return InkWell(
-      onTap: () => setState(() => _selectedSizeId = o.id),
-      borderRadius: BorderRadius.circular(12),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
-        margin: const EdgeInsets.only(top: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        decoration: BoxDecoration(
-          color:
-              selected
-              ? AppColors.coffee.withOpacity(0.12)
-              : (AppColors.dark
-                  ? Colors.white.withOpacity(0.05)
-                  : Colors.white.withOpacity(0.50)),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected ? AppColors.coffee : const Color(0xFFE5DDD7),
-            width: selected ? 2 : 1,
-          ),
-        ),
+    return Semantics(
+      selected: selected,
+      inMutuallyExclusiveGroup: true,
+      child: StageGlass(
+        onTap: () => setState(() => _selectedSizeId = o.id),
+        highlight: selected ? tint : null,
+        radius: 16,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         child: Row(
           children: [
-            Icon(
-              selected
-                  ? Icons.radio_button_checked_rounded
-                  : Icons.radio_button_unchecked_rounded,
-              color: selected ? AppColors.coffee : AppColors.textMuted,
-              size: 22,
-            ),
-            const SizedBox(width: 10),
+            _radioDot(selected, tint),
+            const SizedBox(width: 12),
             Expanded(
               child: Text(o.name,
-                  style: const TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w700)),
+                  style:  TextStyle(
+                      color: St.fg(),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700)),
             ),
             Text(
               Formatters.money(o.price),
               style: TextStyle(
-                color: selected ? AppColors.coffee : AppColors.textDark,
+                color: selected
+                    ? St.fg()
+                    : St.fg(0.75),
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
               ),
@@ -333,8 +372,29 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     );
   }
 
+  Widget _radioDot(bool on, Color tint) => AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 22,
+        height: 22,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+              color: on ? St.line(1) : St.line(0.4),
+              width: 2),
+        ),
+        child: Center(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: on ? 10 : 0,
+            height: on ? 10 : 0,
+            decoration:  BoxDecoration(
+                shape: BoxShape.circle, color: St.solid),
+          ),
+        ),
+      );
+
   // ── Khu chọn TOPPING (multi-select, cộng dồn) ──
-  List<Widget> _optionSection(List<ProductOption> opts) {
+  List<Widget> _optionSection(List<ProductOption> opts, Color tint) {
     final groups = <String, List<ProductOption>>{};
     for (final o in opts) {
       final g = (o.groupName == null || o.groupName!.isEmpty)
@@ -343,99 +403,149 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       groups.putIfAbsent(g, () => []).add(o);
     }
 
-    final widgets = <Widget>[
-      const SizedBox(height: 24),
-      const Text('Topping',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-    ];
+    final widgets = <Widget>[_sectionTitle('Topping', 'chọn nhiều')];
+    var first = true;
     groups.forEach((g, os) {
-      widgets.add(Padding(
-        padding: const EdgeInsets.only(top: 12, bottom: 4),
-        child: Text(g,
-            style: TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 13,
-                fontWeight: FontWeight.w700)),
-      ));
-      for (final o in os) {
-        widgets.add(_optionTile(o));
+      if (groups.length > 1 || g != 'Tùy chọn thêm') {
+        widgets.add(Padding(
+          padding: EdgeInsets.only(top: first ? 0 : 10, bottom: 8, left: 2),
+          child: Text(g,
+              style: TextStyle(
+                  color: St.fg(0.6),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700)),
+        ));
       }
+      first = false;
+      widgets.add(StageGlass(
+        radius: 18,
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Material(
+          type: MaterialType.transparency,
+          child: Column(
+            children: [
+              for (var i = 0; i < os.length; i++) ...[
+                if (i > 0)
+                  Divider(
+                      height: 1,
+                      indent: 50,
+                      color: St.line(0.08)),
+                _optionTile(os[i], tint),
+              ],
+            ],
+          ),
+        ),
+      ));
     });
     return widgets;
   }
 
-  Widget _optionTile(ProductOption o) {
+  Widget _optionTile(ProductOption o, Color tint) {
     final selected = _selectedIds.contains(o.id);
-    return InkWell(
-      onTap: () => _toggle(o.id),
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          children: [
-            Icon(
-              selected
-                  ? Icons.check_box_rounded
-                  : Icons.check_box_outline_blank_rounded,
-              color: selected ? AppColors.coffee : AppColors.textMuted,
-              size: 22,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(o.name,
-                  style: const TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w600)),
-            ),
-            Text(
-              o.price > 0 ? '+${Formatters.money(o.price)}' : 'Miễn phí',
-              style: TextStyle(
-                color: o.price > 0 ? AppColors.coffee : AppColors.textMuted,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
+    return Semantics(
+      checked: selected,
+      child: InkWell(
+        onTap: () => _toggle(o.id),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: selected ? tint : Colors.transparent,
+                  border: Border.all(
+                    color: selected
+                        ? Color.lerp(tint, Colors.white, 0.3)!
+                        : St.line(0.4),
+                    width: 2,
+                  ),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                              color: tint.withValues(alpha: 0.5),
+                              blurRadius: 10)
+                        ]
+                      : null,
+                ),
+                child: selected
+                    ? Icon(Icons.check_rounded,
+                        size: 16, color: stageOn(tint))
+                    : null,
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(o.name,
+                    style: TextStyle(
+                        color: St.fg()
+                            .withValues(alpha: selected ? 1 : 0.88),
+                        fontSize: 15,
+                        fontWeight:
+                            selected ? FontWeight.w700 : FontWeight.w500)),
+              ),
+              Text(
+                o.price > 0 ? '+${Formatters.money(o.price)}' : 'Miễn phí',
+                style: TextStyle(
+                  color: o.price > 0
+                      ? St.fg(0.85)
+                      : St.fg(0.5),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _qtyStepper() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.dark
-            ? Colors.white.withOpacity(0.05)
-            : Colors.white.withOpacity(0.50),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-            color: AppColors.dark
-                ? Colors.white.withOpacity(0.12)
-                : const Color(0xFFE5DDD7)),
-      ),
-      child: Row(
-        children: [
-          _stepBtn(Icons.remove_rounded,
-              () => setState(() => _qty = _qty > 1 ? _qty - 1 : 1)),
-          SizedBox(
-            width: 40,
-            child: Text('$_qty',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.w700)),
-          ),
-          _stepBtn(Icons.add_rounded, () => setState(() => _qty++)),
-        ],
-      ),
+  Widget _qtyStepper(Color tint) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _stepBtn(Icons.remove_rounded, 'Giảm số lượng',
+            _qty > 1 ? () => setState(() => _qty--) : null, tint),
+        SizedBox(
+          width: 44,
+          child: Text('$_qty',
+              textAlign: TextAlign.center,
+              style:  TextStyle(
+                  color: St.fg(),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800)),
+        ),
+        _stepBtn(Icons.add_rounded, 'Tăng số lượng',
+            () => setState(() => _qty++), tint),
+      ],
     );
   }
 
-  Widget _stepBtn(IconData icon, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Icon(icon, color: AppColors.coffee, size: 22),
+  Widget _stepBtn(
+      IconData icon, String label, VoidCallback? onTap, Color tint) {
+    final enabled = onTap != null;
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        color: enabled
+            ? St.fill(0.14)
+            : St.fill(0.05),
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: Icon(icon,
+                color: St.fg(enabled ? 1 : 0.35),
+                size: 22),
+          ),
+        ),
       ),
     );
   }

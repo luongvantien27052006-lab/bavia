@@ -4,6 +4,7 @@
 // Bấm vào từng mục sẽ mở app tương ứng. Để trống mục nào -> tự ẩn mục đó.
 
 import 'package:flutter/material.dart';
+import '../../widgets/stage.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/config/store_info.dart';
@@ -31,15 +32,9 @@ class ContactScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.cream,
-      appBar: AppBar(
-        title: const Text('Liên hệ hỗ trợ',
-            style: TextStyle(fontWeight: FontWeight.w800)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: AppColors.textDark,
-      ),
+    return StageScaffold(
+      title: 'Liên hệ hỗ trợ',
+      tint: const Color(0xFF3B82F6),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

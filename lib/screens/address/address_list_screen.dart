@@ -3,7 +3,7 @@
 // Sổ địa chỉ giao hàng: xem, đặt mặc định, sửa, xoá, thêm mới.
 
 import 'package:flutter/material.dart';
-import '../../widgets/glass_card.dart';
+import '../../widgets/stage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -18,14 +18,9 @@ class AddressListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final addresses = ref.watch(addressesProvider);
 
-    return GlassBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        
-      appBar: AppBar(
-        title: const Text('Sổ địa chỉ',
-            style: TextStyle(fontWeight: FontWeight.w800)),
-      ),
+    return StageScaffold(
+      title: 'Sổ địa chỉ',
+      tint: const Color(0xFF2FB4C9),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.coffee,
         onPressed: () => Navigator.of(context).push(
@@ -36,7 +31,7 @@ class AddressListScreen extends ConsumerWidget {
             style: TextStyle(color: Colors.white)),
       ),
       body: addresses.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Center(child: CircularProgressIndicator(strokeWidth: 2.4, color: St.fg(0.7))),
         error: (e, _) => _error(ref, e.toString()),
         data: (list) {
           if (list.isEmpty) {
@@ -61,7 +56,7 @@ class AddressListScreen extends ConsumerWidget {
           );
         },
       ),
-    ));
+    );
   }
 
   Widget _addressCard(

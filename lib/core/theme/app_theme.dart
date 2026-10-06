@@ -23,11 +23,12 @@ class AppColors {
   static const _surfaceL = Colors.white;
   static const _borderL = Color(0xFFEFE4D9);
 
-  static const _textDarkD = Color(0xFFF2ECE6);
-  static const _textMutedD = Color(0xFFA79A90);
-  static const _creamD = Color(0xFF141210);
-  static const _surfaceD = Color(0xFF211C19);
-  static const _borderD = Color(0xFF37302B);
+  // Bảng màu "sân khấu tối" (đồng bộ Trang chủ): nền mận rất đậm.
+  static const _textDarkD = Color(0xFFF6ECEE);
+  static const _textMutedD = Color(0xFFB79FA6);
+  static const _creamD = Color(0xFF140B10);
+  static const _surfaceD = Color(0xFF21141A);
+  static const _borderD = Color(0xFF3A2730);
 
   static Color get textDark => dark ? _textDarkD : _textDarkL;
   static Color get textMuted => dark ? _textMutedD : _textMutedL;
@@ -61,16 +62,16 @@ class AppTheme {
       primary: AppColors.coffee,
       brightness: Brightness.dark,
     ).copyWith(
-      surface: const Color(0xFF211C19),
-      onSurface: const Color(0xFFF2ECE6),
+      surface: const Color(0xFF21141A),
+      onSurface: const Color(0xFFF6ECEE),
     );
     return _base(
       scheme: scheme,
-      scaffold: const Color(0xFF141210),
-      surface: const Color(0xFF211C19),
-      onSurface: const Color(0xFFF2ECE6),
-      border: const Color(0xFF37302B),
-      fill: const Color(0xFF211C19),
+      scaffold: const Color(0xFF140B10),
+      surface: const Color(0xFF21141A),
+      onSurface: const Color(0xFFF6ECEE),
+      border: const Color(0xFF3A2730),
+      fill: const Color(0xFF241720),
     );
   }
 

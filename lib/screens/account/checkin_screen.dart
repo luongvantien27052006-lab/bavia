@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../widgets/stage.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../providers/checkin_provider.dart';
@@ -22,17 +23,12 @@ class CheckinScreen extends ConsumerWidget {
     final todayIdx =
         st.streak <= 0 ? 0 : (can ? (st.streak % 7) : ((st.streak - 1) % 7));
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text('Điểm danh nhận quà',
-            style: TextStyle(fontWeight: FontWeight.w800)),
-      ),
-      body: GlassBackground(
+    return StageScaffold(
+      title: 'Điểm danh nhận quà',
+      tint: const Color(0xFF34C77B),
+      body: SizedBox.expand(
         child: st.loading
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(child: CircularProgressIndicator(strokeWidth: 2.4, color: St.fg(0.7)))
             : ListView(
           padding: const EdgeInsets.all(16),
           children: [

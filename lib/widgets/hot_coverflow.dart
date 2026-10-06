@@ -10,6 +10,7 @@
 import 'dart:ui' show FontFeature;
 
 import 'package:flutter/material.dart';
+import 'stage.dart';
 import 'package:flutter/services.dart';
 
 import '../models/product.dart';
@@ -186,8 +187,8 @@ class _HotCoverflowState extends State<HotCoverflow>
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style:  TextStyle(
+                    color: St.fg(),
                     fontSize: 21,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.2,
@@ -198,7 +199,7 @@ class _HotCoverflowState extends State<HotCoverflow>
               Text(
                 Formatters.money(current.price),
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.82),
+                  color: St.fg(0.82),
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   fontFeatures: const [FontFeature.tabularFigures()],
@@ -218,23 +219,23 @@ class _HotCoverflowState extends State<HotCoverflow>
             ),
             const SizedBox(width: 10),
             Material(
-              color: Colors.white,
+              color: St.solid,
               borderRadius: BorderRadius.circular(999),
               child: InkWell(
                 borderRadius: BorderRadius.circular(999),
                 onTap: () =>
                     widget.onOpen(current, HotCoverflow.heroTagOf(current)),
-                child: const Padding(
+                child:  Padding(
                   padding: EdgeInsets.symmetric(horizontal: 22, vertical: 13),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.add_shopping_cart_rounded,
-                          size: 18, color: Color(0xFF1A0F14)),
+                          size: 18, color: St.onSolid),
                       SizedBox(width: 8),
                       Text('Chọn món này',
                           style: TextStyle(
-                              color: Color(0xFF1A0F14),
+                              color: St.onSolid,
                               fontWeight: FontWeight.w800,
                               fontSize: 14)),
                     ],
@@ -264,7 +265,7 @@ class _HotCoverflowState extends State<HotCoverflow>
                   width: i == _index ? 18 : 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: Colors.white
+                    color: St.solid
                         .withValues(alpha: i == _index ? 1 : 0.32),
                     borderRadius: BorderRadius.circular(3),
                   ),
@@ -432,7 +433,7 @@ class _RoundButton extends StatelessWidget {
       button: true,
       label: label,
       child: Material(
-        color: Colors.white.withValues(alpha: enabled ? 0.14 : 0.06),
+        color: St.fill(enabled ? 0.14 : 0.06),
         shape: const CircleBorder(),
         child: InkWell(
           customBorder: const CircleBorder(),
@@ -441,7 +442,7 @@ class _RoundButton extends StatelessWidget {
             width: 46,
             height: 46,
             child: Icon(icon,
-                color: Colors.white.withValues(alpha: enabled ? 1 : 0.35)),
+                color: St.fg(enabled ? 1 : 0.35)),
           ),
         ),
       ),

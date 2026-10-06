@@ -84,7 +84,7 @@ class _BaviaAppState extends ConsumerState<BaviaApp> {
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       systemNavigationBarColor:
-          _dark ? const Color(0xFF16110E) : const Color(0xFFDFF3EE),
+          _dark ? const Color(0xFF140B10) : const Color(0xFFFBF4F1),
       systemNavigationBarIconBrightness:
           _dark ? Brightness.light : Brightness.dark,
     ));

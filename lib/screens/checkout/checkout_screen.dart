@@ -1,23 +1,12 @@
 // ============================================================
-//  FLUTTER
-//  lib/screens/checkout/checkout_screen.dart
-//  >> CHEP DE (phi ship + dia chi quan o muc chuyen khoan)
+//  FLUTTER — lib/screens/checkout/checkout_screen.dart
+//  >> GIAO DIỆN "SÂN KHẤU TỐI" (đồng bộ Trang chủ)
+//  Đặt đơn: hình thức nhận hàng (Giao hàng/Tự lấy) + địa chỉ giao + giờ nhận +
+//  phương thức thanh toán + voucher + dùng điểm → POST /orders.
+//  BANK_QR → màn QR; COD → màn thành công. Logic GIỮ NGUYÊN.
 // ============================================================
 
-// ==================================================================
-//  FLUTTER — app khach (package bavia)
-//  Dat tai:  lib/screens/checkout/checkout_screen.dart
-//  >> CHEP DE (thay file co san)
-// ==================================================================
-
-// lib/screens/checkout/checkout_screen.dart
-//
-// Đặt đơn: hình thức nhận hàng (Giao hàng/Tự lấy) + địa chỉ giao + phương thức
-// thanh toán + dùng điểm + voucher → POST /orders.
-// BANK_QR → màn QR; COD → màn thành công.
-
 import 'package:flutter/material.dart';
-import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/config/loyalty_config.dart';
@@ -29,17 +18,17 @@ import '../../models/order_model.dart';
 import '../../providers/address_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/checkout_provider.dart';
-import '../../providers/voucher_wallet_provider.dart';
-import '../../models/voucher_wallet.dart';
-import 'voucher_select_screen.dart';
-import '../../providers/shipping_provider.dart';
 import '../../providers/loyalty_provider.dart';
 import '../../providers/order_provider.dart';
+import '../../providers/shipping_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../utils/formatters.dart';
+import '../../widgets/drink_tint.dart';
+import '../../widgets/stage.dart';
 import '../address/address_form_screen.dart';
 import 'order_success_screen.dart';
 import 'qr_payment_screen.dart';
+import 'voucher_select_screen.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -51,6 +40,9 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   bool _addressInitialized = false;
   final _voucherController = TextEditingController();
+
+  /// Màu nhấn của màn (theo món đầu tiên trong giỏ).
+  Color _tint = DrinkTint.fallback;
 
   @override
   void dispose() {
@@ -141,41 +133,36 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final closedReason = storeStatus.maybeWhen(
         data: (s) => s.isOpen ? null : s.closedReason, orElse: () => null);
 
+    final cart = ref.watch(cartProvider);
+    final tint =
+        cart.isNotEmpty ? DrinkTint.of(cart.first.product) : DrinkTint.fallback;
+
     final canPlace = !placing &&
         isOpen &&
         !(checkout.isDelivery && checkout.deliveryAddress == null);
 
-    return GlassBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        
-      appBar: AppBar(
-        title: const Text('Thanh toán',
-            style: TextStyle(fontWeight: FontWeight.w800)),
-      ),
+    _tint = tint;
+
+    return StageScaffold(
+      title: 'Thanh toán',
+      subtitle: '${cart.fold<int>(0, (s, c) => s + c.quantity)} món · ${Formatters.money(subtotal)}',
+      tint: tint,
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
         children: [
           if (!isOpen) ...[
             _closedBanner(closedReason ?? 'Quán đang đóng cửa'),
             const SizedBox(height: 16),
           ],
           _sectionTitle('Hình thức nhận hàng'),
-          const SizedBox(height: 10),
           _fulfillmentToggle(checkout.fulfillment),
-          const SizedBox(height: 20),
           if (checkout.isDelivery) ...[
             _sectionTitle('Địa chỉ giao hàng'),
-            const SizedBox(height: 10),
             _addressSection(checkout.deliveryAddress),
-            const SizedBox(height: 20),
           ],
           _sectionTitle('Giờ nhận'),
-          const SizedBox(height: 10),
           _scheduleSection(checkout),
-          const SizedBox(height: 20),
           _sectionTitle('Phương thức thanh toán'),
-          const SizedBox(height: 10),
           _paymentOption(
             method: PaymentMethodType.cod,
             selected: checkout.paymentMethod == PaymentMethodType.cod,
@@ -189,47 +176,69 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             selected: checkout.paymentMethod == PaymentMethodType.bankQr,
             icon: Icons.qr_code_2_rounded,
             title: 'Chuyển khoản QR',
-            subtitle: 'Quét VietQR, tự xác nhận khi nhận tiền',
+            subtitle: 'Quét VietQR · MoMo, ZaloPay, mọi ngân hàng',
           ),
           if (checkout.paymentMethod == PaymentMethodType.bankQr) ...[
             const SizedBox(height: 10),
             _bankNote(),
           ],
-          const SizedBox(height: 20),
           _sectionTitle('Mã giảm giá'),
-          const SizedBox(height: 10),
           _voucherSection(checkout),
-          const SizedBox(height: 20),
           _sectionTitle('Dùng điểm thưởng'),
-          const SizedBox(height: 10),
           _pointsSection(subtotal),
-          const SizedBox(height: 20),
+          _sectionTitle('Chi tiết thanh toán'),
           _summaryCard(subtotal, itemDiscount, pointsDiscount, grandTotal,
               shipFee, ship, checkout.isDelivery, shipDiscount),
         ],
       ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: ElevatedButton(
-            onPressed: canPlace
-                ? () => ref
-                    .read(placeOrderControllerProvider.notifier)
-                    .placeOrder()
-                : null,
-            child: placing
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2.5, color: Colors.white))
-                : Text(isOpen
-                    ? 'Đặt hàng • ${Formatters.money(grandTotal)}'
-                    : 'Quán đang đóng cửa'),
+      bottomBar: Container(
+        decoration: BoxDecoration(
+          color: St.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+          border: Border(
+              top: BorderSide(color: St.line(0.10))),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+            child: Row(
+              children: [
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Tổng cộng',
+                        style: TextStyle(
+                            color: St.fg(0.6),
+                            fontSize: 12.5)),
+                    Text(Formatters.money(grandTotal),
+                        style:  TextStyle(
+                            color: St.fg(),
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800)),
+                  ],
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: StageButton(
+                    tint: tint,
+                    loading: placing,
+                    icon: isOpen ? Icons.check_rounded : Icons.storefront_rounded,
+                    label: isOpen ? 'Đặt hàng' : 'Quán đang đóng cửa',
+                    onTap: canPlace
+                        ? () => ref
+                            .read(placeOrderControllerProvider.notifier)
+                            .placeOrder()
+                        : null,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ));
+    );
   }
 
   String _fmtSchedule(DateTime dt) {
@@ -261,24 +270,25 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return picked;
   }
 
-  Widget _scheduleOption(String label, bool selected, VoidCallback onTap) {
-    return GestureDetector(
+  Widget _scheduleOption(
+      IconData icon, String label, bool selected, VoidCallback onTap) {
+    return StageGlass(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.coffee.withOpacity(0.12) : AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-              color: selected ? AppColors.coffee : AppColors.border,
-              width: selected ? 1.5 : 1),
-        ),
-        child: Center(
-          child: Text(label,
+      highlight: selected ? _tint : null,
+      radius: 16,
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon,
+              size: 18,
+              color: St.fg(selected ? 1 : 0.65)),
+          const SizedBox(width: 6),
+          Text(label,
               style: TextStyle(
                   fontWeight: FontWeight.w700,
-                  color: selected ? AppColors.coffee : AppColors.textDark)),
-        ),
+                  color: St.fg(selected ? 1 : 0.75))),
+        ],
       ),
     );
   }
@@ -297,46 +307,40 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         Row(
           children: [
             Expanded(
-              child: _scheduleOption('Giao ngay', scheduled == null, () {
+              child: _scheduleOption(
+                  Icons.bolt_rounded, 'Giao ngay', scheduled == null, () {
                 ref.read(checkoutProvider.notifier).setScheduledFor(null);
               }),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
-              child: _scheduleOption('Hẹn giờ', scheduled != null, pick),
+              child: _scheduleOption(Icons.schedule_rounded, 'Hẹn giờ',
+                  scheduled != null, pick),
             ),
           ],
         ),
         if (scheduled != null) ...[
           const SizedBox(height: 10),
-          InkWell(
+          StageGlass(
             onTap: pick,
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.coffee.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.coffee.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.access_time_rounded,
-                      color: AppColors.coffee, size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text('Nhận lúc ${_fmtSchedule(scheduled)}',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textDark)),
-                  ),
-                  Text('Đổi',
-                      style: TextStyle(
-                          color: AppColors.coffee,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13)),
-                ],
-              ),
+            radius: 16,
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                 Icon(Icons.access_time_rounded,
+                    color: St.fg(), size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text('Nhận lúc ${_fmtSchedule(scheduled)}',
+                      style:  TextStyle(
+                          color: St.fg(), fontWeight: FontWeight.w700)),
+                ),
+                Text('Đổi',
+                    style: TextStyle(
+                        color: St.fg(0.8),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13)),
+              ],
             ),
           ),
         ],
@@ -344,34 +348,40 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  Widget _sectionTitle(String text) => Text(text,
-      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16));
+  Widget _sectionTitle(String text) => Padding(
+        padding: const EdgeInsets.only(top: 22, bottom: 10, left: 2),
+        child: Text(text,
+            style:  TextStyle(
+                color: St.fg(),
+                fontWeight: FontWeight.w800,
+                fontSize: 16)),
+      );
 
   // ─── Băng "đóng cửa" ─────────────────────────────────────────────────
   Widget _closedBanner(String reason) => Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.delivery.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.delivery.withOpacity(0.4)),
+          color: const Color(0xFFE23E57).withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+              color: const Color(0xFFFF8A9B).withValues(alpha: 0.5)),
         ),
         child: Row(
           children: [
-            const Icon(Icons.do_not_disturb_on_rounded,
-                color: AppColors.delivery),
+            const Icon(Icons.storefront_rounded, color: Color(0xFFFFB3BE)),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Quán đang đóng cửa',
+                   Text('Quán đang đóng cửa',
                       style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.delivery)),
+                          color: St.fg(), fontWeight: FontWeight.w800)),
                   const SizedBox(height: 2),
                   Text(reason,
                       style: TextStyle(
-                          fontSize: 13, color: AppColors.textMuted)),
+                          fontSize: 13,
+                          color: St.fg(0.8))),
                 ],
               ),
             ),
@@ -381,33 +391,34 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   // ─── Hình thức nhận hàng ─────────────────────────────────────────────
   Widget _fulfillmentToggle(FulfillmentType current) {
-    Widget opt(FulfillmentType type, IconData icon, Color color) {
+    Widget opt(FulfillmentType type, IconData icon, String hint) {
       final selected = current == type;
       return Expanded(
-        child: GestureDetector(
-          onTap: () =>
-              ref.read(checkoutProvider.notifier).setFulfillment(type),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            decoration: BoxDecoration(
-              color: AppColors.dark
-              ? Colors.white.withOpacity(0.06)
-              : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: selected ? color : const Color(0xFFE5DDD7),
-                width: selected ? 2 : 1,
-              ),
-            ),
+        child: Semantics(
+          selected: selected,
+          button: true,
+          child: StageGlass(
+            onTap: () =>
+                ref.read(checkoutProvider.notifier).setFulfillment(type),
+            highlight: selected ? _tint : null,
+            radius: 18,
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
             child: Column(
               children: [
                 Icon(icon,
-                    color: selected ? color : AppColors.textMuted, size: 28),
+                    color: St.fg(selected ? 1 : 0.6),
+                    size: 28),
                 const SizedBox(height: 6),
                 Text(type.label,
                     style: TextStyle(
-                        color: selected ? color : AppColors.textDark,
-                        fontWeight: FontWeight.w700)),
+                        color:
+                            St.fg(selected ? 1 : 0.8),
+                        fontWeight: FontWeight.w800)),
+                const SizedBox(height: 2),
+                Text(hint,
+                    style: TextStyle(
+                        color: St.fg(0.55),
+                        fontSize: 11.5)),
               ],
             ),
           ),
@@ -418,10 +429,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return Row(
       children: [
         opt(FulfillmentType.delivery, Icons.delivery_dining_rounded,
-            AppColors.delivery),
-        const SizedBox(width: 12),
+            'Ship tận nơi'),
+        const SizedBox(width: 10),
         opt(FulfillmentType.pickup, Icons.storefront_rounded,
-            AppColors.pickup),
+            'Không phí ship'),
       ],
     );
   }
@@ -429,77 +440,66 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   // ─── Địa chỉ giao hàng ───────────────────────────────────────────────
   Widget _addressSection(AddressModel? selected) {
     if (selected == null) {
-      return GestureDetector(
+      return StageGlass(
         onTap: _openAddressPicker,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.dark
-              ? Colors.white.withOpacity(0.06)
-              : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.delivery.withOpacity(0.4)),
-          ),
-          child: const Row(
-            children: [
-              Icon(Icons.add_location_alt_outlined, color: AppColors.delivery),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text('Chọn hoặc thêm địa chỉ giao hàng',
-                    style: TextStyle(
-                        color: AppColors.delivery,
-                        fontWeight: FontWeight.w600)),
-              ),
-              Icon(Icons.chevron_right_rounded, color: AppColors.delivery),
-            ],
-          ),
+        highlight: const Color(0xFFFF8A9B),
+        radius: 18,
+        child:  Row(
+          children: [
+            Icon(Icons.add_location_alt_outlined, color: St.fg()),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text('Chọn hoặc thêm địa chỉ giao hàng',
+                  style: TextStyle(
+                      color: St.fg(), fontWeight: FontWeight.w700)),
+            ),
+            Icon(Icons.chevron_right_rounded, color: St.fg()),
+          ],
         ),
       );
     }
 
-    return GestureDetector(
+    return StageGlass(
       onTap: _openAddressPicker,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.dark
-              ? Colors.white.withOpacity(0.06)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.location_on_rounded, color: AppColors.coffee),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(selected.recipientName,
-                          style:
-                              const TextStyle(fontWeight: FontWeight.w700)),
-                      const SizedBox(width: 8),
-                      Text(selected.phone,
-                          style: TextStyle(
-                              color: AppColors.textMuted, fontSize: 13)),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(selected.detailedAddress,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          color: AppColors.textMuted, fontSize: 13)),
-                ],
-              ),
+      radius: 18,
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: St.fill(0.12),
             ),
-            const Text('Đổi',
-                style: TextStyle(
-                    color: AppColors.coffee, fontWeight: FontWeight.w600)),
-          ],
-        ),
+            child:  Icon(Icons.location_on_rounded,
+                color: St.fg(), size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${selected.recipientName} · ${selected.phone}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style:  TextStyle(
+                        color: St.fg(), fontWeight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Text(selected.detailedAddress,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        color: St.fg(0.65),
+                        fontSize: 13)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text('Đổi',
+              style: TextStyle(
+                  color: St.fg(0.85),
+                  fontWeight: FontWeight.w700)),
+        ],
       ),
     );
   }
@@ -507,7 +507,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   void _openAddressPicker() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface,
+      backgroundColor: St.sheet,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -522,10 +522,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('Chọn địa chỉ giao hàng',
+                     Text('Chọn địa chỉ giao hàng',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                            fontWeight: FontWeight.w800, fontSize: 16)),
+                            color: St.fg(),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16)),
                     const SizedBox(height: 16),
                     addresses.when(
                       loading: () => const Padding(
@@ -546,15 +548,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         return Column(
                           children: list.map((a) {
                             return ListTile(
-                              leading: const Icon(Icons.location_on_outlined,
-                                  color: AppColors.coffee),
+                              leading: Icon(Icons.location_on_outlined,
+                                  color: St.fg(0.8)),
                               title: Text(
                                   '${a.recipientName} • ${a.phone}',
-                                  style: const TextStyle(
+                                  style:  TextStyle(
+                                      color: St.fg(),
                                       fontWeight: FontWeight.w600)),
                               subtitle: Text(a.detailedAddress,
                                   maxLines: 2,
-                                  overflow: TextOverflow.ellipsis),
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      color: St.fg()
+                                          .withValues(alpha: 0.6))),
                               onTap: () {
                                 ref
                                     .read(checkoutProvider.notifier)
@@ -567,14 +573,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       },
                     ),
                     const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      onPressed: () {
+                    StageButton(
+                      label: 'Thêm địa chỉ mới',
+                      icon: Icons.add_rounded,
+                      white: true,
+                      onTap: () {
                         Navigator.pop(ctx);
                         Navigator.of(context).push(MaterialPageRoute(
                             builder: (_) => const AddressFormScreen()));
                       },
-                      icon: const Icon(Icons.add_rounded),
-                      label: const Text('Thêm địa chỉ mới'),
                     ),
                   ],
                 ),
@@ -594,75 +601,97 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     required String title,
     required String subtitle,
   }) {
-    return GestureDetector(
-      onTap: () =>
-          ref.read(checkoutProvider.notifier).setPaymentMethod(method),
-      child: Container(
+    return Semantics(
+      selected: selected,
+      inMutuallyExclusiveGroup: true,
+      child: StageGlass(
+        onTap: () =>
+            ref.read(checkoutProvider.notifier).setPaymentMethod(method),
+        highlight: selected ? _tint : null,
+        radius: 18,
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.dark
-              ? Colors.white.withOpacity(0.06)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected ? AppColors.coffee : const Color(0xFFE5DDD7),
-            width: selected ? 2 : 1,
-          ),
-        ),
         child: Row(
           children: [
-            Icon(icon,
-                color: selected ? AppColors.coffee : AppColors.textMuted,
-                size: 28),
-            const SizedBox(width: 14),
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                color: St.fill(0.12),
+              ),
+              child: Icon(icon, color: St.fg(), size: 24),
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title,
-                      style: const TextStyle(fontWeight: FontWeight.w700)),
+                      style:  TextStyle(
+                          color: St.fg(), fontWeight: FontWeight.w700)),
                   const SizedBox(height: 2),
                   Text(subtitle,
                       style: TextStyle(
-                          color: AppColors.textMuted, fontSize: 12)),
+                          color: St.fg(0.6),
+                          fontSize: 12)),
                 ],
               ),
             ),
-            Icon(
-              selected
-                  ? Icons.radio_button_checked_rounded
-                  : Icons.radio_button_off_rounded,
-              color: selected ? AppColors.coffee : AppColors.textMuted,
-            ),
+            _radio(selected),
           ],
         ),
       ),
     );
   }
 
-  // ─── Dùng điểm ───────────────────────────────────────────────────────
+  Widget _radio(bool on) => AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 22,
+        height: 22,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+              color: on ? St.line(1) : St.line(0.4),
+              width: 2),
+        ),
+        child: Center(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: on ? 10 : 0,
+            height: on ? 10 : 0,
+            decoration:  BoxDecoration(
+                shape: BoxShape.circle, color: St.solid),
+          ),
+        ),
+      );
+
   // ─── Mã giảm giá ─────────────────────────────────────────────────────
   Widget _voucherChip(String label, VoidCallback onRemove) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: AppColors.success.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.success.withOpacity(0.4)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.local_offer_rounded,
-              color: AppColors.success, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(label,
-                style: const TextStyle(
-                    color: AppColors.success, fontWeight: FontWeight.w600)),
-          ),
-          TextButton(onPressed: onRemove, child: const Text('Bỏ')),
-        ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: StageGlass(
+        highlight: const Color(0xFF4ADE80),
+        radius: 16,
+        padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
+        child: Row(
+          children: [
+             Icon(Icons.local_offer_rounded,
+                color: St.fg(), size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(label,
+                  style:  TextStyle(
+                      color: St.fg(), fontWeight: FontWeight.w700)),
+            ),
+            TextButton(
+              onPressed: onRemove,
+              child: Text('Bỏ',
+                  style: TextStyle(
+                      color: St.fg(0.85),
+                      fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -690,33 +719,28 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             },
           ),
         // Nút "Thêm voucher" -> mở danh sách voucher trong ví.
-        InkWell(
+        StageGlass(
           onTap: _showVoucherSheet,
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            decoration: BoxDecoration(
-              color: AppColors.dark
-                  ? Colors.white.withOpacity(0.05)
-                  : Colors.white.withOpacity(0.7),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.coffee.withOpacity(0.3)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.local_offer_rounded,
-                    color: AppColors.coffee, size: 22),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text('Thêm voucher',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textDark,
-                          fontSize: 14.5)),
-                ),
-                Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
-              ],
-            ),
+          radius: 16,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          child: Row(
+            children: [
+               Icon(Icons.confirmation_number_rounded,
+                  color: St.fg(), size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                    checkout.hasVoucher || checkout.hasShippingVoucher
+                        ? 'Đổi / thêm voucher'
+                        : 'Chọn voucher hoặc nhập mã',
+                    style:  TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: St.fg(),
+                        fontSize: 14.5)),
+              ),
+              Icon(Icons.chevron_right_rounded,
+                  color: St.fg(0.7)),
+            ],
           ),
         ),
       ],
@@ -736,19 +760,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final balanceAsync = ref.watch(loyaltyBalanceProvider);
     return balanceAsync.when(
       loading: () => _pointsCard(
-        child: const Center(
+        child:  Center(
           child: Padding(
             padding: EdgeInsets.all(8),
             child: SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2)),
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: St.fg(0.7))),
           ),
         ),
       ),
       error: (e, _) => _pointsCard(
         child: Text('Không tải được điểm thưởng',
-            style: TextStyle(color: AppColors.textMuted)),
+            style: TextStyle(color: St.fg(0.6))),
       ),
       data: (balance) {
         final maxPoints =
@@ -760,7 +785,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             child: Row(
               children: [
                 Icon(Icons.card_giftcard_outlined,
-                    color: AppColors.textMuted, size: 20),
+                    color: St.fg(0.6), size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -768,7 +793,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         ? 'Bạn có 0 điểm. Hoàn tất đơn để tích điểm và dùng giảm giá ở lần sau.'
                         : 'Đơn chưa đủ điều kiện dùng điểm.',
                     style: TextStyle(
-                        color: AppColors.textMuted, fontSize: 13),
+                        color: St.fg(0.65),
+                        fontSize: 13),
                   ),
                 ),
               ],
@@ -791,19 +817,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.card_giftcard_rounded,
-                      color: AppColors.coffee, size: 20),
+                   Icon(Icons.card_giftcard_rounded,
+                      color: St.fg(), size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text('Dùng điểm (có ${balance.balance} điểm)',
-                        style: const TextStyle(fontWeight: FontWeight.w700)),
+                        style:  TextStyle(
+                            color: St.fg(), fontWeight: FontWeight.w700)),
                   ),
                   if (used > 0)
                     Text(
                         '−${Formatters.money(LoyaltyConfig.pointsToValue(used))}',
                         style: const TextStyle(
-                            color: AppColors.success,
-                            fontWeight: FontWeight.w700)),
+                            color: Color(0xFF4ADE80),
+                            fontWeight: FontWeight.w800)),
                 ],
               ),
               const SizedBox(height: 12),
@@ -814,8 +841,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   Expanded(
                     child: Text('$used / $maxPoints điểm',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w700)),
+                        style:  TextStyle(
+                            color: St.fg(),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800)),
                   ),
                   _stepBtn(
                       Icons.add_rounded,
@@ -827,14 +856,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     onPressed: used == maxPoints
                         ? () => notifier.setPointsToRedeem(0)
                         : () => notifier.setPointsToRedeem(maxPoints),
-                    child: Text(used == maxPoints ? 'Bỏ' : 'Tối đa'),
+                    child: Text(used == maxPoints ? 'Bỏ' : 'Tối đa',
+                        style:  TextStyle(
+                            color: St.fg(), fontWeight: FontWeight.w700)),
                   ),
                 ],
               ),
               const SizedBox(height: 4),
               Text('1 điểm = ${Formatters.money(LoyaltyConfig.pointValue)}',
                   style: TextStyle(
-                      color: AppColors.textMuted, fontSize: 11)),
+                      color: St.fg(0.5),
+                      fontSize: 11)),
             ],
           ),
         );
@@ -843,47 +875,33 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Widget _stepBtn(IconData icon, VoidCallback? onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: onTap == null
-              ? const Color(0xFFE5DDD7)
-              : AppColors.coffee.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(10),
+    final enabled = onTap != null;
+    return Material(
+      color: St.fill(enabled ? 0.14 : 0.05),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 38,
+          height: 38,
+          child: Icon(icon,
+              size: 20,
+              color: St.fg(enabled ? 1 : 0.35)),
         ),
-        child: Icon(icon,
-            size: 22,
-            color: onTap == null ? AppColors.textMuted : AppColors.coffee),
       ),
     );
   }
 
-  Widget _pointsCard({required Widget child}) => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.dark
-              ? Colors.white.withOpacity(0.06)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: child,
-      );
+  Widget _pointsCard({required Widget child}) =>
+      StageGlass(radius: 18, child: child);
 
   // ─── Tổng kết ────────────────────────────────────────────────────────
   Widget _summaryCard(
       int subtotal, int discount, int pointsDiscount, int total,
       int shipFee, dynamic ship, bool isDelivery, int shipDiscount) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.dark
-              ? Colors.white.withOpacity(0.06)
-              : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
+    return StageGlass(
+      radius: 18,
       child: Column(
         children: [
           _row('Tạm tính', subtotal),
@@ -891,7 +909,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           if (pointsDiscount > 0) _row('Giảm bằng điểm', -pointsDiscount),
           if (isDelivery) _shipRow(shipFee, ship),
           if (shipDiscount > 0) _row('Giảm phí ship', -shipDiscount),
-          const Divider(height: 18),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child:
+                Divider(height: 1, color: St.line(0.1)),
+          ),
           _row('Tổng cộng', total, bold: true),
         ],
       ),
@@ -905,16 +927,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ? 'Phí giao hàng (${km.toStringAsFixed(1)} km)'
         : 'Phí giao hàng';
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: AppColors.textMuted)),
+          Text(label,
+              style: TextStyle(color: St.fg(0.7))),
           Text(
             shipFee == 0 ? 'Miễn phí' : Formatters.money(shipFee),
             style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: shipFee == 0 ? Colors.green.shade700 : AppColors.textDark,
+              fontWeight: FontWeight.w700,
+              color: shipFee == 0
+                  ? const Color(0xFF4ADE80)
+                  : St.fg(0.85),
             ),
           ),
         ],
@@ -924,47 +949,44 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   /// Lưu ý khi chuyển khoản — kèm địa chỉ quán để khách đối chiếu.
   Widget _bankNote() {
-    return Container(
+    final muted = St.fg(0.7);
+    return StageGlass(
+      radius: 16,
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.coffee.withOpacity(0.25)),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: const [
-              Icon(Icons.info_outline_rounded,
-                  size: 18, color: AppColors.coffee),
+           Row(
+            children: [
+              Icon(Icons.info_outline_rounded, size: 18, color: St.fg()),
               SizedBox(width: 6),
               Text('Lưu ý khi chuyển khoản',
-                  style: TextStyle(fontWeight: FontWeight.w800)),
+                  style: TextStyle(
+                      color: St.fg(), fontWeight: FontWeight.w800)),
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             '• Chuyển đúng số tiền và giữ nguyên nội dung chuyển khoản để '
             'hệ thống tự xác nhận đơn.\n'
             '• Đơn được xử lý ngay sau khi nhận được tiền.',
-            style: TextStyle(fontSize: 13, height: 1.5),
+            style: TextStyle(fontSize: 13, height: 1.5, color: muted),
           ),
           const SizedBox(height: 10),
-          const Divider(height: 1),
+          Divider(height: 1, color: St.line(0.1)),
           const SizedBox(height: 10),
-          const Text('Địa chỉ quán',
+           Text('Địa chỉ quán',
               style: TextStyle(
-                  fontWeight: FontWeight.w700, fontSize: 13)),
+                  color: St.fg(),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13)),
           const SizedBox(height: 4),
-          Text(
-            StoreInfo.address,
-            style: const TextStyle(fontSize: 13, height: 1.45),
-          ),
+          Text(StoreInfo.address,
+              style: TextStyle(fontSize: 13, height: 1.45, color: muted)),
           if (StoreInfo.hotline.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text('Hỗ trợ: ${StoreInfo.hotline}',
-                style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
+                style: TextStyle(fontSize: 13, color: muted)),
           ],
         ],
       ),
@@ -975,10 +997,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final style = TextStyle(
       fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
       fontSize: bold ? 17 : 14,
-      color: bold ? AppColors.coffee : AppColors.textDark,
+      color: bold
+          ? St.fg()
+          : (amount < 0
+              ? const Color(0xFF4ADE80)
+              : St.fg(0.75)),
     );
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

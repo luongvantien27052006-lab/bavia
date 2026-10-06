@@ -11,7 +11,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import '../../widgets/glass_card.dart';
+import '../../widgets/stage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -110,13 +110,23 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
   Widget build(BuildContext context) {
     final saving = ref.watch(addressControllerProvider).isLoading;
 
-    return GlassBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        
-      appBar: AppBar(
-        title: Text(_isEdit ? 'Sửa địa chỉ' : 'Thêm địa chỉ',
-            style: const TextStyle(fontWeight: FontWeight.w800)),
+    return StageScaffold(
+      title: _isEdit ? 'Sửa địa chỉ' : 'Thêm địa chỉ',
+      tint: const Color(0xFF2FB4C9),
+      bottomBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: ElevatedButton(
+            onPressed: saving ? null : _save,
+            child: saving
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2.5, color: Colors.white))
+                : Text(_isEdit ? 'Lưu thay đổi' : 'Thêm địa chỉ'),
+          ),
+        ),
       ),
       body: Form(
         key: _formKey,
@@ -145,22 +155,7 @@ class _AddressFormScreenState extends ConsumerState<AddressFormScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: ElevatedButton(
-            onPressed: saving ? null : _save,
-            child: saving
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2.5, color: Colors.white))
-                : Text(_isEdit ? 'Lưu thay đổi' : 'Thêm địa chỉ'),
-          ),
-        ),
-      ),
-    ));
+    );
   }
 
   /// Nút TUỲ CHỌN: lấy vị trí hiện tại (GPS) để tính phí ship chính xác hơn.

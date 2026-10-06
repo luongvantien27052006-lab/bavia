@@ -4,8 +4,8 @@
 
 import 'package:flutter/material.dart';
 import '../../widgets/anim.dart';
-import '../../widgets/glass_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../widgets/stage.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../models/loyalty_model.dart';
@@ -20,21 +20,18 @@ class LoyaltyScreen extends ConsumerWidget {
     final balance = ref.watch(loyaltyBalanceProvider);
     final history = ref.watch(loyaltyHistoryProvider);
 
-    return GlassBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        
-      appBar: AppBar(
-        title: const Text('Điểm thưởng',
-            style: TextStyle(fontWeight: FontWeight.w800)),
-      ),
+    return StageScaffold(
+      title: 'Điểm thưởng',
+      tint: const Color(0xFFE0607A),
       body: RefreshIndicator(
+        color: St.fg(),
+        backgroundColor: St.refreshBg,
         onRefresh: () async {
           ref.invalidate(loyaltyBalanceProvider);
           ref.invalidate(loyaltyHistoryProvider);
         },
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
           children: [
             _balanceCard(balance),
             const SizedBox(height: 20),
@@ -45,7 +42,7 @@ class LoyaltyScreen extends ConsumerWidget {
           ],
         ),
       ),
-    ));
+    );
   }
 
   Widget _balanceCard(AsyncValue<LoyaltyBalance> balance) {

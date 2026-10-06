@@ -1,8 +1,12 @@
 // ================================================================
 //  FLUTTER APP (package bavia)
 //  lib/screens/menu/menu_screen.dart
-//  Menu dạng DỌC: sidebar danh mục bên trái + danh sách món 1 cột.
-//  Đồ ăn (bánh ăn kèm, trái cây chấm muối) tự xếp CUỐI (isFoodCategory).
+//  >> GIAO DIỆN "SÂN KHẤU TỐI" (đồng bộ Trang chủ):
+//   - Đầu trang cực quang, màu đổi theo danh mục đang xem.
+//   - Ô tìm kiếm kính, thanh danh mục dọc dạng kính bên trái.
+//   - Mỗi món là 1 thẻ kính: ảnh có quầng sáng theo màu món, nút + phát sáng.
+//  GIỮ NGUYÊN chức năng: tìm kiếm (không dấu), lọc yêu thích, danh mục,
+//  đồ ăn xếp cuối khi tìm, chế độ thêm món cho phòng đặt chung, kéo làm mới.
 // ================================================================
 
 import 'package:flutter/material.dart';
@@ -10,13 +14,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../models/product.dart';
-import '../../providers/menu_provider.dart';
-import '../../providers/group_order_provider.dart';
 import '../../providers/favorites_provider.dart';
-import '../../widgets/glass_card.dart';
-import '../../widgets/anim.dart';
-import '../../widgets/menu_image.dart';
+import '../../providers/group_order_provider.dart';
+import '../../providers/menu_provider.dart';
 import '../../utils/formatters.dart';
+import '../../widgets/anim.dart';
+import '../../widgets/drink_tint.dart';
+import '../../widgets/menu_image.dart';
+import '../../widgets/stage.dart';
 import '../group/group_room_screen.dart';
 import '../group/group_start_screen.dart';
 import '../product/product_detail_screen.dart';
@@ -32,171 +37,206 @@ class MenuScreen extends ConsumerWidget {
     final query = ref.watch(searchQueryProvider).trim();
     final favOnly = ref.watch(showFavoritesOnlyProvider);
     final favs = ref.watch(favoritesProvider);
+    final groupId = ref.watch(activeGroupProvider);
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title:
-            const Text('Menu', style: TextStyle(fontWeight: FontWeight.w800)),
-        actions: [
-          if (ref.watch(activeGroupProvider) == null)
-            IconButton(
-              tooltip: 'Đặt chung',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const GroupStartScreen()),
-              ),
-              icon: Icon(Icons.groups_rounded, color: AppColors.coffee),
+    final searching = query.isNotEmpty;
+    final effective =
+        selected ?? (categories.isNotEmpty ? categories.first : null);
+
+    // Màu đầu trang = màu món đầu tiên của danh mục đang xem.
+    Color tint = DrinkTint.fallback;
+    final all = productsAsync.valueOrNull ?? const <Product>[];
+    if (!searching && effective != null) {
+      for (final p in all) {
+        if (p.category == effective) {
+          tint = DrinkTint.of(p);
+          break;
+        }
+      }
+    }
+
+    return StageScaffold(
+      title: 'Thực đơn',
+      subtitle: groupId != null ? 'Đang thêm món cho phòng đặt chung' : null,
+      tint: tint,
+      showBack: false,
+      actions: [
+        if (groupId == null)
+          StageIconButton(
+            icon: Icons.groups_rounded,
+            tooltip: 'Đặt chung',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const GroupStartScreen()),
             ),
-          IconButton(
-            tooltip: 'Món yêu thích',
-            onPressed: () => ref
-                .read(showFavoritesOnlyProvider.notifier)
-                .state = !ref.read(showFavoritesOnlyProvider),
-            icon: Icon(
-              ref.watch(showFavoritesOnlyProvider)
-                  ? Icons.favorite_rounded
-                  : Icons.favorite_border_rounded,
-              color: ref.watch(showFavoritesOnlyProvider)
-                  ? AppColors.delivery
-                  : AppColors.textDark,
+          ),
+        StageIconButton(
+          icon: favOnly ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+          tooltip: favOnly ? 'Hiện tất cả món' : 'Chỉ món yêu thích',
+          color: favOnly ? const Color(0xFFFF6B81) : null,
+          onTap: () =>
+              ref.read(showFavoritesOnlyProvider.notifier).state = !favOnly,
+        ),
+      ],
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (groupId != null) _GroupBanner(groupId: groupId),
+          _MenuSearchField(tint: tint),
+          Expanded(
+            child: productsAsync.when(
+              loading: () =>  Center(
+                child: CircularProgressIndicator(
+                    strokeWidth: 2.4, color: St.fg(0.7)),
+              ),
+              error: (e, _) => _errorView(ref),
+              data: (all) {
+                // Ảnh đại diện mỗi danh mục = ảnh món đầu tiên có ảnh.
+                final catImg = <String, String?>{};
+                for (final c in categories) {
+                  String? img;
+                  for (final p in all) {
+                    if (p.category == c && p.hasImage) {
+                      img = p.imageUrl;
+                      break;
+                    }
+                  }
+                  catImg[c] = img;
+                }
+
+                final qn = vnNorm(query);
+                List<Product> shown;
+                if (searching) {
+                  shown =
+                      all.where((p) => vnNorm(p.name).contains(qn)).toList();
+                  final drinks =
+                      shown.where((p) => !isFoodCategory(p.category)).toList();
+                  final foods =
+                      shown.where((p) => isFoodCategory(p.category)).toList();
+                  shown = [...drinks, ...foods];
+                } else if (effective != null) {
+                  shown = all.where((p) => p.category == effective).toList();
+                } else {
+                  shown = all;
+                }
+                if (favOnly) {
+                  shown = shown.where((p) => favs.contains(p.id)).toList();
+                }
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (!searching && categories.length > 1)
+                      _CategoryRail(
+                        categories: categories,
+                        selected: effective,
+                        images: catImg,
+                        tint: tint,
+                        onSelect: (c) =>
+                            ref.read(selectedCategoryProvider.notifier).state = c,
+                      ),
+                    Expanded(
+                      child: _productList(
+                        context,
+                        ref,
+                        shown,
+                        searching
+                            ? 'Kết quả tìm kiếm'
+                            : (favOnly
+                                ? 'Món yêu thích'
+                                : (effective ?? 'Tất cả món')),
+                        favOnly,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ],
       ),
-      body: GlassBackground(
-        child: Column(
-          children: [
-            if (ref.watch(activeGroupProvider) != null)
-              _GroupBanner(groupId: ref.watch(activeGroupProvider)!),
-            const _MenuSearchField(),
-            Expanded(
-              child: productsAsync.when(
-                loading: _loading,
-                error: (e, _) => _errorView(ref, e.toString()),
-                data: (all) {
-                  final searching = query.isNotEmpty;
-                  final effective = selected ??
-                      (categories.isNotEmpty ? categories.first : null);
-
-                  // Ảnh đại diện mỗi danh mục = ảnh món đầu tiên có ảnh.
-                  final catImg = <String, String?>{};
-                  for (final c in categories) {
-                    String? img;
-                    for (final p in all) {
-                      if (p.category == c && p.hasImage) {
-                        img = p.imageUrl;
-                        break;
-                      }
-                    }
-                    catImg[c] = img;
-                  }
-
-                  // Danh sách món hiển thị.
-                  final qn = vnNorm(query);
-                  List<Product> shown;
-                  if (searching) {
-                    shown =
-                        all.where((p) => vnNorm(p.name).contains(qn)).toList();
-                    final drinks =
-                        shown.where((p) => !isFoodCategory(p.category)).toList();
-                    final foods =
-                        shown.where((p) => isFoodCategory(p.category)).toList();
-                    shown = [...drinks, ...foods];
-                  } else if (effective != null) {
-                    shown = all.where((p) => p.category == effective).toList();
-                  } else {
-                    shown = all;
-                  }
-                  if (favOnly) {
-                    shown = shown.where((p) => favs.contains(p.id)).toList();
-                  }
-
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (!searching && categories.length > 1)
-                        _CategorySidebar(
-                          categories: categories,
-                          selected: effective,
-                          images: catImg,
-                          onSelect: (c) => ref
-                              .read(selectedCategoryProvider.notifier)
-                              .state = c,
-                        ),
-                      Expanded(
-                        child: _productList(
-                          context,
-                          ref,
-                          shown,
-                          searching
-                              ? 'Kết quả tìm kiếm'
-                              : (effective ?? 'Tất cả món'),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
-  Widget _loading() => const Center(child: CircularProgressIndicator());
+  Widget _productList(BuildContext context, WidgetRef ref, List<Product> list,
+      String header, bool favOnly) {
+    Future<void> refresh() async => ref.invalidate(productsProvider);
 
-  Widget _productList(
-    BuildContext context,
-    WidgetRef ref,
-    List<Product> list,
-    String header,
-  ) {
     if (list.isEmpty) {
       return RefreshIndicator(
-        onRefresh: () async => ref.invalidate(productsProvider),
+        onRefresh: refresh,
+        color: St.fg(),
+        backgroundColor: St.refreshBg,
         child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           children: [
             const SizedBox(height: 80),
-            Icon(Icons.search_off_rounded,
-                size: 48, color: AppColors.textMuted),
-            const SizedBox(height: 10),
-            Center(
-              child: Text('Không tìm thấy món phù hợp.',
-                  style: TextStyle(color: AppColors.textMuted)),
+            Icon(
+                favOnly
+                    ? Icons.favorite_border_rounded
+                    : Icons.search_off_rounded,
+                size: 48,
+                color: St.fg(0.5)),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                favOnly
+                    ? 'Chưa có món yêu thích ở đây.\nBấm ♡ ở trang món để lưu.'
+                    : 'Không tìm thấy món phù hợp.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: St.fg(0.7)),
+              ),
             ),
           ],
         ),
       );
     }
+
     return RefreshIndicator(
-      onRefresh: () async => ref.invalidate(productsProvider),
+      onRefresh: refresh,
+      color: St.fg(),
+      backgroundColor: St.refreshBg,
       child: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(14, 10, 16, 28),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.fromLTRB(
+            10, 4, 14, 28 + MediaQuery.paddingOf(context).bottom),
         itemCount: list.length + 1,
-        separatorBuilder: (_, i) => i == 0
-            ? const SizedBox(height: 4)
-            : Divider(height: 1, color: AppColors.textMuted.withOpacity(0.12)),
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (_, i) {
           if (i == 0) {
             return Padding(
-              padding: const EdgeInsets.only(bottom: 6, top: 2),
-              child: Text(
-                header,
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textDark,
-                ),
+              padding: const EdgeInsets.fromLTRB(4, 2, 0, 0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Flexible(
+                    child: Text(
+                      header,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style:  TextStyle(
+                        color: St.fg(),
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 3),
+                    child: Text('${list.length} món',
+                        style: TextStyle(
+                            color: St.fg(0.55),
+                            fontSize: 12.5)),
+                  ),
+                ],
               ),
             );
           }
           final p = list[i - 1];
           return FadeSlideIn(
             index: i,
-            child: _ProductRow(
+            child: _ProductCard(
               product: p,
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(
@@ -209,22 +249,26 @@ class MenuScreen extends ConsumerWidget {
     );
   }
 
-  Widget _errorView(WidgetRef ref, String msg) {
+  Widget _errorView(WidgetRef ref) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.cloud_off_rounded, size: 48, color: AppColors.textMuted),
+            Icon(Icons.cloud_off_rounded,
+                size: 48, color: St.fg(0.5)),
             const SizedBox(height: 12),
-            Text(msg,
+            Text('Không tải được thực đơn.\nKiểm tra mạng rồi thử lại.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textMuted)),
+                style: TextStyle(color: St.fg(0.75))),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => ref.invalidate(productsProvider),
-              child: const Text('Thử lại'),
+            StageButton(
+              label: 'Thử lại',
+              icon: Icons.refresh_rounded,
+              expand: false,
+              tint: AppColors.coffee,
+              onTap: () => ref.invalidate(productsProvider),
             ),
           ],
         ),
@@ -233,133 +277,203 @@ class MenuScreen extends ConsumerWidget {
   }
 }
 
-/// Sidebar danh mục dọc bên trái (ảnh tròn + tên, tô đậm mục đang chọn).
-class _CategorySidebar extends StatelessWidget {
+/// Thanh danh mục dọc (kính): ảnh tròn + tên; mục chọn có vạch sáng + quầng.
+class _CategoryRail extends StatelessWidget {
   final List<String> categories;
   final String? selected;
   final Map<String, String?> images;
+  final Color tint;
   final ValueChanged<String> onSelect;
 
-  const _CategorySidebar({
+  const _CategoryRail({
     required this.categories,
     required this.selected,
     required this.images,
+    required this.tint,
     required this.onSelect,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 92,
-      color: AppColors.dark
-          ? Colors.white.withOpacity(0.03)
-          : Colors.white.withOpacity(0.35),
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: categories.length,
-        itemBuilder: (_, i) {
-          final c = categories[i];
-          final active = c == selected;
-          final img = images[c];
-          return GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => onSelect(c),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(2.5),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: active ? AppColors.coffee : Colors.transparent,
-                        width: 2,
-                      ),
-                    ),
-                    child: ClipOval(
-                      child: SizedBox(
-                        width: 54,
-                        height: 54,
-                        child: MenuImage(
-                          url: img,
-                          size: 54,
-                          fallback: _fallback(),
+      width: 88,
+      margin: EdgeInsets.fromLTRB(
+          10, 4, 0, 12 + MediaQuery.paddingOf(context).bottom),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        color: St.fill(0.05),
+        border: Border.all(color: St.line(0.08)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: categories.length,
+          itemBuilder: (_, i) {
+            final c = categories[i];
+            final active = c == selected;
+            return Semantics(
+              button: true,
+              selected: active,
+              label: c,
+              excludeSemantics: true,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => onSelect(c),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    color: active
+                        ? St.fill(0.12)
+                        : Colors.transparent,
+                  ),
+                  child: Column(
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 260),
+                        padding: const EdgeInsets.all(2.5),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: active
+                                ? Color.lerp(tint, Colors.white, 0.25)!
+                                : St.line(0.12),
+                            width: 2,
+                          ),
+                          boxShadow: active
+                              ? [
+                                  BoxShadow(
+                                      color: tint.withValues(alpha: 0.55),
+                                      blurRadius: 14)
+                                ]
+                              : null,
+                        ),
+                        child: ClipOval(
+                          child: SizedBox(
+                            width: 50,
+                            height: 50,
+                            child: MenuImage(
+                              url: images[c],
+                              size: 50,
+                              fallback: _fallback(),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 6),
+                      Text(
+                        c,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          height: 1.15,
+                          fontWeight:
+                              active ? FontWeight.w800 : FontWeight.w500,
+                          color: active
+                              ? St.fg()
+                              : St.fg(0.6),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 5),
-                  Text(
-                    c,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      height: 1.15,
-                      fontWeight: active ? FontWeight.w800 : FontWeight.w500,
-                      color: active ? AppColors.coffee : AppColors.textDark,
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
 
   Widget _fallback() => Container(
-        color: AppColors.coffee.withOpacity(0.12),
+        color: St.fill(0.08),
         child: Icon(Icons.local_cafe_rounded,
-            color: AppColors.coffee.withOpacity(0.6), size: 24),
+            color: St.fg(0.6), size: 22),
       );
 }
 
-/// Hàng 1 món trong danh sách dọc: ảnh tròn trái + tên/mô tả/giá phải.
-class _ProductRow extends StatelessWidget {
+/// Thẻ kính 1 món: ảnh bo góc có quầng màu món + tên/mô tả/giá + nút thêm.
+class _ProductCard extends StatelessWidget {
   final Product product;
   final VoidCallback onTap;
-  const _ProductRow({required this.product, required this.onTap});
+  const _ProductCard({required this.product, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final p = product;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+    final tint = DrinkTint.of(p);
+    return Semantics(
+      button: true,
+      label: '${p.name}, ${Formatters.money(p.price)}',
+      child: StageGlass(
+        onTap: onTap,
+        radius: 22,
+        padding: const EdgeInsets.all(10),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            ClipOval(
-              child: SizedBox(
-                width: 84,
-                height: 84,
+            Container(
+              width: 84,
+              height: 84,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: tint.withValues(alpha: 0.35),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
                 child: MenuImage(
                   url: p.hasImage ? p.imageUrl : null,
                   size: 84,
-                  fallback: _imgFallback(),
+                  fallback: Container(
+                    color: tint.withValues(alpha: 0.18),
+                    child: Icon(Icons.local_drink_rounded,
+                        color: St.fg(0.7), size: 30),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (p.isNew || p.isSeasonal)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Wrap(
+                        spacing: 6,
+                        children: [
+                          if (p.isNew)
+                            const StageChip(
+                                label: 'MỚI', color: Color(0xFF4ADE80)),
+                          if (p.isSeasonal)
+                            const StageChip(
+                                label: 'Theo mùa', color: Color(0xFFFFB020)),
+                        ],
+                      ),
+                    ),
                   Text(
                     p.name,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 17,
+                    style:  TextStyle(
+                      color: St.fg(),
+                      fontSize: 15.5,
+                      height: 1.2,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textDark,
                     ),
                   ),
                   if (p.description.isNotEmpty) ...[
@@ -368,40 +482,55 @@ class _ProductRow extends StatelessWidget {
                       p.description,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style:
-                          TextStyle(fontSize: 13, color: AppColors.textMuted),
+                      style: TextStyle(
+                          fontSize: 12.5,
+                          color: St.fg(0.6)),
                     ),
                   ],
                   const SizedBox(height: 6),
                   Text(
                     Formatters.money(p.price),
-                    style: TextStyle(
-                      fontSize: 17,
+                    style:  TextStyle(
+                      color: St.fg(),
+                      fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.delivery,
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 6),
-            Icon(Icons.add_circle_rounded, color: AppColors.coffee, size: 30),
+            const SizedBox(width: 8),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color.lerp(tint, Colors.white, 0.10)!,
+                    Color.lerp(tint, Colors.black, 0.22)!,
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(color: tint.withValues(alpha: 0.45), blurRadius: 12),
+                ],
+              ),
+              child: Icon(Icons.add_rounded, color: stageOn(tint), size: 22),
+            ),
           ],
         ),
       ),
     );
   }
-
-  Widget _imgFallback() => Container(
-        color: AppColors.coffee.withOpacity(0.1),
-        child: Icon(Icons.local_cafe_rounded,
-            color: AppColors.coffee.withOpacity(0.55), size: 30),
-      );
 }
 
-/// Ô tìm kiếm món — cập nhật searchQueryProvider (có nút xoá).
+/// Ô tìm kiếm kính — cập nhật searchQueryProvider (có nút xoá).
 class _MenuSearchField extends ConsumerStatefulWidget {
-  const _MenuSearchField();
+  final Color tint;
+  const _MenuSearchField({required this.tint});
+
   @override
   ConsumerState<_MenuSearchField> createState() => _MenuSearchFieldState();
 }
@@ -410,27 +539,46 @@ class _MenuSearchFieldState extends ConsumerState<_MenuSearchField> {
   final _c = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _c.text = ref.read(searchQueryProvider);
+  }
+
+  @override
   void dispose() {
     _c.dispose();
     super.dispose();
   }
 
+  OutlineInputBorder _border(Color c, [double w = 1]) => OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: c, width: w),
+      );
+
   @override
   Widget build(BuildContext context) {
-    final dark = AppColors.dark;
     final has = _c.text.isNotEmpty;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: const EdgeInsets.fromLTRB(14, 2, 14, 10),
       child: TextField(
         controller: _c,
-        onChanged: (v) => ref.read(searchQueryProvider.notifier).state = v,
+        onChanged: (v) {
+          ref.read(searchQueryProvider.notifier).state = v;
+          setState(() {});
+        },
         textInputAction: TextInputAction.search,
+        cursorColor: St.fg(),
+        style:  TextStyle(color: St.fg(), fontSize: 15),
         decoration: InputDecoration(
-          hintText: 'Tìm món...',
-          prefixIcon: const Icon(Icons.search_rounded),
+          hintText: 'Tìm món: dâu, xoài, matcha...',
+          hintStyle: TextStyle(color: St.fg(0.5)),
+          prefixIcon: Icon(Icons.search_rounded,
+              color: St.fg(0.75)),
           suffixIcon: has
               ? IconButton(
-                  icon: const Icon(Icons.close_rounded),
+                  tooltip: 'Xoá',
+                  icon: Icon(Icons.close_rounded,
+                      color: St.fg(0.8)),
                   onPressed: () {
                     _c.clear();
                     ref.read(searchQueryProvider.notifier).state = '';
@@ -439,17 +587,14 @@ class _MenuSearchFieldState extends ConsumerState<_MenuSearchField> {
                 )
               : null,
           filled: true,
-          fillColor: dark
-              ? Colors.white.withOpacity(0.06)
-              : Colors.white.withOpacity(0.55),
+          fillColor: St.fill(0.10),
           contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide.none,
-          ),
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          border: _border(St.line(0.14)),
+          enabledBorder: _border(St.line(0.14)),
+          focusedBorder:
+              _border(Color.lerp(widget.tint, Colors.white, 0.3)!, 1.6),
         ),
-        onEditingComplete: () => setState(() {}),
       ),
     );
   }
@@ -461,46 +606,47 @@ class _GroupBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.coffee,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.groups_rounded, color: Colors.white, size: 20),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text('Đang thêm món cho phòng đặt chung',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13)),
-          ),
-          GestureDetector(
-            onTap: () {
-              ref.read(activeGroupProvider.notifier).state = null;
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(
-                    builder: (_) => GroupRoomScreen(groupId: groupId)),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text('Về phòng',
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+      child: StageGlass(
+        highlight: const Color(0xFF4ADE80),
+        radius: 18,
+        padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+        child: Row(
+          children: [
+             Icon(Icons.groups_rounded, color: St.fg(), size: 20),
+            const SizedBox(width: 8),
+             Expanded(
+              child: Text('Món chọn sẽ vào phòng đặt chung',
                   style: TextStyle(
-                      color: AppColors.coffee,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12)),
+                      color: St.fg(),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13)),
             ),
-          ),
-        ],
+            Material(
+              color: St.solid,
+              borderRadius: BorderRadius.circular(999),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(999),
+                onTap: () {
+                  ref.read(activeGroupProvider.notifier).state = null;
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                        builder: (_) => GroupRoomScreen(groupId: groupId)),
+                  );
+                },
+                child:  Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  child: Text('Về phòng',
+                      style: TextStyle(
+                          color: St.onSolid,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12.5)),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

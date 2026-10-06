@@ -7,6 +7,7 @@
 //  - Tự tích voucher giảm nhiều nhất mỗi nhóm; "Đồng ý" áp dụng + thoát.
 
 import 'package:flutter/material.dart';
+import '../../widgets/stage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -75,15 +76,9 @@ class _VoucherSelectScreenState extends ConsumerState<VoucherSelectScreen> {
     final subtotal = ref.watch(cartSubtotalProvider);
     final async = ref.watch(availableVouchersProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.cream,
-      appBar: AppBar(
-        title: const Text('Chọn voucher',
-            style: TextStyle(fontWeight: FontWeight.w800)),
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.textDark,
-        elevation: 0.5,
-      ),
+    return StageScaffold(
+      title: 'Chọn voucher',
+      tint: const Color(0xFFFF8A1F),
       body: Column(
         children: [
           // ─── Ô nhập mã + nút Áp dụng (1 KHUNG liền, kiểu Shopee) ───
@@ -169,7 +164,7 @@ class _VoucherSelectScreenState extends ConsumerState<VoucherSelectScreen> {
           Expanded(
             child: async.when(
               loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+                  Center(child: CircularProgressIndicator(strokeWidth: 2.4, color: St.fg(0.7))),
               error: (e, _) => Center(
                   child: Text('Không tải được voucher',
                       style: TextStyle(color: AppColors.textMuted))),

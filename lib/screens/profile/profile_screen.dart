@@ -12,7 +12,7 @@
 // Nếu backend chưa hỗ trợ, nút Lưu sẽ báo lỗi rõ ràng (không làm hỏng gì khác).
 
 import 'package:flutter/material.dart';
-import '../../widgets/glass_card.dart';
+import '../../widgets/stage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/api_exception.dart';
@@ -87,13 +87,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
 
-    return GlassBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        
-      appBar: AppBar(
-        title: const Text('Hồ sơ cá nhân',
-            style: TextStyle(fontWeight: FontWeight.w800)),
+    return StageScaffold(
+      title: 'Hồ sơ cá nhân',
+      tint: const Color(0xFFE0607A),
+      bottomBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: ElevatedButton(
+            onPressed: _saving ? null : _save,
+            child: _saving
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2.5, color: Colors.white))
+                : const Text('Lưu thay đổi'),
+          ),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -170,22 +180,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: ElevatedButton(
-            onPressed: _saving ? null : _save,
-            child: _saving
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2.5, color: Colors.white))
-                : const Text('Lưu thay đổi'),
-          ),
-        ),
-      ),
-    ));
+    );
   }
 
   Future<void> _confirmDelete() async {

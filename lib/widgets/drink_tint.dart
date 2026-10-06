@@ -7,6 +7,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../core/theme/app_theme.dart';
 import '../models/product.dart';
 
 class DrinkTint {
@@ -15,8 +16,9 @@ class DrinkTint {
   /// Màu mặc định (hồng mọng) khi không nhận ra món.
   static const fallback = Color(0xFFE0607A);
 
-  /// Nền tối của "sân khấu" (ánh mận rất đậm).
-  static const stageInk = Color(0xFF140B10);
+  /// Nền "sân khấu": tối = mận rất đậm, sáng = kem hồng.
+  static Color get stageInk =>
+      AppColors.dark ? const Color(0xFF140B10) : const Color(0xFFFBF4F1);
 
   // Từ khoá viết KHÔNG DẤU, so theo nguyên từ. Thứ tự quan trọng:
   // cụm cụ thể đặt trước (vd "dua hau" trước "dua").
@@ -101,6 +103,7 @@ class DrinkTint {
     ];
   }
 
-  /// Nền tối pha chút màu món (dùng cho app bar khi thu gọn).
-  static Color stageBase(Color tint) => Color.lerp(stageInk, tint, 0.12)!;
+  /// Nền sân khấu pha chút màu món (tối pha 12%, sáng pha 7%).
+  static Color stageBase(Color tint) =>
+      Color.lerp(stageInk, tint, AppColors.dark ? 0.12 : 0.07)!;
 }

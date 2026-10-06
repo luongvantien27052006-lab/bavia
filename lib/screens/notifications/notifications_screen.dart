@@ -1,6 +1,7 @@
 // lib/screens/notifications/notifications_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../widgets/stage.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../providers/feed_provider.dart';
@@ -85,16 +86,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final feed = ref.watch(feedProvider);
-    return Scaffold(
-      backgroundColor: AppColors.cream,
-      appBar: AppBar(
-        title: const Text('Thông báo',
-            style: TextStyle(fontWeight: FontWeight.w800)),
-      ),
+    return StageScaffold(
+      title: 'Thông báo',
+      tint: const Color(0xFFFF4D6A),
       body: RefreshIndicator(
+        color: St.fg(),
+        backgroundColor: St.refreshBg,
         onRefresh: () => ref.read(feedProvider.notifier).refresh(),
         child: feed.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => Center(child: CircularProgressIndicator(strokeWidth: 2.4, color: St.fg(0.7))),
           error: (_, __) => ListView(
             children: const [
               SizedBox(height: 120),

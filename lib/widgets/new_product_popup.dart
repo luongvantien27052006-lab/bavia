@@ -3,6 +3,8 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'drink_tint.dart';
+import 'stage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -63,6 +65,7 @@ class _NewProductDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = product;
+    final tint = DrinkTint.of(p);
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 32),
@@ -70,8 +73,12 @@ class _NewProductDialog extends StatelessWidget {
         onTap: () => _open(context),
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.dark ? const Color(0xFF201C19) : Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            color: St.sheet,
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: tint.withValues(alpha: 0.5)),
+            boxShadow: [
+              BoxShadow(color: tint.withValues(alpha: 0.4), blurRadius: 40),
+            ],
           ),
           clipBehavior: Clip.antiAlias,
           child: Column(
@@ -103,7 +110,7 @@ class _NewProductDialog extends StatelessWidget {
                       ),
                       child: const Text('MÓN MỚI 🎉',
                           style: TextStyle(
-                              color: Colors.white,
+                              color: kOnColor,
                               fontWeight: FontWeight.w800,
                               fontSize: 12)),
                     ),
@@ -120,7 +127,7 @@ class _NewProductDialog extends StatelessWidget {
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(Icons.close_rounded,
-                            color: Colors.white, size: 18),
+                            color: kOnColor, size: 18),
                       ),
                     ),
                   ),
@@ -135,14 +142,15 @@ class _NewProductDialog extends StatelessWidget {
                         style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.textDark)),
+                            color: St.fg())),
                     if (p.description.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(p.description,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                              fontSize: 13.5, color: AppColors.textMuted)),
+                              fontSize: 13.5,
+                              color: St.fg(0.65))),
                     ],
                     const SizedBox(height: 12),
                     Row(
@@ -151,18 +159,26 @@ class _NewProductDialog extends StatelessWidget {
                             style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.delivery)),
+                                color: Color.lerp(tint, Colors.white, 0.4))),
                         const Spacer(),
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 18, vertical: 10),
                           decoration: BoxDecoration(
-                            color: AppColors.coffee,
+                            gradient: LinearGradient(colors: [
+                              Color.lerp(tint, Colors.white, 0.1)!,
+                              Color.lerp(tint, Colors.black, 0.22)!,
+                            ]),
                             borderRadius: BorderRadius.circular(999),
+                            boxShadow: [
+                              BoxShadow(
+                                  color: tint.withValues(alpha: 0.5),
+                                  blurRadius: 14),
+                            ],
                           ),
-                          child: const Text('Thử ngay',
+                          child: Text('Thử ngay',
                               style: TextStyle(
-                                  color: Colors.white,
+                                  color: stageOn(tint),
                                   fontWeight: FontWeight.w800)),
                         ),
                       ],
@@ -171,7 +187,8 @@ class _NewProductDialog extends StatelessWidget {
                       const SizedBox(height: 10),
                       Text('+ $more món mới khác đang chờ bạn khám phá',
                           style: TextStyle(
-                              fontSize: 12, color: AppColors.textMuted)),
+                              fontSize: 12,
+                              color: St.fg(0.55))),
                     ],
                   ],
                 ),

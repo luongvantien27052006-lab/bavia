@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../widgets/stage.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../models/membership_rank.dart';
@@ -24,16 +25,11 @@ class MembershipRankScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(membershipRankProvider);
-    return Scaffold(
-      backgroundColor: AppColors.cream,
-      appBar: AppBar(
-        title: const Text('Hạng thành viên'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: AppColors.textDark,
-      ),
+    return StageScaffold(
+      title: 'Hạng thành viên',
+      tint: async.valueOrNull?.tier.color ?? const Color(0xFFCF9B08),
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Center(child: CircularProgressIndicator(strokeWidth: 2.4, color: St.fg(0.7))),
         error: (_, __) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),

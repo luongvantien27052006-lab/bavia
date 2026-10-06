@@ -11,11 +11,18 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../core/theme/app_theme.dart';
 import 'drink_tint.dart';
 
 class AuroraBackground extends StatefulWidget {
   final Color tint;
   final bool animate;
+
+  /// Hoà dần phần đáy vào màu nền tối (để nối liền với nội dung bên dưới).
+  final bool fadeToBase;
+
+  /// Màu nền tối cố định (null = nền pha chút màu món).
+  final Color? base;
   final Widget child;
 
   const AuroraBackground({
@@ -23,6 +30,8 @@ class AuroraBackground extends StatefulWidget {
     required this.tint,
     required this.child,
     this.animate = true,
+    this.fadeToBase = false,
+    this.base,
   });
 
   @override
@@ -85,6 +94,7 @@ class _AuroraBackgroundState extends State<AuroraBackground>
 
   @override
   Widget build(BuildContext context) {
+    Theme.of(context); // đổi Sáng/Tối -> vẽ lại
     return RepaintBoundary(
       child: CustomPaint(
         painter: _AuroraPainter(
@@ -92,6 +102,9 @@ class _AuroraBackgroundState extends State<AuroraBackground>
           fade: _fade,
           from: _from,
           to: _to,
+          fadeToBase: widget.fadeToBase,
+          base: widget.base,
+          dark: AppColors.dark,
         ),
         child: widget.child,
       ),
@@ -104,22 +117,36 @@ class _AuroraPainter extends CustomPainter {
   final Animation<double> fade;
   final Color from;
   final Color to;
+  final bool fadeToBase;
+  final Color? base;
+  final bool dark;
 
   _AuroraPainter({
     required this.drift,
     required this.fade,
     required this.from,
     required this.to,
+    this.fadeToBase = false,
+    this.base,
+    this.dark = true,
   }) : super(repaint: Listenable.merge([drift, fade]));
 
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
     final rect = Offset.zero & size;
+    // Cắt gọn trong khung: vệt màu loang (bán kính lớn) không được tràn ra
+    // ngoài -> tránh lộ 1 đường ngang ở mép dưới dải cực quang.
+    canvas.clipRect(rect);
     final tint = Color.lerp(from, to, Curves.easeInOut.transform(fade.value))!;
-    final cols = DrinkTint.aurora(tint);
+    // Chế độ sáng: màu loang nhạt hơn (pha trắng) và trong hơn.
+    final cols = DrinkTint.aurora(tint)
+        .map((c) => dark ? c : Color.lerp(c, Colors.white, 0.25)!)
+        .toList();
+    final k = dark ? 1.0 : 0.6;
 
-    canvas.drawRect(rect, Paint()..color = DrinkTint.stageBase(tint));
+    final ground = base ?? DrinkTint.stageBase(tint);
+    canvas.drawRect(rect, Paint()..color = ground);
 
     final w = size.width;
     final h = size.height;
@@ -127,14 +154,14 @@ class _AuroraPainter extends CustomPainter {
     final r = math.max(w, 320.0);
 
     _blob(canvas, Offset(w * (0.12 + 0.20 * math.sin(a)), h * (0.10 + 0.08 * math.cos(a))),
-        r * 0.95, cols[0], 0.62);
+        r * 0.95, cols[0], 0.62 * k);
     _blob(canvas, Offset(w * (0.98 + 0.14 * math.cos(a + 1.3)), h * (0.42 + 0.10 * math.sin(a + 0.7))),
-        r * 0.85, cols[1], 0.50);
+        r * 0.85, cols[1], 0.50 * k);
     _blob(canvas, Offset(w * (0.22 + 0.18 * math.cos(2 * a + 2.1)), h * (0.86 + 0.06 * math.sin(a + 2.6))),
-        r * 0.95, cols[2], 0.42);
+        r * 0.95, cols[2], 0.42 * k);
 
-    // Lớp phủ tối nhẹ trên/dưới để chữ trắng luôn dễ đọc.
-    canvas.drawRect(
+    // Lớp phủ tối nhẹ trên/dưới để chữ trắng luôn dễ đọc (chỉ chế độ tối).
+    if (dark) canvas.drawRect(
       rect,
       Paint()
         ..shader = LinearGradient(
@@ -148,6 +175,20 @@ class _AuroraPainter extends CustomPainter {
           stops: const [0, 0.45, 1],
         ).createShader(rect),
     );
+
+    if (fadeToBase) {
+      final fadeH = math.min(200.0, h * 0.3);
+      final band = Rect.fromLTWH(0, h - fadeH, w, fadeH);
+      canvas.drawRect(
+        band,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [ground.withValues(alpha: 0), ground],
+          ).createShader(band),
+      );
+    }
   }
 
   void _blob(Canvas canvas, Offset c, double radius, Color color, double alpha) {
@@ -165,5 +206,11 @@ class _AuroraPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _AuroraPainter old) =>
-      old.from != from || old.to != to || old.drift != drift || old.fade != fade;
+      old.from != from ||
+      old.to != to ||
+      old.fadeToBase != fadeToBase ||
+      old.base != base ||
+      old.dark != dark ||
+      old.drift != drift ||
+      old.fade != fade;
 }

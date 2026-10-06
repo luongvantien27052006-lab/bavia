@@ -3,6 +3,7 @@
 // Tab Scan — quét QR tại quầy (sẽ hoàn thiện sau). Hiện là placeholder gọn.
 
 import 'package:flutter/material.dart';
+import '../../widgets/stage.dart';
 import '../../core/theme/app_theme.dart';
 
 class ScanScreen extends StatelessWidget {
@@ -10,11 +11,9 @@ class ScanScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Quét mã',
-            style: TextStyle(fontWeight: FontWeight.w800)),
-      ),
+    return StageScaffold(
+      title: 'Quét mã',
+      tint: const Color(0xFFE0607A),
       body: Center(
         child: Padding(
           padding: EdgeInsets.all(24),

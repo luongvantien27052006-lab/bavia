@@ -3,11 +3,12 @@
 // Giao diện: Chế độ tối + Hiệu ứng kính + Ảnh hiện dần + Màu nền (chế độ sáng).
 
 import 'package:flutter/material.dart';
+import '../../widgets/stage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
-import '../../providers/theme_provider.dart';
 import '../../providers/display_settings_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/theme_switcher.dart';
 
 class DisplaySettingsScreen extends ConsumerWidget {
@@ -18,24 +19,20 @@ class DisplaySettingsScreen extends ConsumerWidget {
     final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
     final s = ref.watch(displaySettingsProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.cream,
-      appBar: AppBar(
-        title: const Text('Giao diện',
-            style: TextStyle(fontWeight: FontWeight.w800)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: AppColors.textDark,
-      ),
+    return StageScaffold(
+      title: 'Giao diện',
+      tint: const Color(0xFF9CA3AF),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           _sectionHeader('Chế độ'),
           _switchTile(
-            icon: Icons.dark_mode_rounded,
+            icon: isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
             color: AppColors.coffee,
             title: 'Chế độ tối',
-            subtitle: 'Nền tối, dịu mắt khi dùng ban đêm',
+            subtitle: isDark
+                ? 'Đang bật — nền mận đậm, dịu mắt ban đêm'
+                : 'Đang tắt — nền kem sáng',
             value: isDark,
             onChanged: (v) => ThemeSwitcher.run(
               context,
@@ -72,15 +69,6 @@ class DisplaySettingsScreen extends ConsumerWidget {
             value: s.imageFade,
             onChanged: (v) =>
                 ref.read(displaySettingsProvider.notifier).setImageFade(v),
-          ),
-          _switchTile(
-            icon: Icons.gradient_rounded,
-            color: AppColors.pickup,
-            title: 'Màu nền (chế độ sáng)',
-            subtitle: 'Nền chuyển màu ở chế độ sáng (tắt để nền phẳng)',
-            value: s.colorBg,
-            onChanged: (v) =>
-                ref.read(displaySettingsProvider.notifier).setColorBg(v),
           ),
           const SizedBox(height: 20),
           Center(

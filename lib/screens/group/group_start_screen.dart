@@ -3,6 +3,7 @@
 // Bắt đầu đặt chung: tạo phòng mới hoặc nhập mã tham gia.
 
 import 'package:flutter/material.dart';
+import '../../widgets/stage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -82,14 +83,9 @@ class _GroupStartScreenState extends ConsumerState<GroupStartScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.cream,
-      appBar: AppBar(
-        title: const Text('Đặt chung'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: AppColors.textDark,
-      ),
+    return StageScaffold(
+      title: 'Đặt chung',
+      tint: const Color(0xFF34C77B),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

@@ -1,23 +1,22 @@
 // lib/screens/checkout/qr_payment_screen.dart
 //
-// Màn thanh toán chuyển khoản QR. Hiển thị VietQR + nội dung CK + đếm ngược.
-// Lắng nghe socket "payment.confirmed" để tự nhảy sang màn thành công ngay
-// khi backend nhận được tiền (qua webhook Sepay). Có nút kiểm tra thủ công
-// làm phương án dự phòng nếu socket lỡ mất kết nối.
+// >> GIAO DIỆN "SÂN KHẤU TỐI". Màn thanh toán chuyển khoản QR: VietQR + nội
+// dung CK + đếm ngược. Lắng nghe socket "payment.confirmed" để tự nhảy sang
+// màn thành công; có nút kiểm tra thủ công + hỏi định kỳ làm dự phòng.
 
 import 'dart:async';
+import 'dart:ui' show FontFeature;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import '../../widgets/glass_card.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/realtime/socket_service.dart';
-import '../../core/theme/app_theme.dart';
 import '../../models/order_model.dart';
 import '../../providers/repository_providers.dart';
 import '../../utils/formatters.dart';
+import '../../widgets/stage.dart';
 import 'order_success_screen.dart';
 
 class QrPaymentScreen extends ConsumerStatefulWidget {
@@ -137,67 +136,106 @@ class _QrPaymentScreenState extends ConsumerState<QrPaymentScreen> {
   @override
   Widget build(BuildContext context) {
     final expired = _remaining == Duration.zero;
+    const tint = Color(0xFF2FB4C9); // xanh ngân hàng — dễ phân biệt màn trả tiền
+    // Vòng đếm ngược: thang 10 phút (mã QR thường hết hạn sau 10 phút).
+    final frac = (_remaining.inSeconds / 600).clamp(0.0, 1.0);
 
-    return GlassBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        
-      appBar: AppBar(
-        title: const Text('Thanh toán QR',
-            style: TextStyle(fontWeight: FontWeight.w800)),
-      ),
+    return StageScaffold(
+      title: 'Thanh toán QR',
+      subtitle: expired ? 'Mã QR đã hết hạn' : 'Tự động xác nhận khi nhận tiền',
+      tint: tint,
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
         children: [
+          // Khung QR trắng (để app ngân hàng quét chuẩn) nổi trên nền tối.
           Center(
-            child: Text(
-              expired ? 'Mã QR đã hết hạn' : 'Quét mã để thanh toán',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: expired ? AppColors.delivery : AppColors.textDark,
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: kOnColor,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                      color: tint.withValues(alpha: 0.35),
+                      blurRadius: 40,
+                      offset: const Offset(0, 14)),
+                ],
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: CachedNetworkImage(
+                      imageUrl: _payment.qrImageUrl,
+                      width: 236,
+                      height: 236,
+                      fit: BoxFit.contain,
+                      placeholder: (_, __) => const SizedBox(
+                          width: 236,
+                          height: 236,
+                          child: Center(
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2.4))),
+                      errorWidget: (_, __, ___) => const SizedBox(
+                        width: 236,
+                        height: 236,
+                        child: Icon(Icons.broken_image_rounded,
+                            size: 64, color: Colors.black38),
+                      ),
+                    ),
+                  ),
+                  if (expired)
+                    Container(
+                      width: 236,
+                      height: 236,
+                      decoration: BoxDecoration(
+                        color: kOnColor.withValues(alpha: 0.88),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Center(
+                        child: Text('Mã đã hết hạn',
+                            style: TextStyle(
+                                color: kInk,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16)),
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 16),
+          // Đếm ngược dạng viên + thanh tiến độ.
           if (!expired)
             Center(
-              child: Text('Tự động xác nhận • còn $_countdownText',
-                  style: TextStyle(color: AppColors.textMuted)),
-            ),
-          const SizedBox(height: 16),
-          Center(
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                    color: AppColors.dark
-                        ? Colors.white.withOpacity(0.12)
-                        : const Color(0xFFE5DDD7)),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: CachedNetworkImage(
-                  imageUrl: _payment.qrImageUrl,
-                  width: 240,
-                  height: 240,
-                  fit: BoxFit.contain,
-                  placeholder: (_, __) => const SizedBox(
-                      width: 240,
-                      height: 240,
-                      child: Center(child: CircularProgressIndicator())),
-                  errorWidget: (_, __, ___) => SizedBox(
-                    width: 240,
-                    height: 240,
-                    child: Icon(Icons.broken_image_rounded,
-                        size: 64, color: AppColors.textMuted),
-                  ),
+              child: StageGlass(
+                radius: 999,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        value: frac,
+                        strokeWidth: 2.4,
+                        color: St.fg(),
+                        backgroundColor: St.line(0.2),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text('Còn $_countdownText',
+                        style:  TextStyle(
+                            color: St.fg(),
+                            fontWeight: FontWeight.w800,
+                            fontFeatures: [FontFeature.tabularFigures()])),
+                  ],
                 ),
               ),
             ),
-          ),
           const SizedBox(height: 10),
           Center(
             child: Text(
@@ -205,71 +243,59 @@ class _QrPaymentScreenState extends ConsumerState<QrPaymentScreen> {
               style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textMuted),
+                  color: St.fg(0.7)),
             ),
           ),
-          const SizedBox(height: 16),
-          _amountCard(),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
+          _amountCard(tint),
+          const SizedBox(height: 10),
           _infoCard(),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Text(
-            'Lưu ý: giữ nguyên nội dung chuyển khoản để đơn được xác nhận tự động.',
+            'Giữ nguyên nội dung chuyển khoản để đơn được xác nhận tự động.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+            style: TextStyle(
+                fontSize: 12, color: St.fg(0.55)),
           ),
-          const SizedBox(height: 24),
-          OutlinedButton.icon(
-            onPressed: _checking ? null : () => _checkOrderStatus(),
-            icon: _checking
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.refresh_rounded),
-            label: const Text('Tôi đã chuyển khoản'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(52),
-              side: const BorderSide(color: AppColors.coffee),
-              foregroundColor: AppColors.coffee,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14)),
-            ),
+          const SizedBox(height: 22),
+          StageButton(
+            label: 'Tôi đã chuyển khoản',
+            icon: Icons.refresh_rounded,
+            white: true,
+            loading: _checking,
+            onTap: _checking ? null : () => _checkOrderStatus(),
           ),
         ],
       ),
-    ));
+    );
   }
 
-  Widget _amountCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.coffee.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(16),
-      ),
+  Widget _amountCard(Color tint) {
+    return StageGlass(
+      highlight: tint,
+      radius: 20,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text('Số tiền',
-              style: TextStyle(fontWeight: FontWeight.w600)),
+           Text('Số tiền',
+              style: TextStyle(
+                  color: St.fg(), fontWeight: FontWeight.w600)),
+          const Spacer(),
           Text(Formatters.money(_payment.amount),
-              style: const TextStyle(
-                  color: AppColors.coffee,
-                  fontSize: 20,
+              style:  TextStyle(
+                  color: St.fg(),
+                  fontSize: 22,
                   fontWeight: FontWeight.w800)),
+          const SizedBox(width: 4),
+          _copyBtn(_payment.amount.toString(), 'Sao chép số tiền'),
         ],
       ),
     );
   }
 
   Widget _infoCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
-        borderRadius: BorderRadius.circular(16),
-      ),
+    return StageGlass(
+      radius: 20,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         children: [
           if (_payment.bankAccountName != null)
@@ -282,37 +308,38 @@ class _QrPaymentScreenState extends ConsumerState<QrPaymentScreen> {
     );
   }
 
+  Widget _copyBtn(String value, String label) {
+    return IconButton(
+      tooltip: label,
+      onPressed: () {
+        Clipboard.setData(ClipboardData(text: value));
+        HapticFeedback.lightImpact();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Đã sao chép'), duration: Duration(seconds: 1)),
+        );
+      },
+      icon: Icon(Icons.copy_rounded,
+          size: 18, color: St.fg(0.85)),
+    );
+  }
+
   Widget _infoRow(String label, String value, {bool copy = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 110,
+            width: 108,
             child: Text(label,
-                style: TextStyle(color: AppColors.textMuted)),
+                style: TextStyle(color: St.fg(0.6))),
           ),
           Expanded(
             child: Text(value,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
+                style:  TextStyle(
+                    color: St.fg(), fontWeight: FontWeight.w700)),
           ),
-          if (copy)
-            InkWell(
-              onTap: () {
-                Clipboard.setData(ClipboardData(text: value));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Đã sao chép'),
-                      duration: Duration(seconds: 1)),
-                );
-              },
-              child: const Padding(
-                padding: EdgeInsets.only(left: 8),
-                child: Icon(Icons.copy_rounded,
-                    size: 18, color: AppColors.coffee),
-              ),
-            ),
+          if (copy) _copyBtn(value, 'Sao chép $label') else const SizedBox(height: 48),
         ],
       ),
     );

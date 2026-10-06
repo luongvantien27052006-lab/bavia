@@ -7,6 +7,7 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'stage.dart';
 
 import '../models/product.dart';
 import 'product_image.dart';
@@ -38,19 +39,11 @@ class ProductPhoto extends StatelessWidget {
       width: double.infinity,
       height: double.infinity,
       gaplessPlayback: true,
-      frameBuilder: (context, child, frame, wasSync) {
-        if (wasSync) return child;
-        return AnimatedOpacity(
-          opacity: frame == null ? 0 : 1,
-          duration: const Duration(milliseconds: 250),
-          child: child,
-        );
-      },
       errorBuilder: (_, __, ___) => ColoredBox(
-        color: Colors.white.withValues(alpha: 0.08),
+        color: St.fill(0.08),
         child: Center(
           child: Icon(Icons.local_drink_rounded,
-              size: 44, color: Colors.white.withValues(alpha: 0.6)),
+              size: 44, color: St.fg(0.6)),
         ),
       ),
     );

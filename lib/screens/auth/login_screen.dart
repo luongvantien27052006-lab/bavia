@@ -17,7 +17,9 @@
 // form nằm trên THẺ TRẮNG cho đỡ chói, dễ đọc.
 
 import 'package:flutter/material.dart';
-import '../../widgets/glass_card.dart';
+import '../../widgets/aurora_background.dart';
+import '../../widgets/drink_tint.dart';
+import '../../widgets/stage.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -116,94 +118,94 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     });
 
-    return GlassBackground(
+    final canPop = Navigator.of(context).canPop();
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: stageOverlay,
       child: Scaffold(
-        backgroundColor: Colors.transparent,
-        
-      body: Stack(
-        children: [
-          // Ảnh nền: dùng assets/images/auth_bg.jpg nếu có; không thì gradient dịu.
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/auth_bg.jpg',
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFFFFF1E8), Color(0xFFFCE3D6)],
+        backgroundColor: DrinkTint.stageInk,
+        body: AuroraBackground(
+          tint: DrinkTint.fallback,
+          base: DrinkTint.stageInk,
+          child: Stack(
+            children: [
+              SafeArea(
+                child: SingleChildScrollView(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 22, vertical: 28),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: MediaQuery.of(context).size.height - 96,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _logo(),
+                        const SizedBox(height: 28),
+                        StageGlass(
+                          radius: 26,
+                          padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 250),
+                            child: state.step == LoginStep.enterPhone
+                                ? _phoneForm(state)
+                                : _otpForm(state),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
-          // Lớp phủ sáng nhẹ để đỡ chói + chữ trên thẻ dễ đọc.
-          Positioned.fill(
-            child: Container(color: Colors.white.withOpacity(0.28)),
-          ),
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 28),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: MediaQuery.of(context).size.height - 96,
+              if (canPop)
+                Positioned(
+                  top: MediaQuery.paddingOf(context).top + 8,
+                  left: 12,
+                  child: StageIconButton(
+                    icon: Icons.close_rounded,
+                    tooltip: 'Đóng',
+                    onTap: () => Navigator.of(context).maybePop(),
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _logo(),
-                    const SizedBox(height: 28),
-                    Container(
-                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-                      decoration: BoxDecoration(
-                        color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 24,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 250),
-                        child: state.step == LoginStep.enterPhone
-                            ? _phoneForm(state)
-                            : _otpForm(state),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                ),
-              ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
-    ));
+    );
   }
 
   Widget _logo() {
     return Column(
       children: [
         Container(
-          width: 84,
-          height: 84,
+          width: 92,
+          height: 92,
           decoration: BoxDecoration(
-            color: AppColors.coffee.withOpacity(0.12),
             shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                  color: DrinkTint.fallback.withValues(alpha: 0.5),
+                  blurRadius: 30),
+            ],
           ),
-          child: const Icon(Icons.local_cafe_rounded,
-              color: AppColors.coffee, size: 44),
+          child: ClipOval(
+            child: Image.asset(
+              'assets/icon/app_icon.png',
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                color: St.fill(0.12),
+                child:  Icon(Icons.local_drink_rounded,
+                    color: St.fg(), size: 44),
+              ),
+            ),
+          ),
         ),
         const SizedBox(height: 14),
         Text(
           'Mọng Fruits',
           style: TextStyle(
-            color: AppColors.textDark,
+            color: St.fg(),
             fontSize: 28,
             fontWeight: FontWeight.w800,
           ),
@@ -211,7 +213,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         const SizedBox(height: 6),
         Text(
           'Đặt món & tích điểm mỗi ngày',
-          style: TextStyle(color: AppColors.textMuted),
+          style: TextStyle(color: St.fg(0.7)),
         ),
       ],
     );
@@ -225,7 +227,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       children: [
         Text('Số điện thoại',
             style: TextStyle(
-                color: AppColors.textDark, fontWeight: FontWeight.w700)),
+                color: St.fg(), fontWeight: FontWeight.w700)),
         const SizedBox(height: 10),
         TextField(
           controller: _phoneController,
@@ -239,15 +241,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           onSubmitted: (_) => _submitPhone(),
         ),
         const SizedBox(height: 20),
-        ElevatedButton(
-          onPressed: state.loading ? null : _submitPhone,
-          child: state.loading
-              ? const SizedBox(
-                  height: 22,
-                  width: 22,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2.5, color: Colors.white))
-              : const Text('Gửi mã OTP'),
+        StageButton(
+          label: 'Gửi mã OTP',
+          icon: Icons.sms_rounded,
+          white: true,
+          loading: state.loading,
+          onTap: state.loading ? null : _submitPhone,
         ),
       ],
     );
@@ -261,14 +260,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       children: [
         Text('Xác thực OTP',
             style: TextStyle(
-                color: AppColors.textDark,
+                color: St.fg(),
                 fontSize: 20,
                 fontWeight: FontWeight.w700),
             textAlign: TextAlign.center),
         const SizedBox(height: 6),
         Text(
           'Mã 6 số vừa gửi tới ${Formatters.prettyPhone(Formatters.toE164(state.phone))}',
-          style: TextStyle(color: AppColors.textMuted),
+          style: TextStyle(color: St.fg(0.7)),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
@@ -288,7 +287,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textDark,
+                      color: St.fg(),
                     ),
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
@@ -298,16 +297,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       counterText: '',
                       contentPadding: EdgeInsets.zero,
                       filled: true,
-                      fillColor: AppColors.cream,
+                      fillColor: St.fill(0.08),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         borderSide: BorderSide(
-                            color: AppColors.coffee.withOpacity(0.25)),
+                            color: St.line(0.2)),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         borderSide:
-                            const BorderSide(color: AppColors.coffee, width: 2),
+                             BorderSide(color: St.line(1), width: 2),
                       ),
                     ),
                     onChanged: (v) {
@@ -341,18 +340,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         const SizedBox(height: 6),
         Text(
           'Nhập mã của bạn bè để họ nhận thưởng khi bạn dùng app.',
-          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+          style: TextStyle(fontSize: 12, color: St.fg(0.6)),
         ),
         const SizedBox(height: 22),
-        ElevatedButton(
-          onPressed: state.loading ? null : _submitOtp,
-          child: state.loading
-              ? const SizedBox(
-                  height: 22,
-                  width: 22,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2.5, color: Colors.white))
-              : const Text('Đăng nhập'),
+        StageButton(
+          label: 'Đăng nhập',
+          icon: Icons.login_rounded,
+          white: true,
+          loading: state.loading,
+          onTap: state.loading ? null : _submitOtp,
         ),
         const SizedBox(height: 8),
         Row(
@@ -364,17 +360,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   : () =>
                       ref.read(loginControllerProvider.notifier).backToPhone(),
               child: Text('Đổi số',
-                  style: TextStyle(color: AppColors.textMuted)),
+                  style: TextStyle(color: St.fg(0.7))),
             ),
-            Text('•', style: TextStyle(color: AppColors.textMuted)),
+            Text('•', style: TextStyle(color: St.fg(0.7))),
             TextButton(
               onPressed: state.loading
                   ? null
                   : () =>
                       ref.read(loginControllerProvider.notifier).resendOtp(),
-              child: const Text('Gửi lại mã',
+              child:  Text('Gửi lại mã',
                   style: TextStyle(
-                      color: AppColors.coffee, fontWeight: FontWeight.w600)),
+                      color: St.fg(), fontWeight: FontWeight.w700)),
             ),
           ],
         ),

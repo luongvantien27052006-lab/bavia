@@ -10,7 +10,7 @@
 // và tiến độ 3 mốc thưởng.
 
 import 'package:flutter/material.dart';
-import '../../widgets/glass_card.dart';
+import '../../widgets/stage.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -24,13 +24,11 @@ class ReferralScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(referralSummaryProvider);
-    return GlassBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        
-      appBar: AppBar(title: const Text('Giới thiệu bạn bè')),
+    return StageScaffold(
+      title: 'Giới thiệu bạn bè',
+      tint: const Color(0xFF7457E0),
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Center(child: CircularProgressIndicator(strokeWidth: 2.4, color: St.fg(0.7))),
         error: (e, _) => _ErrorView(
           onRetry: () => ref.invalidate(referralSummaryProvider),
         ),
@@ -59,7 +57,7 @@ class ReferralScreen extends ConsumerWidget {
           ),
         ),
       ),
-    ));
+    );
   }
 
   Widget _codeCard(BuildContext context, String code) {

@@ -41,13 +41,10 @@ class DisplaySettings {
 class DisplaySettingsNotifier extends Notifier<DisplaySettings> {
   @override
   DisplaySettings build() {
-    final p = ref.read(sharedPrefsProvider);
-    return DisplaySettings(
-      glass: p.getBool(_kGlass) ?? false,
-      imageFade: p.getBool(_kImgFade) ?? false,
-      colorBg: p.getBool(_kColorBg) ?? false,
-      itemAnim: p.getBool(_kItemAnim) ?? false,
-    );
+    // Đã BỎ hẳn các hiệu ứng cũ (bỏ màn chỉnh "Giao diện"):
+    // không món hiện dần khi lướt, không ảnh hiện dần, không kính mờ ở thẻ cũ.
+    // (Bỏ qua lựa chọn cũ đã lưu trên máy khách.)
+    return const DisplaySettings();
   }
 
   Future<void> _save(String key, bool v) async {

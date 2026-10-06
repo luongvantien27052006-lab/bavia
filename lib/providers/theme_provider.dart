@@ -15,8 +15,9 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
   @override
   ThemeMode build() {
     // Đọc đồng bộ giá trị đã lưu -> áp đúng chế độ ngay từ frame đầu.
+    // Chưa chọn bao giờ -> mặc định TỐI (giao diện "sân khấu" gốc).
     final v = ref.read(sharedPrefsProvider).getString(_kThemeKey);
-    return v == 'dark' ? ThemeMode.dark : ThemeMode.light;
+    return v == 'light' ? ThemeMode.light : ThemeMode.dark;
   }
 
   Future<void> setMode(ThemeMode mode) async {

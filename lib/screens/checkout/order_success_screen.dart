@@ -1,14 +1,18 @@
 // lib/screens/checkout/order_success_screen.dart
 //
-// Màn xác nhận đặt đơn thành công. [paid] = true khi đã nhận thanh toán QR.
+// >> GIAO DIỆN "SÂN KHẤU TỐI". Màn xác nhận đặt đơn thành công.
+// [paid] = true khi đã nhận thanh toán QR.
 
 import 'package:flutter/material.dart';
-import '../../widgets/glass_card.dart';
-import '../../widgets/anim.dart';
+import 'package:flutter/services.dart';
 
-import '../../core/theme/app_theme.dart';
 import '../../models/order_model.dart';
 import '../../utils/formatters.dart';
+import '../../widgets/anim.dart';
+import '../../widgets/aurora_background.dart';
+import '../../widgets/drink_tint.dart';
+import '../../widgets/stage.dart';
+import '../orders/order_detail_screen.dart';
 
 class OrderSuccessScreen extends StatelessWidget {
   final OrderModel order;
@@ -20,51 +24,78 @@ class OrderSuccessScreen extends StatelessWidget {
     this.paid = false,
   });
 
+  static const _green = Color(0xFF34C77B);
+
   @override
   Widget build(BuildContext context) {
-    return GlassBackground(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: stageOverlay,
       child: Scaffold(
-        backgroundColor: Colors.transparent,
-        
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              const Spacer(),
-              const SuccessCheck(size: 110),
-              const SizedBox(height: 24),
-              Text(
-                paid ? 'Thanh toán thành công!' : 'Đặt hàng thành công!',
-                style: const TextStyle(
-                    fontSize: 22, fontWeight: FontWeight.w800),
+        backgroundColor: DrinkTint.stageInk,
+        body: AuroraBackground(
+          tint: _green,
+          base: DrinkTint.stageInk,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+              child: Column(
+                children: [
+                  const Spacer(),
+                  const SuccessCheck(size: 110),
+                  const SizedBox(height: 20),
+                  Text(
+                    paid ? 'Thanh toán thành công!' : 'Đặt hàng thành công!',
+                    textAlign: TextAlign.center,
+                    style:  TextStyle(
+                        color: St.fg(),
+                        fontSize: 26,
+                        letterSpacing: -0.3,
+                        fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _scheduledLabel != null
+                        ? 'Cảm ơn bạn! Đơn hẹn nhận lúc $_scheduledLabel.\n'
+                            'Quán sẽ chuẩn bị trước giờ hẹn.'
+                        : paid
+                            ? 'Cảm ơn bạn! Đơn hàng đang được chuẩn bị.'
+                            : 'Đơn của bạn đã được tiếp nhận.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: St.fg(0.75),
+                        height: 1.45),
+                  ),
+                  const SizedBox(height: 24),
+                  _detailCard(),
+                  const Spacer(),
+                  StageButton(
+                    label: 'Theo dõi đơn hàng',
+                    icon: Icons.receipt_long_rounded,
+                    white: true,
+                    onTap: () {
+                      final nav = Navigator.of(context);
+                      nav.popUntil((route) => route.isFirst);
+                      nav.push(MaterialPageRoute(
+                          builder: (_) => OrderDetailScreen(orderId: order.id)));
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  TextButton(
+                    onPressed: () => Navigator.of(context)
+                        .popUntil((route) => route.isFirst),
+                    child: Text('Về trang chủ',
+                        style: TextStyle(
+                            color: St.fg(0.85),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15)),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                _scheduledLabel != null
-                    ? 'Cảm ơn bạn! Đơn hẹn nhận lúc $_scheduledLabel.\n'
-                        'Quán sẽ chuẩn bị trước giờ hẹn.'
-                    : paid
-                        ? 'Cảm ơn bạn! Đơn hàng đang được chuẩn bị.'
-                        : 'Đơn của bạn đã được tiếp nhận.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textMuted),
-              ),
-              const SizedBox(height: 24),
-              _detailCard(),
-              const Spacer(),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context)
-                    .popUntil((route) => route.isFirst),
-                style: ElevatedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(54)),
-                child: const Text('Về trang chủ'),
-              ),
-            ],
+            ),
           ),
         ),
       ),
-    ));
+    );
   }
 
   /// "16:00, 02/10" nếu là đơn hẹn giờ, ngược lại null.
@@ -77,23 +108,25 @@ class OrderSuccessScreen extends StatelessWidget {
   }
 
   Widget _detailCard() {
-    return Container(
+    final id = order.id.length > 8 ? order.id.substring(0, 8) : order.id;
+    Widget div() => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Divider(height: 1, color: St.line(0.1)),
+        );
+    return StageGlass(
+      radius: 22,
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.55),
-        borderRadius: BorderRadius.circular(18),
-      ),
       child: Column(
         children: [
-          _row('Mã đơn', '#${order.id.substring(0, 8).toUpperCase()}'),
+          _row('Mã đơn', '#${id.toUpperCase()}'),
           if (_scheduledLabel != null) ...[
-            const Divider(height: 18),
+            div(),
             _row('Giờ hẹn nhận', _scheduledLabel!),
           ],
-          const Divider(height: 18),
+          div(),
           _row('Tổng tiền', Formatters.money(order.finalAmount)),
           if (order.pointsEarned > 0) ...[
-            const Divider(height: 18),
+            div(),
             _row('Điểm tích luỹ', '+${order.pointsEarned} điểm',
                 highlight: true),
           ],
@@ -106,11 +139,11 @@ class OrderSuccessScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(color: AppColors.textMuted)),
+        Text(label, style: TextStyle(color: St.fg(0.65))),
         Text(value,
             style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: highlight ? AppColors.success : AppColors.textDark)),
+                fontWeight: FontWeight.w800,
+                color: highlight ? const Color(0xFF4ADE80) : St.fg())),
       ],
     );
   }

@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../../widgets/stage.dart';
 import 'package:flutter/services.dart';
 import '../../core/config/api_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -102,16 +103,11 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(groupRoomProvider(widget.groupId));
-    return Scaffold(
-      backgroundColor: AppColors.cream,
-      appBar: AppBar(
-        title: const Text('Đặt chung'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: AppColors.textDark,
-      ),
+    return StageScaffold(
+      title: 'Đặt chung',
+      tint: const Color(0xFF34C77B),
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Center(child: CircularProgressIndicator(strokeWidth: 2.4, color: St.fg(0.7))),
         error: (_, __) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -311,10 +307,10 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
                   style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textDark)),
+                      color: const Color(0xFF1A0F14))),
               const SizedBox(height: 4),
               Text('Mã phòng: ${room.code}',
-                  style: TextStyle(color: AppColors.textMuted)),
+                  style: TextStyle(color: const Color(0xFF6B5A60))),
               const SizedBox(height: 16),
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
@@ -330,7 +326,7 @@ class _GroupRoomScreenState extends ConsumerState<GroupRoomScreen> {
                       child: Text('Mã phòng: ${room.code}',
                           style: TextStyle(
                               fontWeight: FontWeight.w800,
-                              color: AppColors.textDark)),
+                              color: const Color(0xFF1A0F14))),
                     ),
                   ),
                 ),
