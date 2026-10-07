@@ -5,6 +5,8 @@
 //     size THAY gia thay vi cong; mac dinh S; kem dinh luong 400/600/800g)
 // ================================================================
 
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import '../../widgets/favorite_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,7 +19,7 @@ import '../../providers/group_order_provider.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/stage.dart';
 import '../../widgets/drink_tint.dart';
-import '../../widgets/parallax_product_stage.dart';
+import '../../widgets/product_image.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final Product product;
@@ -140,16 +142,23 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     final base = DrinkTint.stageBase(tint);
     final inGroup = ref.watch(activeGroupProvider) != null;
 
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
     return Scaffold(
       backgroundColor: base,
-      body: CustomScrollView(
+      extendBody: true,
+      body: Stack(
+        children: [
+          // Nền cả màn: chính ảnh món phóng to + làm mờ mạnh -> màu luôn khớp món.
+          Positioned.fill(child: _AmbientBackdrop(product: p, base: base)),
+          CustomScrollView(
         slivers: [
-          // Đầu trang "ly nổi chiều sâu": nghiêng máy để thấy hiệu ứng 3D.
+          // Đầu trang: ảnh món tràn viền như bản cũ (không dùng hiệu ứng 3D).
           SliverAppBar(
-            expandedHeight: 400,
+            expandedHeight: 380,
             pinned: true,
             stretch: true,
-            backgroundColor: base,
+            backgroundColor: base.withValues(alpha: 0.78),
             foregroundColor: St.fg(),
             surfaceTintColor: Colors.transparent,
             systemOverlayStyle: stageOverlay,
@@ -174,17 +183,47 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             flexibleSpace: FlexibleSpaceBar(
               collapseMode: CollapseMode.parallax,
               stretchModes: const [StretchMode.zoomBackground],
-              background: ParallaxProductStage(
-                product: p,
-                heroTag: widget.heroTag ?? 'product-${p.id}',
-                topInset:
-                    MediaQuery.paddingOf(context).top + kToolbarHeight,
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Ảnh gốc tràn viền, mép dưới tan dần vào nền mờ phía sau.
+                  ShaderMask(
+                    blendMode: BlendMode.dstIn,
+                    shaderCallback: (rect) => const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      stops: [0.0, 0.62, 1.0],
+                      colors: [Colors.white, Colors.white, Colors.transparent],
+                    ).createShader(rect),
+                    child: ProductImage(
+                      product: p,
+                      fit: BoxFit.cover,
+                      heroTag: widget.heroTag ?? 'product-${p.id}',
+                    ),
+                  ),
+                  // Phủ nhẹ phía trên để nút quay lại / thanh trạng thái dễ nhìn.
+                  IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          stops: const [0.0, 0.3],
+                          colors: [
+                            base.withValues(alpha: 0.5),
+                            base.withValues(alpha: 0.0),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
+              padding: EdgeInsets.fromLTRB(18, 18, 18, 28 + 88 + bottomInset),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -272,10 +311,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           ),
         ],
       ),
-      // Thanh dưới: nút thêm phát sáng theo màu món.
-      bottomNavigationBar: Container(
+        ],
+      ),
+      // Thanh dưới: kính mờ nổi trên nền ảnh, nút thêm phát sáng theo màu món.
+      bottomNavigationBar: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: Container(
         decoration: BoxDecoration(
-          color: base,
+          color: base.withValues(alpha: 0.55),
           border: Border(
               top: BorderSide(color: St.line(0.08))),
         ),
@@ -293,6 +337,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
               onTap: _addToCart,
             ),
           ),
+        ),
+      ),
         ),
       ),
     );
@@ -546,6 +592,53 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 size: 22),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Nền "ambient": ảnh món phóng to, làm mờ thật mạnh rồi phủ tối (hoặc sáng ở
+/// chế độ sáng) để chữ luôn dễ đọc. Màu nền vì vậy luôn lấy từ chính ảnh món.
+class _AmbientBackdrop extends StatelessWidget {
+  final Product product;
+  final Color base;
+  const _AmbientBackdrop({required this.product, required this.base});
+
+  @override
+  Widget build(BuildContext context) {
+    Theme.of(context);
+    final dark = AppColors.dark;
+    return RepaintBoundary(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ColoredBox(color: base),
+          Transform.scale(
+            scale: 1.4,
+            child: ImageFiltered(
+              imageFilter: ImageFilter.blur(
+                  sigmaX: 46, sigmaY: 46, tileMode: TileMode.mirror),
+              child: ProductImage(product: product, fit: BoxFit.cover),
+            ),
+          ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: dark
+                    ? [
+                        Colors.black.withValues(alpha: 0.38),
+                        Colors.black.withValues(alpha: 0.64),
+                      ]
+                    : [
+                        Colors.white.withValues(alpha: 0.42),
+                        Colors.white.withValues(alpha: 0.72),
+                      ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
