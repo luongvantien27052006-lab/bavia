@@ -1,0 +1,19 @@
+group = "com.mongfruits.liveupdate"
+version = "1.0"
+
+apply plugin: "com.android.library"
+
+android {
+    namespace = "com.mongfruits.liveupdate"
+    // API 36 (Live Updates) được gọi qua reflection -> biên dịch với 35 vẫn chạy trên Android 16.
+    compileSdk = 35
+
+    defaultConfig {
+        minSdk = 21
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}

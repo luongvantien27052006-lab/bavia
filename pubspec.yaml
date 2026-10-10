@@ -1,7 +1,7 @@
 name: bavia
 description: Bavia Coffee - App đặt món khách hàng
 publish_to: 'none'
-version: 2.9.26+61
+version: 2.10.26+62
 
 
 
@@ -30,7 +30,9 @@ dependencies:
   package_info_plus: ^5.0.1
   url_launcher: ^6.2.5
   app_links: ^3.5.1        # deep link: mở app từ link mời đặt chung
-  live_activity_kit: ^1.1.1 # Dynamic Island / Live Activity (iOS) + Live Update (Android)
+  live_activity_kit: ^1.1.1 # Dynamic Island / Live Activity (iOS)
+  mong_live_update:          # Live Update Android 16+ (Hyper Island / chip thanh trạng thái)
+    path: packages/mong_live_update
 
   # UI helpers
   sensors_plus: ^6.1.2     # cảm biến nghiêng máy -> hiệu ứng chiều sâu ở trang chi tiết món

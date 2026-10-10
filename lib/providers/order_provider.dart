@@ -93,6 +93,9 @@ class PlaceOrderController
       ref.read(_orderIdemProvider.notifier).state = null;
       ref.read(cartProvider.notifier).clear();
       ref.read(checkoutProvider.notifier).reset();
+      // Tải lại danh sách đơn ngay -> timeline đơn (Dynamic Island / Live
+      // Update) bật luôn khi khách còn trong app.
+      ref.invalidate(ordersProvider);
       state = AsyncData(result);
       return result;
     } catch (e, st) {

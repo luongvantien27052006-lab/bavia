@@ -1,0 +1,19 @@
+name: mong_live_update
+description: Thông báo tiến trình đơn hàng dạng Live Update (Android 16+) cho app Mọng Fruits.
+version: 1.0.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: mongliveupdate
+        pluginClass: MongLiveUpdatePlugin

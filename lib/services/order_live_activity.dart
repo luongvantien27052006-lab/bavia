@@ -1,7 +1,8 @@
 // lib/services/order_live_activity.dart
 //
 // Timeline đơn hàng trên Dynamic Island / màn khoá (iOS Live Activity) và
-// thông báo ongoing / Live Update (Android 16+).
+// Live Update (Android): Android 16+ hiện chip thanh trạng thái / màn khoá /
+// Hyper Island (Xiaomi HyperOS 3.1+); Android cũ là thông báo cố định có tiến trình.
 //
 // - syncOrders(): gọi mỗi khi danh sách đơn tải lại -> tự bật / cập nhật / kết
 //   thúc activity cho khớp trạng thái đơn đang xử lý.
@@ -15,6 +16,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:live_activity_kit/live_activity_kit.dart';
+import 'package:mong_live_update/mong_live_update.dart';
 
 import '../core/network/api_client.dart';
 import '../models/order_model.dart';
@@ -29,6 +31,10 @@ class _Step {
 }
 
 const _steps = <String, _Step>{
+  // Bật ngay khi vừa đặt (lúc app còn mở) -> đăng ký với server sớm, nên khi
+  // khách thoát app, các trạng thái sau vẫn tự cập nhật.
+  'PENDING': _Step(0.08, 'Chờ quán xác nhận', 'Chờ quán',
+      'Quán sẽ xác nhận đơn trong giây lát', 'clock.fill'),
   'CONFIRMED': _Step(0.2, 'Đã xác nhận', 'Đã nhận', 'Quán đã nhận đơn của bạn',
       'checkmark.seal.fill'),
   'IN_PROGRESS': _Step(0.45, 'Đang pha chế', 'Đang pha',
@@ -42,7 +48,7 @@ const _steps = <String, _Step>{
       'Liên hệ quán nếu cần hỗ trợ', 'xmark.circle.fill'),
 };
 
-const _active = {'CONFIRMED', 'IN_PROGRESS', 'READY', 'DELIVERING'};
+const _active = {'PENDING', 'CONFIRMED', 'IN_PROGRESS', 'READY', 'DELIVERING'};
 const _terminal = {'DELIVERED', 'CANCELLED'};
 
 const _brand = Color(0xFFD9653B);
@@ -78,8 +84,19 @@ class OrderLiveActivity {
     if (kIsWeb) return false;
     if (_supported != null) return _supported!;
     try {
-      final s = await LiveActivity.support();
-      _supported = s.canStart;
+      if (_isIOS) {
+        final s = await LiveActivity.support();
+        _supported = s.canStart;
+      } else {
+        // Android: tự vẽ thông báo chuẩn Live Update (plugin mong_live_update).
+        final st = await MongLiveUpdate.status();
+        _supported = st['notificationsEnabled'] == true;
+        // Chưa bật thông báo thì lần sau kiểm tra lại (khách có thể bật sau).
+        if (_supported == false) {
+          _supported = null;
+          return false;
+        }
+      }
     } catch (_) {
       _supported = false;
     }
@@ -186,7 +203,7 @@ class OrderLiveActivity {
     final st = status;
     await _enqueue(() async {
       if (!await _isSupported()) return;
-      await _apply(orderId, st);
+      await _apply(orderId, st, fromRemote: true);
     });
   }
 
@@ -194,7 +211,11 @@ class OrderLiveActivity {
   Future<void> endAll() async {
     _shown.clear();
     try {
-      await LiveActivity.endAll(immediate: true);
+      if (_isIOS) {
+        await LiveActivity.endAll(immediate: true);
+      } else {
+        await MongLiveUpdate.cancelAll();
+      }
     } catch (_) {}
   }
 
@@ -210,9 +231,13 @@ class OrderLiveActivity {
   }
 
   Future<void> _apply(String orderId, String status,
-      {bool silentEnd = false}) async {
+      {bool silentEnd = false, bool fromRemote = false}) async {
     final id = _laId(orderId);
     if (_shown[id] == status) return;
+    if (!_isIOS) {
+      return _applyAndroid(orderId, status,
+          silentEnd: silentEnd, fromRemote: fromRemote);
+    }
     final l = _layout(orderId, status);
 
     bool running = _shown.containsKey(id);
@@ -265,6 +290,53 @@ class OrderLiveActivity {
       if (!_isIOS) unawaited(_register(orderId));
     }
     _shown[id] = status;
+  }
+
+  /// Android: thông báo chuẩn (không giao diện tự chế, không tô nền) để
+  /// Android 16 nâng thành Live Update -> hiện trên Hyper Island / chip.
+  Future<void> _applyAndroid(String orderId, String status,
+      {bool silentEnd = false, bool fromRemote = false}) async {
+    final id = _laId(orderId);
+    final s = _steps[status]!;
+    final code = _code(orderId);
+    final firstTime = !_shown.containsKey(id);
+
+    if (_terminal.contains(status)) {
+      _shown.remove(id);
+      if (silentEnd) {
+        await MongLiveUpdate.cancel(id);
+        return;
+      }
+      await MongLiveUpdate.show(
+        id: id,
+        title: s.label,
+        text: s.sub,
+        subText: 'Mọng Fruits · Đơn #$code',
+        progress: status == 'DELIVERED' ? 100 : -1,
+        ongoing: false,
+        alert: fromRemote,
+        color: (status == 'DELIVERED' ? _ok : _bad).toARGB32(),
+        timeoutMs: const Duration(minutes: 30).inMilliseconds,
+      );
+      return;
+    }
+
+    await MongLiveUpdate.show(
+      id: id,
+      title: s.label,
+      text: s.sub,
+      subText: 'Mọng Fruits · Đơn #$code',
+      shortText: s.short,
+      progress: (s.progress * 100).round(),
+      points: const [20, 45, 70, 88],
+      ongoing: true,
+      // Đổi trạng thái lúc app ở nền -> rung/chuông 1 lần (thay thông báo thường).
+      alert: fromRemote,
+      color: _brand.toARGB32(),
+    );
+    _shown[id] = status;
+    // Báo server: đơn này có Live Update -> lần sau gửi dữ liệu để tự cập nhật.
+    if (firstTime && !fromRemote) unawaited(_register(orderId));
   }
 
   Future<void> _show(String id, LiveActivityLayout l, {required bool push}) async {
