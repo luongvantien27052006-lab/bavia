@@ -314,7 +314,8 @@ class OrderLiveActivity {
         subText: 'Mọng Fruits · Đơn #$code',
         progress: status == 'DELIVERED' ? 100 : -1,
         ongoing: false,
-        alert: fromRemote,
+        // Tin FCM đã được receiver native vẽ + rung/chuông ngay -> ở đây im lặng.
+        alert: false,
         color: (status == 'DELIVERED' ? _ok : _bad).toARGB32(),
         timeoutMs: const Duration(minutes: 30).inMilliseconds,
       );
@@ -330,8 +331,9 @@ class OrderLiveActivity {
       progress: (s.progress * 100).round(),
       points: const [20, 45, 70, 88],
       ongoing: true,
-      // Đổi trạng thái lúc app ở nền -> rung/chuông 1 lần (thay thông báo thường).
-      alert: fromRemote,
+      // Tin FCM (fromRemote) đã được receiver native vẽ + rung/chuông ngay lúc
+      // nhận; phía Dart chỉ vẽ lại cho chắc, không kêu lần 2.
+      alert: false,
       color: _brand.toARGB32(),
     );
     _shown[id] = status;

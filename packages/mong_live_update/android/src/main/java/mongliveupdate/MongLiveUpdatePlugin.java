@@ -104,15 +104,6 @@ public class MongLiveUpdatePlugin implements FlutterPlugin, MethodChannel.Method
     // ───────────────────────── hiện / cập nhật ─────────────────────────
 
     private void show(MethodCall call) {
-        ensureChannel();
-        String id = str(call, "id");
-        String title = str(call, "title");
-        String text = str(call, "text");
-        String subText = str(call, "subText");
-        String shortText = str(call, "shortText");
-        int progress = num(call, "progress", -1);
-        boolean ongoing = bool(call, "ongoing", true);
-        boolean alert = bool(call, "alert", false);
         Integer color = call.argument("color") instanceof Number
                 ? ((Number) call.argument("color")).intValue() : null;
         long timeoutMs = call.argument("timeoutMs") instanceof Number
@@ -124,11 +115,60 @@ public class MongLiveUpdatePlugin implements FlutterPlugin, MethodChannel.Method
                 if (p instanceof Number) points.add(((Number) p).intValue());
             }
         }
+        post(context, str(call, "id"), str(call, "title"), str(call, "text"),
+                str(call, "subText"), str(call, "shortText"), num(call, "progress", -1),
+                points, bool(call, "ongoing", true), bool(call, "alert", false), color, timeoutMs);
+    }
+
+    // ───────────────────────── trạng thái đơn (dùng cho receiver FCM) ─────────────────────────
+
+    private static final int BRAND = 0xFFD9653B;
+    private static final int OK = 0xFF2E9E5B;
+    private static final int BAD = 0xFFD64545;
+    private static final List<Integer> STEP_POINTS = java.util.Arrays.asList(20, 45, 70, 88);
+
+    /** Khớp bảng _steps trong lib/services/order_live_activity.dart. */
+    static void postOrderStatus(Context ctx, String orderId, String status, boolean alert) {
+        if ("REFUNDED".equals(status)) status = "CANCELLED";
+        String label, sub, shortText;
+        int progress;
+        switch (status) {
+            case "PENDING": label = "Chờ quán xác nhận"; shortText = "Chờ quán"; sub = "Quán sẽ xác nhận đơn trong giây lát"; progress = 8; break;
+            case "CONFIRMED": label = "Đã xác nhận"; shortText = "Đã nhận"; sub = "Quán đã nhận đơn của bạn"; progress = 20; break;
+            case "IN_PROGRESS": label = "Đang pha chế"; shortText = "Đang pha"; sub = "Đồ uống của bạn đang được chuẩn bị"; progress = 45; break;
+            case "READY": label = "Đã sẵn sàng"; shortText = "Sẵn sàng"; sub = "Đơn đã pha xong"; progress = 70; break;
+            case "DELIVERING": label = "Đang giao"; shortText = "Đang giao"; sub = "Shipper đang trên đường tới bạn"; progress = 88; break;
+            case "DELIVERED": label = "Hoàn thành"; shortText = "Xong"; sub = "Cảm ơn bạn đã chọn Mọng Fruits!"; progress = 100; break;
+            case "CANCELLED": label = "Đơn đã huỷ"; shortText = "Đã huỷ"; sub = "Liên hệ quán nếu cần hỗ trợ"; progress = -1; break;
+            default: return;
+        }
+        String hex = orderId.replace("-", "");
+        String code = hex.substring(0, Math.min(8, hex.length())).toUpperCase();
+        String id = "order-" + orderId;
+        boolean terminal = "DELIVERED".equals(status) || "CANCELLED".equals(status);
+        if (terminal) {
+            post(ctx, id, label, sub, "Mọng Fruits · Đơn #" + code, null, progress,
+                    new ArrayList<Integer>(), false, alert,
+                    "DELIVERED".equals(status) ? OK : BAD, 30L * 60L * 1000L);
+        } else {
+            post(ctx, id, label, sub, "Mọng Fruits · Đơn #" + code, shortText, progress,
+                    STEP_POINTS, true, alert, BRAND, 0L);
+        }
+    }
+
+    // ───────────────────────── vẽ thông báo ─────────────────────────
+
+    static void post(Context ctx, String id, String title, String text, String subText,
+                     String shortText, int progress, List<Integer> points, boolean ongoing,
+                     boolean alert, Integer color, long timeoutMs) {
+        NotificationManager nm = nm(ctx);
+        if (Build.VERSION.SDK_INT >= 24 && !nm.areNotificationsEnabled()) return;
+        ensureChannel(ctx);
 
         int nid = notifId(id);
         Notification.Builder b = Build.VERSION.SDK_INT >= 26
-                ? new Notification.Builder(context, CHANNEL_ID)
-                : new Notification.Builder(context);
+                ? new Notification.Builder(ctx, CHANNEL_ID)
+                : new Notification.Builder(ctx);
         b.setSmallIcon(R.drawable.ic_mong_live)
                 .setContentTitle(title)
                 .setContentText(text)
@@ -138,7 +178,7 @@ public class MongLiveUpdatePlugin implements FlutterPlugin, MethodChannel.Method
                 .setShowWhen(true)
                 .setWhen(System.currentTimeMillis())
                 .setCategory(ongoing ? Notification.CATEGORY_PROGRESS : Notification.CATEGORY_STATUS)
-                .setContentIntent(launchIntent(id, nid));
+                .setContentIntent(launchIntent(ctx, id, nid));
         if (Build.VERSION.SDK_INT >= 21) b.setVisibility(Notification.VISIBILITY_PUBLIC);
         if (subText != null && !subText.isEmpty()) b.setSubText(subText);
         // Chỉ tô màu icon/thanh tiến trình. KHÔNG setColorized (sẽ mất Live Update).
@@ -147,7 +187,7 @@ public class MongLiveUpdatePlugin implements FlutterPlugin, MethodChannel.Method
 
         if (progress >= 0) {
             int pct = Math.max(0, Math.min(100, progress));
-            if (!(Build.VERSION.SDK_INT >= 36 && applyProgressStyle(b, pct, points, color))) {
+            if (!(Build.VERSION.SDK_INT >= 36 && applyProgressStyle(ctx, b, pct, points, color))) {
                 b.setProgress(100, pct, false);
             }
         }
@@ -159,11 +199,11 @@ public class MongLiveUpdatePlugin implements FlutterPlugin, MethodChannel.Method
             }
         }
 
-        nm().notify(TAG, nid, b.build());
+        nm.notify(TAG, nid, b.build());
     }
 
     /** Android 16: Notification.ProgressStyle (thanh tiến trình có mốc + icon chạy). */
-    private boolean applyProgressStyle(Notification.Builder b, int pct, List<Integer> points, Integer color) {
+    private static boolean applyProgressStyle(Context ctx, Notification.Builder b, int pct, List<Integer> points, Integer color) {
         try {
             Class<?> styleCls = Class.forName("android.app.Notification$ProgressStyle");
             Object style = styleCls.getConstructor().newInstance();
@@ -189,7 +229,7 @@ public class MongLiveUpdatePlugin implements FlutterPlugin, MethodChannel.Method
             }
 
             try {
-                Icon tracker = Icon.createWithResource(context, R.drawable.ic_mong_live);
+                Icon tracker = Icon.createWithResource(ctx, R.drawable.ic_mong_live);
                 styleCls.getMethod("setProgressTrackerIcon", Icon.class).invoke(style, tracker);
             } catch (Throwable ignored) {
                 // Không có icon chạy cũng được.
@@ -214,26 +254,27 @@ public class MongLiveUpdatePlugin implements FlutterPlugin, MethodChannel.Method
 
     // ───────────────────────── tiện ích ─────────────────────────
 
-    private void ensureChannel() {
+    private static void ensureChannel(Context ctx) {
         if (Build.VERSION.SDK_INT < 26) return;
-        if (nm().getNotificationChannel(CHANNEL_ID) != null) return;
+        NotificationManager nm = nm(ctx);
+        if (nm.getNotificationChannel(CHANNEL_ID) != null) return;
         // Live Update không chấp nhận kênh IMPORTANCE_MIN -> dùng DEFAULT.
         NotificationChannel ch = new NotificationChannel(
                 CHANNEL_ID, "Tiến trình đơn hàng", NotificationManager.IMPORTANCE_DEFAULT);
         ch.setDescription("Theo dõi đơn đang pha chế / đang giao");
         ch.setShowBadge(false);
         ch.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-        nm().createNotificationChannel(ch);
+        nm.createNotificationChannel(ch);
     }
 
-    private PendingIntent launchIntent(String id, int requestCode) {
-        Intent i = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
+    private static PendingIntent launchIntent(Context ctx, String id, int requestCode) {
+        Intent i = ctx.getPackageManager().getLaunchIntentForPackage(ctx.getPackageName());
         if (i == null) i = new Intent();
         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         i.putExtra("live_order_id", id);
         int flags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= 23) flags |= PendingIntent.FLAG_IMMUTABLE;
-        return PendingIntent.getActivity(context, requestCode, i, flags);
+        return PendingIntent.getActivity(ctx, requestCode, i, flags);
     }
 
     private static void invoke(Object target, String name, Class<?> type, Object value) {
@@ -245,7 +286,11 @@ public class MongLiveUpdatePlugin implements FlutterPlugin, MethodChannel.Method
     }
 
     private NotificationManager nm() {
-        return (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        return nm(context);
+    }
+
+    private static NotificationManager nm(Context ctx) {
+        return (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
     }
 
     private static int notifId(String id) {

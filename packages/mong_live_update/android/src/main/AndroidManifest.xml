@@ -1,1 +1,16 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Nhận tin FCM "live_activity" và cập nhật thông báo tiến trình đơn NGAY
+             trong tiến trình native (không chờ khởi động Flutter nền — trên Xiaomi/
+             HyperOS phần đó hay bị hoãn tới khi mở lại app). Cùng cách
+             firebase_messaging đăng ký receiver của nó. -->
+        <receiver
+            android:name="mongliveupdate.LiveUpdateFcmReceiver"
+            android:exported="true"
+            android:permission="com.google.android.c2dm.permission.SEND">
+            <intent-filter>
+                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>
