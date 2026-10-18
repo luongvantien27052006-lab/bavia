@@ -5,10 +5,13 @@
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 <!-- Android 16+: cho phép thông báo tiến trình đơn thành Live Update (chip thanh trạng thái / màn khoá). -->
 <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS"/>
+<!-- Android 9 trở xuống: cần quyền ghi bộ nhớ để lưu ảnh mã QR vào thư viện. -->
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29"/>
     <application
         android:label="Mọng Fruits"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:requestLegacyExternalStorage="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -62,6 +65,11 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Mở link https (VietQR deeplink -> app ngân hàng). -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
         </intent>
     </queries>
 </manifest>

@@ -72,6 +72,8 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Mọng Fruits lưu ảnh mã QR thanh toán vào thư viện để bạn quét trong app ngân hàng.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>Mọng Fruits dùng độ nghiêng của máy để tạo hiệu ứng chiều sâu cho ảnh món.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

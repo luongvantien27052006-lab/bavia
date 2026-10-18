@@ -127,6 +127,7 @@ class PaymentInfo {
   final DateTime? expiresAt;
   final String? bankAccountNo;
   final String? bankAccountName;
+  final String? bankBin; // mã BIN ngân hàng nhận (dùng mở app ngân hàng)
 
   const PaymentInfo({
     required this.qrImageUrl,
@@ -135,6 +136,7 @@ class PaymentInfo {
     this.expiresAt,
     this.bankAccountNo,
     this.bankAccountName,
+    this.bankBin,
   });
 
   factory PaymentInfo.fromJson(Map<String, dynamic> json) {
@@ -149,6 +151,8 @@ class PaymentInfo {
           JsonX.strOrNull(json, ['accountNo', 'account_no']),
       bankAccountName: JsonX.strOrNull(bank, ['accountName', 'account_name']) ??
           JsonX.strOrNull(json, ['accountName', 'account_name']),
+      bankBin: JsonX.strOrNull(bank, ['bin', 'bankBin', 'bank_bin']) ??
+          JsonX.strOrNull(json, ['bin', 'bankBin', 'bank_bin']),
     );
   }
 }

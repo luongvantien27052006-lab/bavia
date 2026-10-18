@@ -29,6 +29,7 @@ dependencies:
   firebase_messaging: ^14.7.19
   package_info_plus: ^5.0.1
   url_launcher: ^6.2.5
+  gal: ^2.3.0               # lưu ảnh mã QR thanh toán vào thư viện ảnh
   app_links: ^3.5.1        # deep link: mở app từ link mời đặt chung
   live_activity_kit: ^1.1.1 # Dynamic Island / Live Activity (iOS)
   mong_live_update:          # Live Update Android 16+ (Hyper Island / chip thanh trạng thái)
