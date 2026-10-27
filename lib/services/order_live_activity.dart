@@ -26,26 +26,35 @@ class _Step {
   final String label; // tiêu đề lớn
   final String short; // chữ ngắn cạnh Dynamic Island
   final String sub; // dòng phụ màn khoá
-  final String symbol; // SF Symbol (iOS)
-  const _Step(this.progress, this.label, this.short, this.sub, this.symbol);
+  final String icon; // tên icon trong bộ Mọng (assets/live/<icon>.png, ic_live_<icon>)
+  const _Step(this.progress, this.label, this.short, this.sub, this.icon);
+
+  String get asset => _iconAsset(icon);
 }
+
+/// Bộ icon timeline tự vẽ (huy hiệu màu) — dùng cho Dynamic Island / màn khoá.
+String _iconAsset(String icon) => 'assets/live/$icon.png';
+const _allIcons = [
+  'pending', 'confirmed', 'preparing', 'ready', 'delivering', 'delivered',
+  'cancelled',
+];
 
 const _steps = <String, _Step>{
   // Bật ngay khi vừa đặt (lúc app còn mở) -> đăng ký với server sớm, nên khi
   // khách thoát app, các trạng thái sau vẫn tự cập nhật.
   'PENDING': _Step(0.08, 'Chờ quán xác nhận', 'Chờ quán',
-      'Quán sẽ xác nhận đơn trong giây lát', 'clock.fill'),
+      'Quán sẽ xác nhận đơn trong giây lát', 'pending'),
   'CONFIRMED': _Step(0.2, 'Đã xác nhận', 'Đã nhận', 'Quán đã nhận đơn của bạn',
-      'checkmark.seal.fill'),
+      'confirmed'),
   'IN_PROGRESS': _Step(0.45, 'Đang pha chế', 'Đang pha',
-      'Đồ uống của bạn đang được chuẩn bị', 'cup.and.saucer.fill'),
-  'READY': _Step(0.7, 'Đã sẵn sàng', 'Sẵn sàng', 'Đơn đã pha xong', 'bag.fill'),
+      'Đồ uống của bạn đang được chuẩn bị', 'preparing'),
+  'READY': _Step(0.7, 'Đã sẵn sàng', 'Sẵn sàng', 'Đơn đã pha xong', 'ready'),
   'DELIVERING': _Step(0.88, 'Đang giao', 'Đang giao',
-      'Shipper đang trên đường tới bạn', 'bicycle'),
+      'Shipper đang trên đường tới bạn', 'delivering'),
   'DELIVERED': _Step(1.0, 'Hoàn thành', 'Xong',
-      'Cảm ơn bạn đã chọn Mọng Fruits!', 'checkmark.circle.fill'),
+      'Cảm ơn bạn đã chọn Mọng Fruits!', 'delivered'),
   'CANCELLED': _Step(0, 'Đơn đã huỷ', 'Đã huỷ',
-      'Liên hệ quán nếu cần hỗ trợ', 'xmark.circle.fill'),
+      'Liên hệ quán nếu cần hỗ trợ', 'cancelled'),
 };
 
 const _active = {'PENDING', 'CONFIRMED', 'IN_PROGRESS', 'READY', 'DELIVERING'};
@@ -105,7 +114,11 @@ class OrderLiveActivity {
 
   // ─────────────────────────── Layout ───────────────────────────
 
-  LiveActivityLayout _layout(String orderId, String status) {
+  /// [preload] = kèm (vô hình) mọi icon trạng thái để app chép sẵn vào App
+  /// Group ngay lần đầu -> các trạng thái server đẩy về sau (lúc app đã đóng)
+  /// vẫn có icon. Chỉ dùng cho show/update từ app, không gửi lên server.
+  LiveActivityLayout _layout(String orderId, String status,
+      {bool preload = false}) {
     final s = _steps[status]!;
     final color = status == 'CANCELLED'
         ? _bad
@@ -117,12 +130,13 @@ class OrderLiveActivity {
 
     return LiveActivityLayout(
       theme: const LATheme(background: _cream, tint: _brand),
-      // Dynamic Island (nền đen) -> chữ trắng.
-      compactLeading: LA.symbol(s.symbol, color: color),
+      // Dynamic Island (nền đen): huy hiệu màu + chữ màu trạng thái.
+      compactLeading: LA.asset(s.asset, width: 22, height: 22),
       compactTrailing:
           LA.text(s.short, size: 13, weight: FontWeight.w600, color: color),
-      minimal: LA.symbol(s.symbol, color: color),
-      expandedLeading: LA.symbol(s.symbol, size: 22, color: color),
+      minimal: LA.asset(s.asset, width: 22, height: 22),
+      expandedLeading: LA.padding(LA.asset(s.asset, width: 44, height: 44),
+          top: 4, left: 2),
       expandedTrailing: LA.text('#$code', size: 13, color: Colors.white),
       expandedCenter: LA.text('Mọng Fruits',
           size: 14, weight: FontWeight.w600, color: Colors.white),
@@ -130,18 +144,26 @@ class OrderLiveActivity {
         LA.text(s.label, size: 17, weight: FontWeight.bold, color: Colors.white),
         if (showProgress) LA.progress(s.progress, tint: color),
       ], spacing: 6),
-      // Màn khoá (nền kem) -> chữ nâu đậm.
+      // Màn khoá (nền kem): huy hiệu lớn bên trái, chữ nâu đậm.
       lockScreen: LA.column([
         LA.row([
-          LA.symbol(s.symbol, size: 14, color: color),
-          LA.text('Mọng Fruits · Đơn #$code',
-              size: 13, weight: FontWeight.w600, color: _ink),
+          LA.asset(s.asset, width: 46, height: 46),
+          LA.column([
+            LA.text('Mọng Fruits · Đơn #$code',
+                size: 12, weight: FontWeight.w600, color: _ink, opacity: 0.7),
+            LA.text(s.label,
+                size: 19, weight: FontWeight.bold, color: _ink, maxLines: 1),
+          ], spacing: 2),
           LA.spacer(),
-        ], spacing: 6),
-        LA.text(s.label, size: 20, weight: FontWeight.bold, color: _ink),
+          if (preload)
+            LA.row([
+              for (final i in _allIcons)
+                LA.asset(_iconAsset(i), width: 0.5, height: 0.5),
+            ], spacing: 0),
+        ], spacing: 12),
         if (showProgress) LA.progress(s.progress, tint: color),
         LA.text(s.sub, size: 13, color: _ink, opacity: 0.75),
-      ], spacing: 6),
+      ], spacing: 8),
     );
   }
 
@@ -238,7 +260,7 @@ class OrderLiveActivity {
       return _applyAndroid(orderId, status,
           silentEnd: silentEnd, fromRemote: fromRemote);
     }
-    final l = _layout(orderId, status);
+    final l = _layout(orderId, status, preload: true);
 
     bool running = _shown.containsKey(id);
     if (!running) {
@@ -313,6 +335,7 @@ class OrderLiveActivity {
         text: s.sub,
         subText: 'Mọng Fruits · Đơn #$code',
         progress: status == 'DELIVERED' ? 100 : -1,
+        icon: s.icon,
         ongoing: false,
         // Tin FCM đã được receiver native vẽ + rung/chuông ngay -> ở đây im lặng.
         alert: false,
@@ -330,6 +353,7 @@ class OrderLiveActivity {
       shortText: s.short,
       progress: (s.progress * 100).round(),
       points: const [20, 45, 70, 88],
+      icon: s.icon,
       ongoing: true,
       // Tin FCM (fromRemote) đã được receiver native vẽ + rung/chuông ngay lúc
       // nhận; phía Dart chỉ vẽ lại cho chắc, không kêu lần 2.

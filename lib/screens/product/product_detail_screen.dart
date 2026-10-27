@@ -20,6 +20,7 @@ import '../../utils/formatters.dart';
 import '../../widgets/stage.dart';
 import '../../widgets/drink_tint.dart';
 import '../../widgets/product_image.dart';
+import '../../widgets/review_showcase.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final Product product;
@@ -305,6 +306,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       ],
                     ),
                   ),
+                  // Đánh giá tốt của khách đã mua (không có thì ẩn).
+                  ProductReviewsSection(productId: p.id, tint: tint),
                 ],
               ),
             ),

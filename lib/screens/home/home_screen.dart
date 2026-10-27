@@ -5,7 +5,7 @@
 //   - Thẻ kính: điểm + hạng (hoặc mời đăng nhập), 2 ô nhanh (Thực đơn / Đặt chung),
 //     đơn đang xử lý dạng timeline.
 //   - "Món hot hôm nay" = kệ trưng bày xoay 3D (HotCoverflow).
-//   - Phía dưới giữ nguyên: thông báo đóng cửa, Sự kiện.
+//   - Phía dưới: "Khách nói gì về Mọng" (đánh giá tốt), Sự kiện.
 //  GIỮ NGUYÊN chức năng cũ: pull-to-refresh, đăng nhập, hạng thành viên,
 //  phòng đặt chung (tạo / vào lại), đơn đang giao, sự kiện, mọi điều hướng.
 // ============================================================
@@ -28,6 +28,7 @@ import '../../providers/loyalty_provider.dart';
 import '../../providers/menu_provider.dart';
 import '../../providers/news_provider.dart';
 import '../../providers/order_provider.dart';
+import '../../providers/public_reviews_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../utils/formatters.dart';
 import '../../widgets/anim.dart';
@@ -35,6 +36,7 @@ import '../../widgets/aurora_background.dart';
 import '../../widgets/drink_tint.dart';
 import '../../widgets/event_carousel.dart';
 import '../../widgets/hot_coverflow.dart';
+import '../../widgets/review_showcase.dart';
 import '../../widgets/stage.dart';
 import '../auth/login_screen.dart';
 import '../group/group_room_screen.dart';
@@ -133,6 +135,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ref.invalidate(loyaltyBalanceProvider);
               ref.invalidate(activeGroupRoomProvider);
               ref.invalidate(latestNewsProvider);
+              ref.invalidate(homeReviewsProvider);
             },
             child: ListView(
               controller: _scroll,
@@ -143,6 +146,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 _hero(context, user, hot, activeOrder),
                 const SizedBox(height: 8),
+                // Đánh giá tốt của khách (tên/SĐT đã ẩn bớt).
+                HomeReviewsSection(
+                  tint: _tint,
+                  onOpenProduct: (p) => _push(ProductDetailScreen(product: p)),
+                ),
                 _eventsSection(),
                 const SizedBox(height: 28),
               ],

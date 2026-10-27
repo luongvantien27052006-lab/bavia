@@ -7,10 +7,12 @@
 // thanh toán.
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ui' as ui show ImageByteFormat;
 import 'dart:ui' show FontFeature;
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter/services.dart';
@@ -58,6 +60,7 @@ class _QrPaymentScreenState extends ConsumerState<QrPaymentScreen> {
     _setupCountdown();
     _listenSocket();
     _startPolling();
+    _BankLogos.load(); // tải sẵn logo app ngân hàng cho bảng chọn
   }
 
   void _setupCountdown() {
@@ -139,10 +142,27 @@ class _QrPaymentScreenState extends ConsumerState<QrPaymentScreen> {
     if (_saving) return;
     setState(() => _saving = true);
     try {
+      final ok = await _writeQrToGallery();
+      if (ok) {
+        HapticFeedback.mediumImpact();
+        _toast('Đã lưu mã QR vào thư viện ảnh. Mở app ngân hàng → Quét QR → '
+            'chọn ảnh từ thư viện để thanh toán.');
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  /// Chụp khung QR rồi lưu vào thư viện ảnh. Trả về true nếu lưu được.
+  /// [quiet] = không báo lỗi (dùng khi tự lưu trước lúc mở app ngân hàng).
+  Future<bool> _writeQrToGallery({bool quiet = false}) async {
+    try {
       final hasAccess = await Gal.hasAccess();
       if (!hasAccess && !await Gal.requestAccess()) {
-        _toast('Hãy cho phép Mọng Fruits lưu ảnh vào thư viện trong Cài đặt.');
-        return;
+        if (!quiet) {
+          _toast('Hãy cho phép Mọng Fruits lưu ảnh vào thư viện trong Cài đặt.');
+        }
+        return false;
       }
       final boundary =
           _qrKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
@@ -155,17 +175,17 @@ class _QrPaymentScreenState extends ConsumerState<QrPaymentScreen> {
         data.buffer.asUint8List(),
         name: 'MongFruits_QR_${_payment.transferContent}',
       );
-      HapticFeedback.mediumImpact();
-      _toast('Đã lưu mã QR vào thư viện ảnh. Mở app ngân hàng → Quét QR → '
-          'chọn ảnh từ thư viện để thanh toán.');
+      return true;
     } on GalException catch (e) {
-      _toast(e.type == GalExceptionType.accessDenied
-          ? 'Hãy cho phép Mọng Fruits lưu ảnh vào thư viện trong Cài đặt.'
-          : 'Không lưu được ảnh, vui lòng thử lại.');
+      if (!quiet) {
+        _toast(e.type == GalExceptionType.accessDenied
+            ? 'Hãy cho phép Mọng Fruits lưu ảnh vào thư viện trong Cài đặt.'
+            : 'Không lưu được ảnh, vui lòng thử lại.');
+      }
+      return false;
     } catch (_) {
-      _toast('Không lưu được ảnh, vui lòng thử lại.');
-    } finally {
-      if (mounted) setState(() => _saving = false);
+      if (!quiet) _toast('Không lưu được ảnh, vui lòng thử lại.');
+      return false;
     }
   }
 
@@ -195,7 +215,13 @@ class _QrPaymentScreenState extends ConsumerState<QrPaymentScreen> {
 
   Future<void> _openBankApp(_BankApp app) async {
     Navigator.of(context).pop(); // đóng bảng chọn
-    // Dự phòng: app nào không tự điền sẵn thì khách chỉ cần dán nội dung.
+    // App ngân hàng KHÔNG tự điền được -> lưu sẵn ảnh QR để khách chọn
+    // "Quét QR → Ảnh": cách này app nào cũng điền đủ STK, tên, tiền, nội dung.
+    var savedQr = false;
+    if (!app.autofill && _qrLoaded) {
+      savedQr = await _writeQrToGallery(quiet: true);
+    }
+    // Dự phòng cuối: nội dung CK đã nằm sẵn trong bộ nhớ tạm để dán.
     await Clipboard.setData(ClipboardData(text: _payment.transferContent));
     final uri = Uri.https('dl.vietqr.io', '/pay', {
       'app': app.id,
@@ -211,6 +237,12 @@ class _QrPaymentScreenState extends ConsumerState<QrPaymentScreen> {
     } catch (_) {}
     if (!ok) {
       _toast('Không mở được ${app.name}. Bạn có thể lưu mã QR rồi quét trong app.');
+    } else if (app.autofill) {
+      _toast('${app.name} sẽ mở màn chuyển khoản với thông tin điền sẵn. '
+          'Kiểm tra lại rồi bấm Chuyển nhé.');
+    } else if (savedQr) {
+      _toast('Đã lưu mã QR vào thư viện. Trong ${app.name}: chọn Quét QR → '
+          'Ảnh → chọn ảnh vừa lưu để điền đủ thông tin.');
     } else {
       _toast('Đã sao chép nội dung CK. Quay lại đây sau khi chuyển khoản nhé.');
     }
@@ -243,76 +275,115 @@ class _QrPaymentScreenState extends ConsumerState<QrPaymentScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                 child: Text('Chọn app ngân hàng',
                     style: TextStyle(
                         color: St.fg(),
                         fontSize: 18,
                         fontWeight: FontWeight.w800)),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                child: Text(
-                  'App sẽ mở với số tài khoản, số tiền và nội dung điền sẵn '
-                  '(tuỳ app ngân hàng có hỗ trợ).',
-                  style: TextStyle(color: St.fg(0.6), fontSize: 13),
-                ),
-              ),
               Flexible(
-                child: GridView.builder(
+                child: ListView(
                   shrinkWrap: true,
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 8,
-                    childAspectRatio: 0.78,
-                  ),
-                  itemCount: _bankApps.length,
-                  itemBuilder: (_, i) {
-                    final b = _bankApps[i];
-                    return InkWell(
-                      borderRadius: BorderRadius.circular(16),
-                      onTap: () => _openBankApp(b),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 52,
-                            height: 52,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: b.color,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Text(
-                              b.short,
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 13),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            b.name,
-                            maxLines: 2,
-                            textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                color: St.fg(0.85),
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                  children: [
+                    _sheetSection(
+                      'Tự điền sẵn thông tin',
+                      'Mở thẳng màn chuyển khoản: số tài khoản, tên, số tiền '
+                          'và nội dung đã điền đủ.',
+                      _bankApps.where((b) => b.autofill).toList(),
+                    ),
+                    const SizedBox(height: 14),
+                    _sheetSection(
+                      'Ngân hàng khác',
+                      'Mã QR sẽ được lưu vào thư viện ảnh. Trong app ngân hàng '
+                          'chọn Quét QR → Ảnh → chọn ảnh vừa lưu.',
+                      _bankApps.where((b) => !b.autofill).toList(),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _sheetSection(String title, String hint, List<_BankApp> apps) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(title,
+              style: TextStyle(
+                  color: St.fg(),
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w800)),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 2, 4, 10),
+          child: Text(hint,
+              style: TextStyle(color: St.fg(0.6), fontSize: 12.5)),
+        ),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 4,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 8,
+            childAspectRatio: 0.78,
+          ),
+          itemCount: apps.length,
+          itemBuilder: (_, i) => _bankTile(apps[i]),
+        ),
+      ],
+    );
+  }
+
+  Widget _bankTile(_BankApp b) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => _openBankApp(b),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              _BankLogo(b),
+              if (b.autofill)
+                Positioned(
+                  right: -4,
+                  top: -4,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2E9E5B),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: St.base, width: 2),
+                    ),
+                    child: const Icon(Icons.bolt_rounded,
+                        size: 12, color: Colors.white),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            b.name,
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+                color: St.fg(0.85),
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600),
+          ),
+        ],
       ),
     );
   }
@@ -713,22 +784,33 @@ class _BankApp {
   final String name;
   final String short;
   final Color color;
-  const _BankApp(this.id, this.name, this.short, this.color);
+
+  /// App ngân hàng hỗ trợ tự điền khi mở deeplink (theo changelog VietQR).
+  /// App khác chỉ mở app -> dùng ảnh QR đã lưu để điền đủ thông tin.
+  final bool autofill;
+  const _BankApp(this.id, this.name, this.short, this.color,
+      {this.autofill = false});
 }
 
 /// Xếp theo độ phổ biến. appId theo api.vietqr.io/v2/{android,ios}-app-deeplinks.
+/// Tự điền (2026): MB, VietinBank, BIDV, ACB, OCB — thêm khi VietQR mở rộng.
 const _bankApps = <_BankApp>[
-  _BankApp('mb', 'MB Bank', 'MB', Color(0xFF1E3A8A)),
+  _BankApp('mb', 'MB Bank', 'MB', Color(0xFF1E3A8A),
+      autofill: true),
   _BankApp('vcb', 'Vietcombank', 'VCB', Color(0xFF0B7A3E)),
   _BankApp('tcb', 'Techcombank', 'TCB', Color(0xFFE31837)),
-  _BankApp('icb', 'VietinBank', 'CTG', Color(0xFF0B5CAB)),
-  _BankApp('bidv', 'BIDV', 'BIDV', Color(0xFF1C6B6B)),
+  _BankApp('icb', 'VietinBank', 'CTG', Color(0xFF0B5CAB),
+      autofill: true),
+  _BankApp('bidv', 'BIDV', 'BIDV', Color(0xFF1C6B6B),
+      autofill: true),
   _BankApp('vba', 'Agribank', 'AGR', Color(0xFFA6192E)),
   _BankApp('vpb', 'VPBank NEO', 'VPB', Color(0xFF00965E)),
-  _BankApp('acb', 'ACB ONE', 'ACB', Color(0xFF1F4FA0)),
+  _BankApp('acb', 'ACB ONE', 'ACB', Color(0xFF1F4FA0),
+      autofill: true),
   _BankApp('tpb', 'TPBank', 'TPB', Color(0xFF5B2C83)),
   _BankApp('cake', 'Cake', 'CAKE', Color(0xFFEC4899)),
-  _BankApp('ocb', 'OCB OMNI', 'OCB', Color(0xFF178A4C)),
+  _BankApp('ocb', 'OCB OMNI', 'OCB', Color(0xFF178A4C),
+      autofill: true),
   _BankApp('timo', 'Timo', 'TIMO', Color(0xFF2B2B6E)),
   _BankApp('lpb', 'LPBank', 'LPB', Color(0xFFF26522)),
   _BankApp('hdb', 'HDBank', 'HDB', Color(0xFFE2231A)),
@@ -766,3 +848,105 @@ const _binToCode = <String, String>{
   '546034': 'cake',
   '963388': 'timo',
 };
+
+// ─────────────────────── Logo app ngân hàng ───────────────────────
+
+/// Logo THẬT của app ngân hàng, lấy từ API danh sách deeplink của VietQR
+/// (api.vietqr.io/v2/{android,ios}-app-deeplinks -> appLogo). Tải 1 lần mỗi
+/// phiên, ảnh được cache. Chưa tải được -> hiện ô chữ viết tắt như cũ.
+class _BankLogos {
+  static final ValueNotifier<Map<String, String>> logos =
+      ValueNotifier(const {});
+  static Future<void>? _loading;
+
+  static Future<void> load() => _loading ??= _fetch();
+
+  static Future<Map<String, String>> _list(Dio dio, String platform) async {
+    final m = <String, String>{};
+    try {
+      final res =
+          await dio.get('https://api.vietqr.io/v2/$platform-app-deeplinks');
+      final data = res.data is String ? jsonDecode(res.data as String) : res.data;
+      final apps = data is Map ? data['apps'] : null;
+      if (apps is List) {
+        for (final a in apps) {
+          if (a is! Map) continue;
+          final id = a['appId']?.toString();
+          final logo = a['appLogo']?.toString();
+          if (id != null && logo != null && logo.startsWith('http')) {
+            m[id] = logo;
+          }
+        }
+      }
+    } catch (_) {}
+    return m;
+  }
+
+  static Future<void> _fetch() async {
+    final dio = Dio(BaseOptions(
+      connectTimeout: const Duration(seconds: 6),
+      receiveTimeout: const Duration(seconds: 6),
+    ));
+    final ios = defaultTargetPlatform == TargetPlatform.iOS;
+    final lists = await Future.wait([_list(dio, 'android'), _list(dio, 'ios')]);
+    // Ưu tiên danh sách đúng nền tảng, thiếu thì lấy bên còn lại.
+    final merged = ios
+        ? {...lists[0], ...lists[1]}
+        : {...lists[1], ...lists[0]};
+    if (merged.isEmpty) {
+      _loading = null; // lỗi mạng -> lần mở sau thử lại
+      return;
+    }
+    logos.value = merged;
+  }
+}
+
+class _BankLogo extends StatelessWidget {
+  final _BankApp bank;
+  const _BankLogo(this.bank);
+
+  Widget _fallback() => Container(
+        width: 52,
+        height: 52,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: bank.color,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          bank.short,
+          style: const TextStyle(
+              color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<Map<String, String>>(
+      valueListenable: _BankLogos.logos,
+      builder: (context, logos, _) {
+        final url = logos[bank.id];
+        if (url == null) return _fallback();
+        return Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: St.line(0.12)),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: CachedNetworkImage(
+            imageUrl: url,
+            width: 52,
+            height: 52,
+            fit: BoxFit.cover,
+            fadeInDuration: const Duration(milliseconds: 150),
+            placeholder: (_, __) => _fallback(),
+            errorWidget: (_, __, ___) => _fallback(),
+          ),
+        );
+      },
+    );
+  }
+}

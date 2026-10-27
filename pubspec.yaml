@@ -1,7 +1,7 @@
 name: bavia
 description: Bavia Coffee - App đặt món khách hàng
 publish_to: 'none'
-version: 2.11.27+64
+version: 2.11.28+65
 
 
 
@@ -58,3 +58,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/icon/
+    - assets/live/   # bộ icon timeline đơn (Dynamic Island / màn khoá iOS)

@@ -29,6 +29,7 @@ class MongLiveUpdate {
     String? shortText,
     int progress = -1,
     List<int> points = const [],
+    String? icon, // bộ icon Mọng: pending/confirmed/preparing/ready/delivering/delivered/cancelled
     bool ongoing = true,
     bool alert = false,
     int? color,
@@ -42,6 +43,7 @@ class MongLiveUpdate {
         'shortText': shortText,
         'progress': progress,
         'points': points,
+        'icon': icon,
         'ongoing': ongoing,
         'alert': alert,
         'color': color,
