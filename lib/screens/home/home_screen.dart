@@ -5,7 +5,7 @@
 //   - Thẻ kính: điểm + hạng (hoặc mời đăng nhập), 2 ô nhanh (Thực đơn / Đặt chung),
 //     đơn đang xử lý dạng timeline.
 //   - "Món hot hôm nay" = kệ trưng bày xoay 3D (HotCoverflow).
-//   - Phía dưới: "Khách nói gì về Mọng" (đánh giá tốt), Sự kiện.
+//   - Phía dưới: Sự kiện, rồi "Khách nói gì về Mọng" (đánh giá tốt).
 //  GIỮ NGUYÊN chức năng cũ: pull-to-refresh, đăng nhập, hạng thành viên,
 //  phòng đặt chung (tạo / vào lại), đơn đang giao, sự kiện, mọi điều hướng.
 // ============================================================
@@ -146,12 +146,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 _hero(context, user, hot, activeOrder),
                 const SizedBox(height: 8),
-                // Đánh giá tốt của khách (tên/SĐT đã ẩn bớt).
+                _eventsSection(),
+                // Đánh giá tốt của khách (tên/SĐT đã ẩn bớt) — dưới Sự kiện.
                 HomeReviewsSection(
                   tint: _tint,
                   onOpenProduct: (p) => _push(ProductDetailScreen(product: p)),
                 ),
-                _eventsSection(),
                 const SizedBox(height: 28),
               ],
             ),

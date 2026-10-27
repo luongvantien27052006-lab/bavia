@@ -69,6 +69,8 @@ class _EventCarouselState extends State<EventCarousel> {
             height: h,
             child: PageView.builder(
               controller: _pc,
+              // Không cắt bóng đổ ở mép trên/dưới (tránh vệt ngang).
+              clipBehavior: Clip.none,
               itemCount: items.length,
               onPageChanged: (i) => setState(() => _index = i),
               itemBuilder: (context, i) => AnimatedBuilder(
@@ -131,11 +133,13 @@ class _EventCarouselState extends State<EventCarousel> {
             borderRadius: BorderRadius.circular(radius),
             color: St.fill(0.06),
             border: Border.all(color: St.line(0.10)),
+            // Nền tối: bóng đậm cho thẻ nổi. Nền sáng: bóng rất nhẹ — bóng đậm
+            // loang ra 2 mép màn hình thành 1 dải xám khác màu nền.
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
+                color: Colors.black.withValues(alpha: St.dark ? 0.35 : 0.07),
+                blurRadius: St.dark ? 24 : 16,
+                offset: Offset(0, St.dark ? 12 : 6),
               ),
             ],
           ),

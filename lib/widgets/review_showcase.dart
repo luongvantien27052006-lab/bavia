@@ -136,6 +136,7 @@ class HomeReviewsSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        const SizedBox(height: 28),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
@@ -218,7 +219,6 @@ class HomeReviewsSection extends ConsumerWidget {
             ),
           );
         }),
-        const SizedBox(height: 26),
       ],
     );
   }
