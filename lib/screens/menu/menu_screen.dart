@@ -328,9 +328,12 @@ class _CategoryRail extends StatelessWidget {
                       const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
+                    // Không dùng Colors.transparent (= ĐEN trong suốt): khi đổi
+                    // mục, màu nền chuyển dần trắng -> đen nên ô cũ/ô mới loé
+                    // XÁM. Dùng chính màu nền với độ trong 0 -> chỉ mờ dần.
                     color: active
                         ? St.fill(0.12)
-                        : Colors.transparent,
+                        : St.fill(0.12).withValues(alpha: 0),
                   ),
                   child: Column(
                     children: [
