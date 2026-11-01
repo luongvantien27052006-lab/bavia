@@ -21,6 +21,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gal/gal.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/config/api_config.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/realtime/socket_service.dart';
 import '../../models/order_model.dart';
@@ -230,7 +231,11 @@ class _QrPaymentScreenState extends ConsumerState<QrPaymentScreen> {
       'am': _payment.amount.toString(),
       'tn': _payment.transferContent,
       if (_payment.bankAccountName != null) 'bn': _payment.bankAccountName!,
-      'url': 'mongfruits://payment',
+      // BẮT BUỘC là link http(s). Scheme riêng (mongfruits://) bị dl.vietqr.io
+      // coi là không hợp lệ -> chỉ mở app ngân hàng ở trang chủ, không điền
+      // sẵn thông tin. Dùng trang join.html (App Link của app) để nút
+      // "Quay lại" trên trang VietQR đưa khách về lại Mọng Fruits.
+      'url': '${ApiConfig.inviteBaseUrl}/join.html',
     });
     var ok = false;
     try {
