@@ -694,7 +694,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       data: (list) {
         if (list.isEmpty) return message('Chưa có món nổi bật.');
         return HotCoverflow(
-          products: list.take(8).toList(),
+          products: list.take(12).toList(),
           onFocus: (p) {
             final c = DrinkTint.of(p);
             if (c != _tint) setState(() => _tint = c);
