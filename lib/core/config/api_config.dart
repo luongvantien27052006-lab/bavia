@@ -19,7 +19,7 @@ class ApiConfig {
 
   // ═══════════════════════════════════════════════════════════════════
   // 👇 DÁN DOMAIN APP (merry-harmony) VÀO ĐÂY
-  static const String _appHost = 'merry-harmony-production-ae63.up.railway.app';
+  static const String _appHost = 'api-157-10-200-185.sslip.io';
   // ═══════════════════════════════════════════════════════════════════
 
   /// Bật true CHỈ khi test với backend chạy ở máy tính (npm run start:dev).
