@@ -103,7 +103,7 @@ class Product {
   }
 
   /// Tạm coi các món display_order nhỏ là "hot" cho mục "Món hot hôm nay".
-  bool get isHot => displayOrder > 0 && displayOrder <= 5;
+  bool get isHot => displayOrder > 0 && displayOrder <= 12; // món nổi bật: POS gửi thứ tự 1..12
 
   /// Món mới: tạo trong 7 ngày gần đây.
   bool get isNew {
